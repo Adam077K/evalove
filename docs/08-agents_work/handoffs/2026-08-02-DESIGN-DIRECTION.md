@@ -149,6 +149,17 @@ The v6 system is the rejected direction rendered as tokens. It goes.
 Keep: `--ease-out`, `--ease-io`, the four durations, the radius scale. Those were
 never the problem.
 
+### The single highest-leverage deletion
+
+`AuroraBackdrop` is mounted in `apps/web/app/(app)/layout.tsx` — meaning the
+three-blob animated gradient wash sits behind **every authenticated surface**,
+not just login. One component in one file is responsible for the tint on all
+seven screens.
+
+Deleting it is the largest single step toward the colour law in §1, and it is a
+one-line change. Do it first; everything else gets easier to judge once the wash
+is gone.
+
 ---
 
 ## 4. Typography
@@ -179,24 +190,51 @@ The founder asked specifically for motion to make the app feel like a place wort
 visiting. The references are static images, so motion comes from our skills and
 from real shipped products.
 
-Non-negotiable craft floor, from `emilkowal-animations` and
-`12-principles-of-animation`:
+These numbers are **measured**, not asserted. R4 read them out of the shipped
+source of Vaul and Sonner — Emil Kowalski's own libraries, the ones our
+animation skill was derived from — so they are citable rather than inherited.
 
-- `ease-out` by default. Entrances ease-out, exits ease-in.
-- UI transitions ≤300ms. Sheets and drawers 500ms on `cubic-bezier(0.32,0.72,0,1)`.
-- `scale(0.97)` on press. Every interactive element gets an active state.
-- Animate `transform` and `opacity` only.
-- Interruptible. Never animate keyboard-initiated actions.
-- Honour `prefers-reduced-motion` — degrade to opacity, don't strip motion entirely.
-- Stagger ≤50ms per item.
+| Motion | Value | Provenance |
+|---|---|---|
+| Press | 150ms `cubic-bezier(0.22,1,0.36,1)`, `scale(0.97)` | Already correct in `globals.css`. Keep. |
+| UI transition | 220–320ms `--ease-out` | Already correct in `globals.css`. Keep. |
+| Sheet / drawer | 500ms `cubic-bezier(0.32,0.72,0,1)` | **Measured** from Vaul's source. Matches our skill exactly. |
+| Toast | 300ms in / 200ms swipe-out | **Measured** from Sonner's source. |
 
-**And one signature moment.** The app needs a single piece of motion it is
-remembered for, and it should be the thing that is true about these two people:
-**opening something that was sealed while you were asleep.** That is the Time
-Capsule idea, and it is the moment where asynchrony becomes a gift instead of a
-delay. Spend real craft there. One memorable moment beats micro-motion sprayed
-across every component — `frontend-design` requires exactly one such anchor, and
-this is it.
+Also: `ease-out` by default, entrances ease-out and exits ease-in; `transform`
+and `opacity` only; interruptible; never animate keyboard-initiated actions;
+stagger ≤50ms.
+
+### Two places our animation skill is wrong
+
+Both found by reading shipped source. Follow the source, not the skill.
+
+1. **`prefers-reduced-motion`.** Our skill says degrade to opacity-only. Sonner's
+   own CSS does a full `transition: none / animation: none` removal. Sonner ships
+   to far more users than we ever will.
+2. **The blanket "≤300ms UI transitions" rule** does not survive contact with
+   Sonner itself — 400ms container transition, 300ms enter keyframe. Treat 300ms
+   as a strong default, not a law.
+
+### The signature moment already exists
+
+`apps/web/components/home/SealedCard.tsx` is a real spring-based sealed-to-opened
+flip. It is the best interaction in the codebase and it is **exactly** the moment
+R3's research points at: opening something left while you were asleep, where
+asynchrony turns into a gift instead of a delay.
+
+It is currently buried under a violet gradient fill and a shimmer sweep.
+
+**So this is not a build. It is an excavation.** Strip the decoration, keep the
+spring, and give it the 500ms drawer easing above with the background receding
+Vaul-style behind it. One memorable moment beats micro-motion sprayed across
+every component — `frontend-design` requires exactly one such anchor, and this is
+it, and it is already half-built.
+
+**The seal must be the real gap.** Never a manufactured timer, never a global
+reveal clock — a fixed clock structurally privileges one partner's morning over
+the other's, which with seven hours between them is broken by construction.
+Unlock-on-arrival, no visible countdown.
 
 ---
 
