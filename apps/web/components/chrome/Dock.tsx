@@ -25,6 +25,22 @@ import { useViewer } from "@/lib/viewer";
 
 const SPRING = { type: "spring" as const, stiffness: 420, damping: 34 };
 
+/**
+ * DOCK_FOOTPRINT — how much of the bottom of the screen this dock
+ * covers: the pill (`p-1.5` twice over plus its tallest child, the
+ * 3.25rem send button = 4rem) plus the offset it floats at, which is
+ * `max(1rem, env(safe-area-inset-bottom))` so it clears the iOS home
+ * indicator.
+ *
+ *     calc(4rem + max(1rem, env(safe-area-inset-bottom)))
+ *
+ * Because the dock is fixed it reserves none of this in the flow.
+ * Anything that has to stop above it reserves the footprint itself:
+ * the column's bottom padding in `app/(app)/layout.tsx`, and the
+ * echo composer's sticky offset. If the pill's height changes, those
+ * two change with it.
+ */
+
 export function Dock() {
   const pathname = usePathname();
   const { member } = useViewer();
