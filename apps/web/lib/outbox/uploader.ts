@@ -175,11 +175,10 @@ export async function drainOutbox(options: DrainOptions): Promise<DrainOutcome> 
   );
 
   const pool = new TaskPool(UPLOAD_CONCURRENCY);
-  let dispatched = 0;
   const allocator = new TicketAllocator(
     transport,
     queue[0]?.kind ?? "daily",
-    () => queue.length - dispatched,
+    queue.length,
   );
 
   let attempted = 0;
@@ -238,7 +237,6 @@ export async function drainOutbox(options: DrainOptions): Promise<DrainOutcome> 
     }
 
     /* --- Stage two: upload. Two at a time. ---------------------------- */
-    dispatched++;
     const ready = record;
     await pool.spawn(async () => {
       try {
