@@ -21,7 +21,7 @@ import { useViewer } from "@/lib/viewer";
  */
 
 const FIXTURE_NOTE =
-  "The coffee place drew a heart in the foam this morning. Adam almost photographed it, then decided Eva should get the better version on Saturday.";
+  "The coffee place drew a heart in the foam this morning. Eva should get the better version on Saturday, so Adam left this one unphotographed.";
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
 
@@ -98,13 +98,19 @@ export function SealedCard() {
               >
                 <Mail size={20} strokeWidth={1.8} />
               </span>
+              {/* Two lines, one name each — never "Adam left a note
+                  for Eva". Eva before Adam is a founder decision and
+                  the rule is to rewrite the sentence rather than
+                  reorder the names, so the recipient's line carries
+                  the waiting and the sender's line carries the seal.
+                  Both facts survive; neither name queues behind the
+                  other. */}
               <div className="min-w-0">
                 <h2 className="type-card">
-                  {from.displayName} left {LEFT_KIND_LABEL[item.kind]} for{" "}
-                  {member.displayName}
+                  {member.displayName} has {LEFT_KIND_LABEL[item.kind]} waiting
                 </h2>
                 <p className="type-caption mt-0.5 opacity-80">
-                  sealed · left at {when}
+                  sealed by {from.displayName} · {when}
                 </p>
               </div>
               <span className="type-label ml-auto shrink-0 rounded-full bg-white/20 px-3.5 py-1.5">

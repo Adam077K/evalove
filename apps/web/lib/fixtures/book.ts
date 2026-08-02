@@ -37,7 +37,7 @@ export const SHARED_DAYS: SharedDay[] = [
     firstPostAt: PHOTOS["d0731-eva"].createdAt,
     lastPostAt: PHOTOS["d0731-eva"].createdAt,
   },
-  /* today — still open; Adam has posted, Eva's side is coming */
+  /* today — still open; Eva's side is coming, Adam has posted */
   {
     date: "2026-08-02",
     evaPosted: false,

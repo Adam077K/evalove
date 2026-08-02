@@ -81,12 +81,18 @@ function TodayCard() {
     ? todays.find((p) => p.authorMemberId === EVA.id)
     : undefined;
 
+  /**
+   * Eva before Adam, in both half-posted states. The clauses are
+   * ordered, not the names inside them: whichever way the day went,
+   * Eva's half of the sentence comes first, and it happens to track
+   * the slots left-to-right on the card underneath.
+   */
   const status = !day
     ? "A new day — no photographs yet"
     : day.bothPosted
       ? "Both sides are in"
       : day.adamPosted
-        ? "Adam has posted · a place is ready for Eva"
+        ? "A place is ready for Eva · Adam has posted"
         : day.evaPosted
           ? "Eva has posted · a place is ready for Adam"
           : "A new day — no photographs yet";

@@ -21,7 +21,7 @@ export interface LeftBehind {
   openedAt?: IsoDateTime;
 }
 
-/** Adam left a note during his morning — Eva's night. Unopened. */
+/** Eva has a note waiting, unopened — Adam left it in his morning, her night. */
 export const LEFT_BEHINDS: LeftBehind[] = [
   {
     id: "6c31aa90-2e44-4d8b-b1f0-000000000001",

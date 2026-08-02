@@ -11,7 +11,7 @@ import { useViewer } from "@/lib/viewer";
  * Echo — a conversation with the record the two of them have kept,
  * not with the other one. Hard line 1 of `AI-PARTNER-SPEC.md`: this
  * must never be mistakable for the real person, so nothing on this
- * surface is addressed to Adam or Eva and nothing is spoken as them.
+ * surface is addressed to Eva or Adam and nothing is spoken as them.
  * You ask *about* the partner; an echo answers, and what an echo
  * returns is what was actually said.
  *
