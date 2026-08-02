@@ -1,10 +1,6 @@
-/**
- * Intentionally empty.
- *
- * The scaffolder's marketing page has been removed rather than restyled.
- * The design track owns every pixel of this product — any placeholder screen
- * here would collide with it. Real screens land in a later ticket.
- */
-export default function Home() {
-  return null;
+import { redirect } from "next/navigation";
+
+/** The app opens on Home. There is no marketing surface — two users, forever. */
+export default function Root() {
+  redirect("/home");
 }

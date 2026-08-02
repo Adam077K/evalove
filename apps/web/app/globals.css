@@ -1,290 +1,426 @@
 /* ============================================================
-   Eva & Adam — the design system, as code.
-   Tailwind v4, CSS-first. Direction: docs/04-features/LDR-APP-DESIGN-DIRECTION-v6.md
+   Eva & Adam — design system v6: "Between two skies".
+   Tailwind v4, CSS-first. Direction: docs/04-features/DESIGN-DIRECTION-V6.md
 
-   The object is a well-made book. The interface never expresses
-   emotion; only the content does. Warmth comes from materials
-   (paper, ink), physics (weight, resistance), and their own
-   language — never from decoration.
+   The interface is the sky that connects two cities seven hours
+   apart. Rose over New York, amber over Tel Aviv, violet where
+   the two evenings touch. Surfaces float on that sky as layered
+   glass; colour is saturated and semantic — Eva's rose, Adam's
+   amber, and the violet that only exists when it's both of them.
 
-   Two people own two inks. Everything either of them writes is
-   set in the colour of whoever wrote it. That is the signature
-   of the whole system.
+   Two people own two colours. Everything either of them makes is
+   carried in the colour of whoever made it. Violet belongs to
+   moments that are jointly theirs: the book, the sealed things,
+   the AI that speaks with the other one's memory.
    ============================================================ */
 
 @import "tailwindcss";
 
 /* ------------------------------------------------------------
-   1 · Ink and paper — both modes.
-   Night is half this product: W1 is their biggest window and
-   Eva is in it with the lights off. The rule: dim the light on
-   the book, never invert the book. The page stays a page; the
-   room around it goes dark.
-
-   Contrast, recomputed 2026-08-02 (WCAG 2.1):
-     ink/paper        day 14.54:1  night 12.62:1   AAA
-     ink-soft/paper   day  6.18:1  night  6.64:1   AA + headroom
-     ink-eva/paper    day  5.64:1  night  6.08:1   AA
-     ink-adam/paper   day  7.99:1  night  7.23:1   AAA / AA
-     ink-book/paper   day  5.06:1  night  6.40:1   AA
-     paper on eva fill  5.64:1 / 6.08:1            AA (buttons)
-     paper on adam fill 7.99:1 / 7.23:1            AAA/AA (buttons)
-   ink-soft was moved off the AA floor deliberately (rev 5 had
-   5.31:1). State is still never expressed by lowering text
-   contrast — carry state on non-text elements (ribbons, rings).
+   1 · The two rooms — day and night.
+   Night is half this product: Eva reads this at 11pm with the
+   lights off. Night is not inverted day — it is the same sky
+   after dark: deep plum, never black, accents glowing slightly
+   because everything glows a little at night.
    ------------------------------------------------------------ */
 
 :root {
-  --paper: #f6f1e9; /* the page — warm uncoated stock */
-  --paper-edge: #e8dfd1; /* fore-edge lines, rules, frames (decorative only) */
-  --surround: #ede6db; /* the room around the book */
-  --ink: #231f1c; /* text — near-black, brown bias, never #000 */
-  --ink-soft: #615850; /* captions, timestamps, metadata */
-  --ink-eva: #8e4a63; /* rose-oxblood — Eva's ink */
-  --ink-adam: #2c4b6e; /* deep marine — Adam's ink */
-  --ink-book: #5e6b4f; /* muted green — the book's own ribbon, nothing else */
+  /* canvas & surfaces */
+  --canvas: #faf6fb;
+  --surface: #ffffff;
+  --surface-2: #f3edf7; /* recessed wells, inputs, empty slots */
+  --glass: rgba(255, 255, 255, 0.68);
+  --glass-strong: rgba(255, 255, 255, 0.84);
+  --glass-edge: rgba(255, 255, 255, 0.75);
+  --line: rgba(43, 27, 62, 0.09);
+  --ink: #241735;
+  --mute: #6f6187;
+  --on-accent: #ffffff;
 
-  --shadow-page: 0 1px 2px rgba(58, 44, 32, 0.05),
-    0 12px 32px -12px rgba(58, 44, 32, 0.18);
-  --shadow-lifted: 0 2px 3px rgba(58, 44, 32, 0.08),
-    0 18px 40px -14px rgba(58, 44, 32, 0.28);
-  --gutter-shade: rgba(0, 0, 0, 0.14);
+  /* the three hues */
+  --eva: #e8447f;
+  --eva-deep: #b92a5f;
+  --eva-soft: #fce4ee;
+  --eva-tint: rgba(232, 68, 127, 0.13);
+  --adam: #e0720d;
+  --adam-deep: #a95403;
+  --adam-soft: #ffeeda;
+  --adam-tint: rgba(224, 114, 13, 0.14);
+  --us: #7a5af8;
+  --us-deep: #5636cf;
+  --us-soft: #ece6fe;
+  --us-tint: rgba(122, 90, 248, 0.13);
 
-  --noise-opacity: 0.025;
-  --photo-dim: none; /* photos stay bright in day */
+  /* semantic — errors are their own colour, never Eva's rose */
+  --danger: #d43d47;
+  --danger-soft: #fde5e6;
 
-  /* Motion — two easings, the whole vocabulary. */
-  --ease-page: cubic-bezier(0.32, 0.72, 0, 1); /* anything that moves like matter */
-  --ease-ui: cubic-bezier(0.2, 0, 0, 1); /* fades and small state changes */
-  --dur-ui: 180ms;
-  --dur-slip: 240ms;
-  --dur-drop: 280ms;
-  --dur-flap: 320ms;
-  --dur-sheet: 400ms;
+  /* gradients — the only place colour is allowed to move */
+  --grad-eva: linear-gradient(135deg, #ff82ae 0%, #e8447f 100%);
+  --grad-adam: linear-gradient(135deg, #ffb35c 0%, #e0720d 100%);
+  --grad-us: linear-gradient(135deg, #a184ff 0%, #7a5af8 100%);
+  --grad-sky: linear-gradient(120deg, #ff82ae 0%, #a184ff 48%, #ffb35c 100%);
+
+  /* the aurora backdrop — three blobs, one per hue */
+  --aur-rose: rgba(255, 130, 174, 0.4);
+  --aur-violet: rgba(161, 132, 255, 0.34);
+  --aur-amber: rgba(255, 179, 92, 0.32);
+
+  /* elevation — plum-tinted, never grey */
+  --e1: 0 1px 2px rgba(46, 26, 71, 0.05), 0 4px 14px -2px rgba(46, 26, 71, 0.07);
+  --e2: 0 2px 4px rgba(46, 26, 71, 0.06),
+    0 14px 34px -10px rgba(46, 26, 71, 0.16);
+  --e3: 0 4px 8px rgba(46, 26, 71, 0.07),
+    0 28px 64px -18px rgba(46, 26, 71, 0.26);
+  --glow-eva: 0 10px 30px -8px rgba(232, 68, 127, 0.45);
+  --glow-adam: 0 10px 30px -8px rgba(224, 114, 13, 0.42);
+  --glow-us: 0 10px 30px -8px rgba(122, 90, 248, 0.48);
+
+  --noise-opacity: 0.018;
+  --photo-dim: none;
+
+  /* motion — two easings and four durations; springs live in JS */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-io: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-1: 150ms;
+  --dur-2: 220ms;
+  --dur-3: 320ms;
+  --dur-4: 520ms;
 }
 
-/* Night — the same book, unlit. */
+/* Night — the same sky after dark. */
 [data-mode="night"] {
-  --paper: #26221f;
-  --paper-edge: #3a342e;
-  --surround: #151311;
-  --ink: #ede5d8; /* warm off-white — never #fff, it halates at 2 a.m. */
-  --ink-soft: #b0a79a;
-  --ink-eva: #d48ca5;
-  --ink-adam: #8fb3d9;
-  --ink-book: #9caa88;
+  --canvas: #140e1e;
+  --surface: #1e1530;
+  --surface-2: #281d3d;
+  --glass: rgba(32, 22, 52, 0.6);
+  --glass-strong: rgba(36, 26, 58, 0.82);
+  --glass-edge: rgba(255, 255, 255, 0.12);
+  --line: rgba(243, 237, 250, 0.1);
+  --ink: #f3edfa;
+  --mute: #a598c2;
+  --on-accent: #ffffff;
 
-  --shadow-page: 0 1px 2px rgba(0, 0, 0, 0.3),
-    0 12px 32px -12px rgba(0, 0, 0, 0.55);
-  --shadow-lifted: 0 2px 3px rgba(0, 0, 0, 0.35),
-    0 18px 40px -14px rgba(0, 0, 0, 0.65);
-  --gutter-shade: rgba(0, 0, 0, 0.5);
+  --eva: #ff7fae;
+  --eva-deep: #ffa9c8;
+  --eva-soft: rgba(255, 127, 174, 0.16);
+  --eva-tint: rgba(255, 127, 174, 0.14);
+  --adam: #ffa057;
+  --adam-deep: #ffc08a;
+  --adam-soft: rgba(255, 160, 87, 0.15);
+  --adam-tint: rgba(255, 160, 87, 0.13);
+  --us: #a78bff;
+  --us-deep: #c4b1ff;
+  --us-soft: rgba(167, 139, 255, 0.17);
+  --us-tint: rgba(167, 139, 255, 0.15);
 
-  --noise-opacity: 0.035;
-  /* Dim, on by default at night; released on press-and-hold. */
-  --photo-dim: brightness(0.82) saturate(0.95);
+  --danger: #ff7d84;
+  --danger-soft: rgba(255, 125, 132, 0.16);
+
+  --grad-eva: linear-gradient(135deg, #ff8fb7 0%, #e8447f 100%);
+  --grad-adam: linear-gradient(135deg, #ffb877 0%, #e0720d 100%);
+  --grad-us: linear-gradient(135deg, #ab8fff 0%, #6d4bf0 100%);
+  --grad-sky: linear-gradient(120deg, #ff8fb7 0%, #ab8fff 48%, #ffb877 100%);
+
+  --aur-rose: rgba(232, 68, 127, 0.22);
+  --aur-violet: rgba(122, 90, 248, 0.24);
+  --aur-amber: rgba(224, 114, 13, 0.16);
+
+  --e1: 0 1px 2px rgba(0, 0, 0, 0.32), 0 4px 14px -2px rgba(0, 0, 0, 0.36);
+  --e2: 0 2px 4px rgba(0, 0, 0, 0.36), 0 14px 34px -10px rgba(0, 0, 0, 0.52);
+  --e3: 0 4px 8px rgba(0, 0, 0, 0.4), 0 28px 64px -18px rgba(0, 0, 0, 0.62);
+  --glow-eva: 0 10px 34px -6px rgba(255, 127, 174, 0.38);
+  --glow-adam: 0 10px 34px -6px rgba(255, 160, 87, 0.34);
+  --glow-us: 0 10px 34px -6px rgba(167, 139, 255, 0.42);
+
+  --noise-opacity: 0.03;
+  --photo-dim: brightness(0.86) saturate(0.96);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-mode]) {
-    --paper: #26221f;
-    --paper-edge: #3a342e;
-    --surround: #151311;
-    --ink: #ede5d8;
-    --ink-soft: #b0a79a;
-    --ink-eva: #d48ca5;
-    --ink-adam: #8fb3d9;
-    --ink-book: #9caa88;
-    --shadow-page: 0 1px 2px rgba(0, 0, 0, 0.3),
-      0 12px 32px -12px rgba(0, 0, 0, 0.55);
-    --shadow-lifted: 0 2px 3px rgba(0, 0, 0, 0.35),
-      0 18px 40px -14px rgba(0, 0, 0, 0.65);
-    --gutter-shade: rgba(0, 0, 0, 0.5);
-    --noise-opacity: 0.035;
-    --photo-dim: brightness(0.82) saturate(0.95);
+    --canvas: #140e1e;
+    --surface: #1e1530;
+    --surface-2: #281d3d;
+    --glass: rgba(32, 22, 52, 0.6);
+    --glass-strong: rgba(36, 26, 58, 0.82);
+    --glass-edge: rgba(255, 255, 255, 0.12);
+    --line: rgba(243, 237, 250, 0.1);
+    --ink: #f3edfa;
+    --mute: #a598c2;
+    --on-accent: #ffffff;
+    --eva: #ff7fae;
+    --eva-deep: #ffa9c8;
+    --eva-soft: rgba(255, 127, 174, 0.16);
+    --eva-tint: rgba(255, 127, 174, 0.14);
+    --adam: #ffa057;
+    --adam-deep: #ffc08a;
+    --adam-soft: rgba(255, 160, 87, 0.15);
+    --adam-tint: rgba(255, 160, 87, 0.13);
+    --us: #a78bff;
+    --us-deep: #c4b1ff;
+    --us-soft: rgba(167, 139, 255, 0.17);
+    --us-tint: rgba(167, 139, 255, 0.15);
+    --danger: #ff7d84;
+    --danger-soft: rgba(255, 125, 132, 0.16);
+    --grad-eva: linear-gradient(135deg, #ff8fb7 0%, #e8447f 100%);
+    --grad-adam: linear-gradient(135deg, #ffb877 0%, #e0720d 100%);
+    --grad-us: linear-gradient(135deg, #ab8fff 0%, #6d4bf0 100%);
+    --grad-sky: linear-gradient(120deg, #ff8fb7 0%, #ab8fff 48%, #ffb877 100%);
+    --aur-rose: rgba(232, 68, 127, 0.22);
+    --aur-violet: rgba(122, 90, 248, 0.24);
+    --aur-amber: rgba(224, 114, 13, 0.16);
+    --e1: 0 1px 2px rgba(0, 0, 0, 0.32), 0 4px 14px -2px rgba(0, 0, 0, 0.36);
+    --e2: 0 2px 4px rgba(0, 0, 0, 0.36), 0 14px 34px -10px rgba(0, 0, 0, 0.52);
+    --e3: 0 4px 8px rgba(0, 0, 0, 0.4), 0 28px 64px -18px rgba(0, 0, 0, 0.62);
+    --glow-eva: 0 10px 34px -6px rgba(255, 127, 174, 0.38);
+    --glow-adam: 0 10px 34px -6px rgba(255, 160, 87, 0.34);
+    --glow-us: 0 10px 34px -6px rgba(167, 139, 255, 0.42);
+    --noise-opacity: 0.03;
+    --photo-dim: brightness(0.86) saturate(0.96);
   }
 }
 
 /* ------------------------------------------------------------
    2 · Tokens exposed to Tailwind utilities.
-   bg-paper, text-ink, text-ink-eva, border-paper-edge, etc.
+   bg-canvas, bg-surface, text-ink, text-eva, shadow-e2, etc.
    ------------------------------------------------------------ */
 @theme inline {
-  --color-paper: var(--paper);
-  --color-paper-edge: var(--paper-edge);
-  --color-surround: var(--surround);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-ink-eva: var(--ink-eva);
-  --color-ink-adam: var(--ink-adam);
-  --color-ink-book: var(--ink-book);
+  --color-mute: var(--mute);
+  --color-line: var(--line);
+  --color-on-accent: var(--on-accent);
+  --color-eva: var(--eva);
+  --color-eva-deep: var(--eva-deep);
+  --color-eva-soft: var(--eva-soft);
+  --color-adam: var(--adam);
+  --color-adam-deep: var(--adam-deep);
+  --color-adam-soft: var(--adam-soft);
+  --color-us: var(--us);
+  --color-us-deep: var(--us-deep);
+  --color-us-soft: var(--us-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
 
+  --font-sans: "Outfit Variable", "Outfit", ui-sans-serif, system-ui,
+    sans-serif;
   --font-display: "Fraunces Variable", "Fraunces", Georgia, serif;
-  --font-text: "Literata Variable", "Literata", Georgia, serif;
 
-  --ease-page: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-ui: cubic-bezier(0.2, 0, 0, 1);
+  --shadow-e1: var(--e1);
+  --shadow-e2: var(--e2);
+  --shadow-e3: var(--e3);
+  --shadow-glow-eva: var(--glow-eva);
+  --shadow-glow-adam: var(--glow-adam);
+  --shadow-glow-us: var(--glow-us);
 
-  /* Radius discipline: paper is not rounded. Pages 2px, photos 1px.
-     Radius is for controls only — pill for the one primary action,
-     8px for the rest. There is no rounded-xl in this product. */
-  --radius-page: 2px;
-  --radius-photo: 1px;
-  --radius-control: 8px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-io: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Radius scale — rounded and tactile. Cards 20–28, sheets 36, pills full. */
+  --radius-md: 0.875rem; /* 14 — chips, inputs, small tiles */
+  --radius-lg: 1.25rem; /* 20 — standard cards */
+  --radius-xl: 1.75rem; /* 28 — hero cards, photo plates */
+  --radius-2xl: 2.25rem; /* 36 — sheets, the dock */
 }
 
 /* ------------------------------------------------------------
    3 · Base
    ------------------------------------------------------------ */
 html {
-  font-family: var(--font-text);
+  font-family: var(--font-sans);
   font-feature-settings: "kern" 1, "liga" 1;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 body {
-  background: var(--surround);
+  background: var(--canvas);
   color: var(--ink);
-  transition: background-color 400ms var(--ease-ui),
-    color 400ms var(--ease-ui);
+  transition: background-color 400ms var(--ease-io), color 400ms var(--ease-io);
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--ink-book) 30%, transparent);
+  background: var(--us-tint);
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink-adam);
+  outline: 2px solid var(--us);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 10px;
 }
 
 /* ------------------------------------------------------------
-   4 · The type scale — two families, both serif, no sans anywhere.
-   Fraunces for display (WONK 1 at large sizes only — it gets
-   noisy below 20px). Literata for everything read.
+   4 · The type scale.
+   Outfit carries the interface; Fraunces speaks only at emotional
+   moments — the greeting, a day's name, the book. It never labels
+   a control.
    ------------------------------------------------------------ */
-@utility type-display {
+@utility type-hero {
   font-family: var(--font-display);
-  font-size: 2.5rem; /* 40 */
-  line-height: 2.75rem; /* 44 */
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  font-variation-settings: "opsz" 120, "SOFT" 50, "WONK" 1;
+  font-size: clamp(1.75rem, 5.5vw, 2.25rem);
+  line-height: 1.16;
+  font-weight: 540;
+  letter-spacing: -0.015em;
+  font-variation-settings: "opsz" 90, "SOFT" 60, "WONK" 0;
 }
 
-@utility type-heading {
+@utility type-title {
   font-family: var(--font-display);
-  font-size: 1.5rem; /* 24 */
-  line-height: 1.875rem; /* 30 */
-  font-weight: 500;
-  font-variation-settings: "opsz" 60, "SOFT" 50, "WONK" 1;
+  font-size: 1.375rem; /* 22 */
+  line-height: 1.75rem;
+  font-weight: 520;
+  letter-spacing: -0.01em;
+  font-variation-settings: "opsz" 50, "SOFT" 60, "WONK" 0;
 }
 
-@utility type-entry-title {
-  font-family: var(--font-display);
+@utility type-card {
+  font-family: var(--font-sans);
   font-size: 1.0625rem; /* 17 */
-  line-height: 1.5rem; /* 24 */
-  font-weight: 500;
-  font-variation-settings: "opsz" 30, "SOFT" 50, "WONK" 0;
-}
-
-@utility type-eyebrow {
-  font-family: var(--font-text);
-  font-size: 0.6875rem; /* 11 */
-  line-height: 1rem; /* 16 */
+  line-height: 1.4375rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: -0.01em;
 }
 
 @utility type-body {
-  font-family: var(--font-text);
-  font-size: 1.0625rem; /* 17 */
-  line-height: 1.5625rem; /* 25 */
-  font-weight: 400;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem; /* 15 */
+  line-height: 1.4375rem;
+  font-weight: 450;
+}
+
+@utility type-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem; /* 13 */
+  line-height: 1.125rem;
+  font-weight: 560;
+  letter-spacing: 0.005em;
 }
 
 @utility type-caption {
-  font-family: var(--font-text);
+  font-family: var(--font-sans);
   font-size: 0.8125rem; /* 13 */
-  line-height: 1.1875rem; /* 19 */
-  font-weight: 400;
-  font-variant-numeric: oldstyle-nums;
+  line-height: 1.1875rem;
+  font-weight: 450;
 }
 
-/* Tabular lining figures ONLY in the dial, where digits must not jitter. */
-@utility type-numeral {
-  font-family: var(--font-text);
-  font-size: 0.8125rem;
-  line-height: 1.1875rem;
-  font-weight: 400;
+@utility type-micro {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem; /* 11 */
+  line-height: 1rem;
+  font-weight: 640;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+/* Legacy alias — a few review surfaces still say type-eyebrow. */
+@utility type-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 640;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+/* The clocks. Digits must not jitter as they tick. */
+@utility type-clock {
+  font-family: var(--font-sans);
+  font-size: 2.375rem; /* 38 */
+  line-height: 1;
+  font-weight: 560;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-/* Line length: 60–66 characters on any text column. */
 @utility measure {
   max-width: 34rem;
 }
 
 /* ------------------------------------------------------------
-   5 · Paper — the material utilities.
+   5 · Material — glass, trays, wells.
    ------------------------------------------------------------ */
-@utility paper-page {
-  background: var(--paper);
-  border-radius: var(--radius-page);
-  box-shadow: var(--shadow-page);
+
+/* Frosted glass with edge refraction: blur + saturate, a bright
+   hairline, and an inset top highlight. Fixed/floating chrome and
+   cards only — never on a large scrolling container. */
+@utility glass {
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--e2);
 }
 
-@utility photo-mounted {
-  border-radius: var(--radius-photo);
+@utility glass-strong {
+  background: var(--glass-strong);
+  backdrop-filter: blur(28px) saturate(1.7);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), var(--e3);
+}
+
+[data-mode="night"] .glass,
+[data-mode="night"] .glass-strong {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--e2);
+}
+
+/* An opaque raised card. */
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--e1);
+}
+
+/* A recessed well — empty slots, inputs, quiet zones. */
+@utility well {
+  background: var(--surface-2);
+  box-shadow: inset 0 1px 2px rgba(46, 26, 71, 0.05);
+}
+
+/* Photographs. */
+@utility photo {
   filter: var(--photo-dim);
 }
-
-/* Press-and-hold releases the night dim. */
-@utility photo-mounted-bright {
+@utility photo-bright {
   filter: none;
-}
-
-/* The gutter — the book's valley. Never moves. */
-@utility gutter-left {
-  background: linear-gradient(to right, var(--gutter-shade), transparent 28px);
-}
-@utility gutter-right {
-  background: linear-gradient(to left, var(--gutter-shade), transparent 28px);
 }
 
 /* ------------------------------------------------------------
    6 · Controls
    ------------------------------------------------------------ */
 @utility press {
-  transition: transform 90ms var(--ease-ui);
+  transition: transform var(--dur-1) var(--ease-out);
   &:active {
     transform: scale(0.97);
-    transition-duration: 90ms;
   }
-  &:not(:active) {
-    transition-duration: 180ms;
+}
+
+@utility hover-lift {
+  transition: transform var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+  &:active {
+    transform: translateY(0) scale(0.98);
   }
 }
 
 /* ------------------------------------------------------------
-   7 · Motion — keyframes that carry the object.
-   Only transform and opacity animate, ever.
+   7 · Motion vocabulary — keyframes.
+   Only transform, opacity and filter animate, ever.
    ------------------------------------------------------------ */
 
-/* The slip being replaced: old out down, new in from above. */
-@keyframes slip-out {
-  to {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-@keyframes slip-in {
+/* Content arriving: a heavy, soft rise. */
+@keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(1.02);
+    transform: translateY(16px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -292,11 +428,27 @@ body {
   }
 }
 
-/* A photograph dropping into its corners. */
+/* Something popping into place — spring overshoot baked in. */
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* A photograph dropping into its slot on pair completion. */
 @keyframes photo-drop {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(1.02);
+    transform: translateY(-12px) scale(1.03);
   }
   to {
     opacity: 1;
@@ -304,76 +456,98 @@ body {
   }
 }
 
-/* The pocket flap lifting. */
-@keyframes flap-lift {
+/* Presence — a slow breath, never a blink. */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.45;
+  }
+}
+
+/* Skeleton shimmer. */
+@keyframes shimmer {
   from {
-    transform: rotateX(0deg);
+    transform: translateX(-100%);
   }
   to {
-    transform: rotateX(-38deg);
+    transform: translateX(100%);
   }
 }
 
-/* The turn — scroll-driven. The lift (0–2%) is the paper
-   unsticking; rotation runs 2–100%. If you build one detail
-   from this file, build the lift. */
-@keyframes leaf-turn {
-  0% {
-    transform: translateZ(0) rotateY(0deg) scale(1);
-  }
-  2% {
-    transform: translateZ(1px) rotateY(0deg) scale(1.004);
-  }
-  100% {
-    transform: translateZ(1px) rotateY(-180deg) scale(1.004);
-  }
-}
-@keyframes leaf-cast-shadow {
+/* The aurora blobs drifting — ambient, 26s+, opacity via the blob itself. */
+@keyframes drift-a {
   0%,
-  2% {
-    opacity: 0;
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
+    transform: translate3d(6%, 4%, 0) scale(1.12);
   }
 }
-@keyframes leaf-gutter-deepen {
-  0% {
-    opacity: 0;
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    opacity: 1;
+    transform: translate3d(-5%, -6%, 0) scale(1.08);
   }
+}
+@keyframes drift-c {
+  0%,
   100% {
-    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(4%, -5%, 0) scale(0.96);
   }
 }
 
-/* Reduced motion: the scroller and its snap stay — the gesture
-   and the spatial model survive — but the leaf crossfades
-   instead of rotating, on the same timeline. */
-@media (prefers-reduced-motion: reduce) {
-  @keyframes leaf-turn {
-    0%,
-    49% {
-      opacity: 1;
-      transform: none;
-    }
-    51%,
-    100% {
-      opacity: 0;
-      transform: none;
-    }
+/* Error: a small honest shake. */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
   }
-  @keyframes slip-in {
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+/* Staggered entrance helper: set --i per child. */
+@utility stagger-child {
+  animation: rise-in var(--dur-4) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes rise-in {
     from {
       opacity: 0;
       transform: none;
     }
     to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pop-in {
+    0% {
+      opacity: 0;
+      transform: none;
+    }
+    100% {
       opacity: 1;
       transform: none;
     }
@@ -388,10 +562,35 @@ body {
       transform: none;
     }
   }
+  @keyframes drift-a {
+    0%,
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes drift-b {
+    0%,
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes drift-c {
+    0%,
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: none;
+      opacity: 0.9;
+    }
+  }
 }
 
 /* ------------------------------------------------------------
-   8 · The one noise layer. Fixed, never inside a scroller.
+   8 · Fixed layers. Never inside a scroller.
    ------------------------------------------------------------ */
 .noise-layer {
   position: fixed;
@@ -403,4 +602,18 @@ body {
 }
 [data-mode="night"] .noise-layer {
   mix-blend-mode: overlay;
+}
+
+.aurora-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+.aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  will-change: transform;
 }

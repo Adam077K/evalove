@@ -4,9 +4,10 @@ import { clsx } from "clsx";
 import { useId } from "react";
 
 /**
- * A form field in the book's register: label above, a ruled line
- * rather than a boxed input, error below in plain language.
- * Errors state what happened and what to do — never a scold.
+ * A form field: label above, a soft rounded well, error below in
+ * plain language. Errors state what happened and what to do — never
+ * a scold — and they are carried in the danger colour, which belongs
+ * to no one (rose is Eva's, amber is Adam's; mistakes are nobody's).
  */
 export function Field({
   label,
@@ -24,7 +25,7 @@ export function Field({
   const id = useId();
   return (
     <div className={clsx("flex flex-col gap-2", className)}>
-      <label htmlFor={id} className="type-eyebrow text-ink-soft">
+      <label htmlFor={id} className="type-label text-ink">
         {label}
       </label>
       <input
@@ -33,18 +34,21 @@ export function Field({
         aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
         {...inputProps}
         className={clsx(
-          "type-body w-full bg-transparent pb-2 text-ink outline-none",
-          "border-b transition-colors duration-180",
-          error ? "border-ink-eva" : "border-paper-edge focus:border-ink-soft",
+          "type-body well w-full rounded-[0.875rem] px-4 py-3 text-ink outline-none",
+          "border transition-[border-color,box-shadow] duration-200",
+          error
+            ? "border-danger"
+            : "border-transparent focus:border-us focus:shadow-[0_0_0_3px_var(--us-tint)]",
+          error ? "[animation:shake_320ms_var(--ease-out)]" : "",
           inputProps?.className,
         )}
       />
       {error ? (
-        <p id={`${id}-err`} className="type-caption text-ink-eva">
+        <p id={`${id}-err`} className="type-caption text-danger">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="type-caption text-ink-soft">
+        <p id={`${id}-hint`} className="type-caption text-mute">
           {hint}
         </p>
       ) : null}

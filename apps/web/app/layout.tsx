@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import "@fontsource-variable/literata";
-import "@fontsource-variable/literata/wght-italic.css";
+import "@fontsource-variable/outfit";
 import "@fontsource-variable/fraunces/full.css";
 import "@fontsource-variable/fraunces/full-italic.css";
 import "./globals.css";
@@ -9,7 +8,7 @@ import { NoiseLayer } from "@/components/chrome/NoiseLayer";
 
 export const metadata: Metadata = {
   title: "Eva & Adam",
-  description: "A book for two people.",
+  description: "The sky between two cities.",
 };
 
 export const viewport: Viewport = {
@@ -17,8 +16,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F6F1E9" },
-    { media: "(prefers-color-scheme: dark)", color: "#26221F" },
+    { media: "(prefers-color-scheme: light)", color: "#FAF6FB" },
+    { media: "(prefers-color-scheme: dark)", color: "#140E1E" },
   ],
 };
 
