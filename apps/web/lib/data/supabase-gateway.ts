@@ -1,24 +1,31 @@
 /**
- * THE ONLY FILE IN THIS APPLICATION THAT IMPORTS THE SUPABASE SDK.
+ * The Supabase implementation of `DataGateway`.
  *
- * Not a convention — a checkable property. `lib/data/__tests__/boundary.test.ts`
- * reads the source tree and fails if any other file imports
- * `@supabase/supabase-js`. The reason is the service role key: it bypasses Row
- * Level Security completely, so every line of code holding a client holds the
- * whole database. Keeping that to one file means the review question is "is
- * this file right", not "has anyone anywhere done something careless".
+ * Every query in the photo and book flows lands here, and nowhere else touches
+ * PostgREST. What this file does NOT do is construct the client: that lives in
+ * `lib/data/client.ts`, which is the one file in the application permitted to
+ * import `@supabase/supabase-js`.
  *
- * The client is built lazily, on first use, from `lib/env.ts`. Building it at
- * module scope would make importing this file a boot check for the entire
- * environment — convenient in production, fatal in a unit test that only wants
- * the type. The environment is still validated before the first query, which
- * is the property that actually matters.
+ * Not a convention — a checkable property. `lib/__tests__/no-client-secrets.test.ts`
+ * reads the source tree and fails if any other file imports the SDK. The reason
+ * is the service role key: it bypasses Row Level Security completely, so every
+ * line of code holding a client holds the whole database. Keeping that to one
+ * file means the review question is "is this file right", not "has anyone
+ * anywhere done something careless".
+ *
+ * WHY `serviceClient()` IS ASYNC. `client.ts` imports `lib/env.ts`, which
+ * validates at module evaluation. This module is reached from
+ * `lib/data/index.ts`, which unit tests import for types and for the pure logic
+ * in `photos.ts` — a static import here would turn every one of those into a
+ * boot check for the whole environment. The `await import("./client")` below
+ * defers that to the first actual query, which is where a missing credential
+ * genuinely matters. The module registry caches the import, so this costs one
+ * resolved promise per call and nothing else.
  */
-
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { MEDIA_BUCKET } from "@/lib/schema";
 
+import type { SupabaseClient } from "./client";
 import { DataError } from "./errors";
 import {
   BOOK_ENTRY_COLUMNS,
@@ -39,36 +46,19 @@ import type {
  * The client
  * ------------------------------------------------------------------ */
 
-let cached: SupabaseClient | null = null;
-
 /**
- * The service-role client, built once per process.
+ * The one service-role client, reached without importing the SDK.
  *
- * `persistSession: false` and `autoRefreshToken: false` because there is no
- * user session here: the service role key is the credential, it does not
- * expire, and a refresh timer in a serverless function is a timer that keeps
- * an instance alive for nothing.
+ * `db()` memoises in `client.ts`, so this is a lookup after the first call, not
+ * a construction. The dynamic import is the deferral described at the top of
+ * this file — it keeps `lib/env.ts` out of the import graph of anything that
+ * merely imports `lib/data`.
+ *
+ * Tests that need a fresh client call `__resetDbForTests()` from `./client`.
  */
 async function serviceClient(): Promise<SupabaseClient> {
-  if (cached !== null) return cached;
-
-  // Dynamic so that importing this module does not validate the environment.
-  const { env } = await import("@/lib/env");
-
-  cached = createClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: { persistSession: false, autoRefreshToken: false },
-      db: { schema: "public" },
-    },
-  );
-  return cached;
-}
-
-/** Only for tests that need to prove the singleton is not shared across cases. */
-export function resetServiceClientForTests(): void {
-  cached = null;
+  const { db } = await import("./client");
+  return db();
 }
 
 /* ------------------------------------------------------------------ *
