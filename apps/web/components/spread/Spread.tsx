@@ -3,6 +3,7 @@ import { runningHeadDate } from "@/lib/time";
 import { ADAM, EVA, memberById } from "@/lib/fixtures/members";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { postedAtLocal } from "@/lib/fixtures/photos";
+import { LiveLocalTime } from "./LiveLocalTime";
 
 /**
  * The daily spread — the most-repeated page in the book.
@@ -32,7 +33,7 @@ type SpreadProps = {
   dropIn?: "eva" | "adam";
 };
 
-export function Spread({ day, evaPhoto, adamPhoto, dropIn }: SpreadProps) {
+export function Spread({ day, evaPhoto, adamPhoto, live = false, dropIn }: SpreadProps) {
   /* Neither posted: the book skips the date in silence. No marker. */
   if (!evaPhoto && !adamPhoto) return null;
 
@@ -44,8 +45,8 @@ export function Spread({ day, evaPhoto, adamPhoto, dropIn }: SpreadProps) {
       className="relative grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-0 md:paper-page"
     >
       {/* Eva before Adam — including in the DOM. */}
-      <Leaf side="verso" member={EVA} photo={evaPhoto} head={head} drop={dropIn === "eva"} />
-      <Leaf side="recto" member={ADAM} photo={adamPhoto} head={head} drop={dropIn === "adam"} />
+      <Leaf side="verso" member={EVA} photo={evaPhoto} head={head} live={live} drop={dropIn === "eva"} />
+      <Leaf side="recto" member={ADAM} photo={adamPhoto} head={head} live={live} drop={dropIn === "adam"} />
 
       {/* The running head, at the foot of the gutter. One per spread. */}
       <footer
@@ -67,12 +68,14 @@ function Leaf({
   member,
   photo,
   head,
+  live,
   drop,
 }: {
   side: "verso" | "recto";
   member: Member;
   photo?: Photo;
   head: string;
+  live: boolean;
   drop: boolean;
 }) {
   const ink = member.slug === "eva" ? "text-ink-eva" : "text-ink-adam";
@@ -87,7 +90,11 @@ function Leaf({
         }`}
       />
 
-      {photo ? <Plate photo={photo} ink={ink} drop={drop} /> : null}
+      {photo ? (
+        <Plate photo={photo} ink={ink} drop={drop} />
+      ) : live ? (
+        <PreparedLeaf member={member} ink={ink} />
+      ) : null}
 
       {/* On a phone each leaf carries the running head itself. */}
       <footer
@@ -132,6 +139,32 @@ function Plate({ photo, ink, drop }: { photo: Photo; ink: string; drop: boolean 
         <p className="type-caption text-ink-soft">{postedAtLocal(photo)}</p>
       </figcaption>
     </figure>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * The prepared leaf — one has posted, the other hasn't yet.
+ *
+ * Photo corners, alone, on the paper; the name beneath in that
+ * person's ink; the hour in their city, live. Nothing else. No
+ * outline, no grey box, no spinner, no elapsed anything — a clock,
+ * never a counter. Four crisp corners with nothing in them are
+ * unambiguously a place prepared for something.
+ * ------------------------------------------------------------------ */
+
+function PreparedLeaf({ member, ink }: { member: Member; ink: string }) {
+  return (
+    <div>
+      <div className="relative aspect-[3/4]" role="img" aria-label={`A place prepared for ${member.displayName}'s photograph`}>
+        <Corners />
+      </div>
+      <div className="mt-3 min-h-[2.4rem]">
+        <p className={`type-caption ${ink}`}>{member.displayName}</p>
+        <p className="type-caption text-ink-soft">
+          <LiveLocalTime tz={member.homeTimezone} />
+        </p>
+      </div>
+    </div>
   );
 }
 

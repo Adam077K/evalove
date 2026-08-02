@@ -46,6 +46,13 @@ export default function TodayPage() {
             adamPhoto={PHOTOS["d0730-adam"]}
           />
         </section>
+
+        <section aria-labelledby="state-half">
+          <h2 id="state-half" className="type-eyebrow mb-5 text-ink-soft">
+            The half pair — the day is still open
+          </h2>
+          <Spread day={dayOf("2026-08-02")} adamPhoto={PHOTOS["d0802-adam"]} live />
+        </section>
       </div>
     </main>
   );
