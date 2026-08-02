@@ -1,0 +1,79 @@
+- generic [active] [ref=f11e1]:
+  - main [ref=f11e2]:
+    - generic [ref=f11e3]:
+      - generic [ref=f11e5]:
+        - generic [ref=f11e6]:
+          - paragraph [ref=f11e7]: Sunday 2 August
+          - heading "Eva’s lunch break" [level=1] [ref=f11e8]
+        - link "The pocket — private, opens with a passphrase" [ref=f11e9] [cursor=pointer]:
+          - /url: /pocket
+      - region "Where Eva and Adam are in their days" [ref=f11e14]:
+        - article [ref=f11e15]:
+          - generic [ref=f11e16]:
+            - heading "Eva" [level=3] [ref=f11e18]
+            - paragraph [ref=f11e22]:
+              - generic [ref=f11e23]: 8:50
+              - generic [ref=f11e24]: am
+            - paragraph [ref=f11e25]: New York · awake now
+        - article [ref=f11e26]:
+          - generic [ref=f11e27]:
+            - heading "Adam" [level=3] [ref=f11e29]
+            - paragraph [ref=f11e33]:
+              - generic [ref=f11e34]: 3:50
+              - generic [ref=f11e35]: pm
+            - paragraph [ref=f11e36]: Tel Aviv · at work
+      - 'link "Today: A place is ready for Eva · Adam has posted" [ref=f11e38] [cursor=pointer]':
+        - /url: /today
+        - generic [ref=f11e39]:
+          - heading "Today" [level=2] [ref=f11e40]
+          - generic [ref=f11e41]: Open
+        - generic [ref=f11e45]:
+          - img "A place ready for Eva's photograph" [ref=f11e46]:
+            - generic [ref=f11e49]: Eva
+          - figure "Adam 6:20 am" [ref=f11e50]:
+            - img "Adam's photograph from today" [ref=f11e51]
+            - generic [ref=f11e52]:
+              - generic [ref=f11e53]: Adam
+              - generic [ref=f11e54]: 6:20 am
+        - paragraph [ref=f11e55]: A place is ready for Eva · Adam has posted
+      - region "Left for later" [ref=f11e57]:
+        - button "Eva has a note waiting sealed by Adam · 8:12 am his time Open" [ref=f11e58]:
+          - generic [ref=f11e59]:
+            - generic [ref=f11e64]:
+              - heading "Eva has a note waiting" [level=2] [ref=f11e65]
+              - paragraph [ref=f11e66]: sealed by Adam · 8:12 am his time
+            - generic [ref=f11e67]: Open
+      - 'link "For this window: The five-minute check-in" [ref=f11e69] [cursor=pointer]':
+        - /url: /dates
+        - generic [ref=f11e75]:
+          - paragraph [ref=f11e76]: Eva’s lunch break
+          - heading "The five-minute check-in" [level=2] [ref=f11e77]
+          - paragraph [ref=f11e78]: One good thing, one hard thing, one thing being held.
+          - paragraph [ref=f11e79]:
+            - generic [ref=f11e80]: 5 min
+            - generic [ref=f11e81]: free
+            - generic [ref=f11e82]: screens down
+      - generic [ref=f11e86]:
+        - link "The book — two days, kept" [ref=f11e87] [cursor=pointer]:
+          - /url: /book
+          - generic [ref=f11e90]:
+            - generic [ref=f11e94]: The book
+            - generic [ref=f11e95]: two days, kept
+        - link "Echo Adam’s own words, kept" [ref=f11e96] [cursor=pointer]:
+          - /url: /echo
+          - generic [ref=f11e99]:
+            - generic [ref=f11e100]: Echo
+            - generic [ref=f11e101]: Adam’s own words, kept
+  - navigation "Main" [ref=f11e102]:
+    - generic [ref=f11e103]:
+      - link "Home" [ref=f11e104] [cursor=pointer]:
+        - /url: /home
+      - link "The book" [ref=f11e111] [cursor=pointer]:
+        - /url: /book
+      - link "Send something small" [ref=f11e116] [cursor=pointer]:
+        - /url: /send
+      - link "Dates" [ref=f11e118] [cursor=pointer]:
+        - /url: /dates
+      - link "Echo" [ref=f11e124] [cursor=pointer]:
+        - /url: /echo
+  - alert [ref=f11e128]
