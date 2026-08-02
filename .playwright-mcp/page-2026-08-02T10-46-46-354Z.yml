@@ -1,0 +1,24 @@
+- main [ref=f1e2]:
+  - generic [ref=f1e3]:
+    - heading "The daily spread" [level=1] [ref=f1e4]
+    - navigation "Mode" [ref=f1e5]:
+      - link "day" [ref=f1e6] [cursor=pointer]:
+        - /url: "?mode=day"
+      - text: ·
+      - link "night" [ref=f1e7] [cursor=pointer]:
+        - /url: "?mode=night"
+  - region [ref=f1e9]:
+    - heading "The completed pair" [level=2] [ref=f1e10]
+    - region "Thursday 30 July" [ref=f1e11]:
+      - article [ref=f1e12]:
+        - figure [ref=f1e13]:
+          - img "Deli guy drew a cat on my coffee" [ref=f1e15]
+          - generic [ref=f1e32]:
+            - paragraph [ref=f1e33]: Deli guy drew a cat on my coffee
+            - paragraph [ref=f1e34]: 1:22 pm
+      - article [ref=f1e35]:
+        - figure [ref=f1e36]:
+          - img "Carmel market tomatoes, obscene" [ref=f1e38]
+          - generic [ref=f1e55]:
+            - paragraph [ref=f1e56]: Carmel market tomatoes, obscene
+            - paragraph [ref=f1e57]: 7:48 pm
