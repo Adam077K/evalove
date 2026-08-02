@@ -17,8 +17,9 @@
  * `lib/data/*`. A narrow port makes that enforceable by reading one file's
  * imports rather than by trusting everyone to remember.
  *
- * The Supabase implementation is `lib/data/supabase-gateway.ts`. It is the
- * only file in the app that imports the Supabase SDK.
+ * The Supabase implementation is `lib/data/supabase-gateway.ts`. It gets its
+ * client from `lib/data/client.ts`, which is the only file in the app that
+ * imports the Supabase SDK.
  */
 
 import type { BookEntryRow, PhotoRow } from "./rows";
