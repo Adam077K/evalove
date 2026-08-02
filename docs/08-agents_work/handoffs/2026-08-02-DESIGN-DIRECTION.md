@@ -44,25 +44,67 @@ thing in the product.
 
 ---
 
-## 1. The colour law — this is the one non-negotiable
+## 1. The colour law — revised 2026-08-02 after adversarial review
 
-> **Remove every photograph from a screen. What remains must read as
-> near-black ink on white.**
+**This section was rewritten.** The first version said: *delete every photograph
+and what remains must be near-black ink on white.* The adversarial reviewer
+(P4) took it apart correctly, and the founder accepted the correction.
 
-That is the acceptance test. It is binary and any reviewer can run it in ten
-seconds: screenshot the surface, delete the image layers, look at what's left.
-If what's left is tinted, gradient-washed, glowing, or has a coloured surface —
-it fails, no discussion.
+The flaw: in a product whose entire photograph supply is two people, one of whom
+is always asleep, **"no photograph on screen" is not a stress test — it is
+Tuesday at 3pm.** The old law took the app's emptiest state, wrote it into
+statute, and called it the standard. It also misread the reference: SORDJATI is
+not a restrained page, it is a *photograph-dominated page with restrained
+chrome*, and its photographs are ~60% of the composition and never absent. Ours
+are phone snapshots that arrive unpredictably and often not at all.
 
-Consequences, spelled out so nobody has to interpret:
+### The law, restated
 
-- The canvas is white or a bone off-white. Not lilac-white. Not `#faf6fb`.
-- Surfaces are white on white, separated by hairline rules and space, not by fill.
-- No gradients on any surface, ever. No `--grad-sky`, no mesh, no aurora blobs.
-- No coloured shadows. Shadows are neutral, wide, and nearly invisible.
-- No glow. Glow is the single loudest AI tell in the rejected build.
-- Photographs are never dimmed, tinted, duotoned or overlaid with a colour wash.
-  They are the only saturated thing on screen and they run at full strength.
+> **Restraint lives in the chrome. Warmth lives in the paper.**
+> A screen with no photograph on it must still feel like somewhere worth being.
+
+Photographs remain the only *saturated* thing on screen and still carry the
+colour. What changes is that the page underneath them is no longer required to
+be dead when they're absent.
+
+### Warm is not washed — read this twice
+
+The danger in "warmth" is that it reads as permission to reinstate exactly what
+was rejected. It is not. The distinction is absolute:
+
+| Allowed — warmth in the material | Banned — warmth as an effect |
+|---|---|
+| A single flat warm canvas value: bone, paper, warm off-white | Gradients of any kind, anywhere |
+| Warm-tinted neutrals in text and hairlines (warm greys, never blue-greys) | Animated blobs, mesh, aurora — `AuroraBackdrop` is deleted |
+| Paper-grade texture: a fixed, `pointer-events-none` grain at ≤3% | Glow of any colour, on anything |
+| Warm-tinted shadows — wide, soft, barely there | Glass / `backdrop-blur` as a surface style |
+| Depth from real elevation and hairline rules | Coloured fills standing in for hierarchy |
+
+The test for any proposed warmth: **does it come from the material, or is it
+applied on top?** Paper is warm because of what it is made of. v6 was warm
+because someone painted light onto it. The first is allowed; the second is what
+the founder rejected twice.
+
+Still absolute, unchanged:
+
+- Surfaces separate by hairline rules and space, not by coloured fill.
+- Photographs are never dimmed, tinted, duotoned or washed. Full strength, always.
+- No emoji. No hearts. No gamified affection-tokens — R2 found these, **not**
+  saturation, are what actually makes couple apps read as cheesy.
+
+### Night is a primary surface, not a variant
+
+`library.json` defines **w1 — "She's in bed, he's awake" (IL 05:00–09:00 /
+NYC 22:00–02:00) — as "the biggest window you have."**
+
+So the single largest overlap window in their entire week is one where Eva is in
+bed with the lights off. Night mode is therefore not a theme toggle to be built
+last; it is the surface with the most sessions in the product. **Design night
+first, or at minimum alongside day — never after.** A white-paper canvas has
+nothing to say about this window, which is exactly the contradiction the old law
+failed to notice.
+
+Night is warm too: a deep warm neutral, not plum, not black, not inverted day.
 
 ### The single carve-out — the authorship edge
 
@@ -278,7 +320,10 @@ keep them passing.
 
 ## 8. How this gets judged
 
-1. **The grayscale test** — delete the photos, is it black on white?
+1. **The Tuesday test** (replaces the old grayscale test) — render the surface
+   with **no photograph on it at all**, because that is an ordinary afternoon,
+   not an edge case. Is it still somewhere worth being? If it reads as an empty
+   container waiting to be filled, it fails.
 2. **The logo test** — screenshot it, remove the wordmark. Would you know it was
    this app? (`frontend-design` calls this the differentiation anchor.)
 3. **The 11pm test** — does it work for Eva in New York at 11pm with the lights
