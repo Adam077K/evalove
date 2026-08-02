@@ -44,4 +44,53 @@ overturned.
 
 **Open.** Refero subscription dead — R4's reference work is substituted and
 labelled. Login rate limiter fails closed: a Supabase outage locks both users
-out of their own archive. Build phase not started; awaiting founder go-ahead.
+out of their own archive.
+
+---
+
+# Build phase — design foundation
+
+Founder said go. One worker, narrow scope, foundation before surfaces because
+every surface reads the same tokens.
+
+**Shipped on `feat/design-foundation`** (~12 commits, 251 tests green): aurora
+deleted, warm-paper tokens with reasoning per value, night as a primary surface,
+`SealedCard` rebuilt as a real opening, radius scale down one step, ~60 call
+sites swept. Not merged.
+
+**The gate worked.** A craft review returned FAIL on the Tuesday test and
+PARTIALLY RE-COSTUMED on the escape question — both harsher than design-lead's
+self-assessment — with four P1s. All fixed. The sharpest: photographs were being
+dimmed by gradients, in a codebase whose own comment said the `photo` utility
+existed "so nobody reintroduces `--photo-dim` by writing a one-off."
+
+**Three durable rules came out, all recorded in the branch:**
+- The authorship mark attaches to a thing that exists and that someone made —
+  never to a turn, a state, an intention, or a slot.
+- On any surface the large end belongs to what *changed*; supporting facts stay
+  small however identifying they are. The two clocks are the most identifying
+  thing in the product and still don't get to be the biggest.
+- Before making a layout asymmetry track state, ask whether that state is
+  independent of which person. If the seven-hour gap predicts it, it's a
+  person-ranking wearing a state's clothes.
+
+Plus the meta-lesson, from the scrim breach: an easy-to-compute metric standing
+in for a hard-to-compute property keeps passing until someone looks at the screen.
+
+**Honest state.** Materials right, one composition right (the clock rail), the
+rest still a card stack. Two known weak points, both Today's job and both
+documented with the failed attempts attached: the last 50/50, which the equality
+rule forces, and the unfinished column.
+
+**Process finding.** Three critic-shaped agents stalled — the first task from a
+fresh agent lands, the second often doesn't. Mitigations that worked: require
+the output file as the opening action, keep briefs short, re-spawn rather than
+re-ping. Also: verification reads repeatedly raced in-flight commits, which
+produced two false "not done" conclusions. Check `git log <branch>`, not a
+worktree's working state.
+
+**Corrections I made this phase.** Told the founder the signature moment already
+existed and only needed excavating — it was a cross-fade; that was a build, not
+an excavation. Asserted in the direction doc that the radius scale was never the
+problem — untested, and wrong once rendered. Proposed a state-tracking asymmetry
+to escape the 50/50 — it laundered a person-ranking through geography.
