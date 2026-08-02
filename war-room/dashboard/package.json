@@ -1,0 +1,19 @@
+{
+  "name": "{{project_name}}-war-room-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"bun run dev:server\" \"bun run dev:client\"",
+    "dev:server": "bun --watch server/index.ts",
+    "dev:client": "cd client && bunx vite --port 4201",
+    "build": "cd client && bunx vite build",
+    "start": "NODE_ENV=production bun server/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "@types/bun": "latest"
+  }
+}

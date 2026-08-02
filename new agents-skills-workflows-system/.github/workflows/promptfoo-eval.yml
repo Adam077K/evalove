@@ -1,0 +1,144 @@
+name: Promptfoo Agent Regression Suite
+
+# Runs on PRs touching agent definitions or skills. Lets us catch:
+#   - Routing regressions (CEO routes wrong agent)
+#   - Return-contract drift (missing <verdict> tag, no JSON block)
+#   - Scope creep (agent does work outside its domain)
+#   - Layer-contract violations (CEO writes code, workers escalate badly)
+#
+# Cost ceiling: ~$2 per run (6 agents × ~14 scenarios × 2 providers).
+# Use ANTHROPIC_API_KEY (Console-billed, not OAuth) per Adam's January 2026 ban-risk memo.
+
+on:
+  pull_request:
+    paths:
+      - '.claude/agents/**'
+      - '.agent/skills/**'
+      - 'apps/web/promptfoo/**'
+      - '.github/workflows/promptfoo-eval.yml'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  promptfoo-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for ANTHROPIC_API_KEY secret
+        id: check-secret
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "secret_present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANTHROPIC_API_KEY repo secret is not set. Skipping eval. Add it under Settings → Secrets → Actions to enable agent regression tests."
+          else
+            echo "secret_present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+        # No cache: we use `pnpm dlx promptfoo@latest` (no install step), so a
+        # pnpm cache would be empty and the post-run step would fail.
+
+      - name: Install Promptfoo
+        if: steps.check-secret.outputs.secret_present == 'true'
+        run: pnpm dlx promptfoo@latest --version
+
+      - name: Run Promptfoo eval
+        if: steps.check-secret.outputs.secret_present == 'true'
+        id: eval
+        continue-on-error: true
+        working-directory: apps/web
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PROMPTFOO_DISABLE_TELEMETRY: '1'
+          PROMPTFOO_DISABLE_SHARING: '1'
+        run: |
+          pnpm dlx promptfoo@latest eval \
+            -c promptfoo/promptfoo.config.yaml \
+            --output promptfoo-results.json \
+            --no-table
+
+      - name: Upload results
+        if: steps.check-secret.outputs.secret_present == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: promptfoo-results
+          path: apps/web/promptfoo-results.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Comment summary on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const secretPresent = '${{ steps.check-secret.outputs.secret_present }}' === 'true';
+
+            if (!secretPresent) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: [
+                  '## Promptfoo Agent Regression — ⏭️ SKIPPED',
+                  '',
+                  '`ANTHROPIC_API_KEY` repo secret is not set. Agent regression tests skipped.',
+                  '',
+                  'To enable: Settings → Secrets and variables → Actions → New repository secret → `ANTHROPIC_API_KEY` (Console-billed, not OAuth).',
+                ].join('\n'),
+              });
+              return;
+            }
+
+            const path = 'apps/web/promptfoo-results.json';
+            if (!fs.existsSync(path)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '## Promptfoo Agent Regression — ⚠️ ERROR\n\nNo results file produced. See workflow logs for the eval step error (provider config, network, or rate limit).',
+              });
+              return;
+            }
+            const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const stats = data.results?.stats || {};
+            const pass = stats.successes ?? 0;
+            const fail = stats.failures ?? 0;
+            const total = pass + fail;
+            const verdict = fail === 0 ? '✅ PASS' : '❌ BLOCK';
+            const body = [
+              `## Promptfoo Agent Regression — ${verdict}`,
+              '',
+              `**${pass}/${total}** scenarios passed.`,
+              '',
+              fail > 0 ? `**${fail} regression(s)** — see workflow logs and \`promptfoo-results\` artifact.` : '',
+              '',
+              '_Triggered by changes in `.claude/agents/`, `.agent/skills/`, or `apps/web/promptfoo/`._',
+            ].filter(Boolean).join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Fail job if eval failed
+        if: steps.check-secret.outputs.secret_present == 'true' && steps.eval.outcome == 'failure'
+        run: |
+          echo "::error::Promptfoo eval failed — see logs above and the PR comment for details."
+          exit 1

@@ -1,0 +1,60 @@
+{
+  "_NOTE": "Proposed update for settings.json per Adam's interview decision H.3 (strict Bash allowlist). Review and replace settings.json if approved. The agent cannot self-modify settings.json without explicit permission.",
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(pnpm *)",
+      "Bash(gh *)",
+      "Bash(node *)",
+      "Bash(mkdir *)",
+      "Bash(mv *)",
+      "Bash(cp *)",
+      "Bash(ls *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(wc *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(cat *)",
+      "Bash(awk *)",
+      "Bash(sed *)",
+      "Bash(diff *)",
+      "Bash(which *)",
+      "Bash(echo *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(chmod +x *)",
+      "Bash(npm install -g *)",
+      "Bash(pip install *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/gsa-check-update.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/gsa-context-monitor.js"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node .claude/hooks/gsa-statusline.js"
+  }
+}

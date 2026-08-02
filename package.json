@@ -1,0 +1,42 @@
+{
+  "name": "gsa-startup-kit",
+  "version": "1.1.0",
+  "description": "AI Agent Kit for Claude Code & Antigravity — 3-layer autonomous startup team (CEO, Leads, Workers) with 426+ expert skills",
+  "bin": {
+    "gsa-startup-kit": "bin/install.js"
+  },
+  "files": [
+    "bin/",
+    ".claude/agents/",
+    ".claude/commands/",
+    ".claude/get-shit-done/",
+    ".claude/hooks/",
+    ".claude/package.json",
+    ".claude/settings.json",
+    ".agent/",
+    "docs/",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "SKILLS_SOURCE.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "ai-agents",
+    "claude-code",
+    "antigravity",
+    "startup-kit",
+    "agent-kit",
+    "gsa",
+    "multi-agent"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Adam077K/GSA-Vibe-Startup-Kit"
+  },
+  "homepage": "https://github.com/Adam077K/GSA-Vibe-Startup-Kit#readme"
+}

@@ -1,0 +1,1022 @@
+{
+  "version": "3.0.0",
+  "generated": "2026-05-25",
+  "note": "Regenerated after Beamix \u2192 template scrub. 3 Beamix-only skills archived; 2 renamed (-beamix \u2192 -conventions).",
+  "totalSkills": 154,
+  "skills": [
+    {
+      "name": "agent-evaluation",
+      "description": "Testing and benchmarking LLM agents including behavioral testing, capability assessment, reliability metrics, and production monitoring\\u2014where even top agents achieve less than 50% on re...",
+      "tags": [],
+      "path": ".agent/skills/agent-evaluation/SKILL.md"
+    },
+    {
+      "name": "agent-memory-systems",
+      "description": "Memory is the cornerstone of intelligent agents. Without it, every interaction starts from zero. This skill covers the architecture of agent memory: short-term (context window), long-term (vector s...",
+      "tags": [],
+      "path": ".agent/skills/agent-memory-systems/SKILL.md"
+    },
+    {
+      "name": "agent-tool-builder",
+      "description": "Tools are how AI agents interact with the world. A well-designed tool is the difference between an agent that works and one that hallucinates, fails silently, or costs 10x more tokens than necessar...",
+      "tags": [],
+      "path": ".agent/skills/agent-tool-builder/SKILL.md"
+    },
+    {
+      "name": "ai-agents-architect",
+      "description": "Expert in designing and building autonomous AI agents. Masters tool use, memory systems, planning strategies, and multi-agent orchestration. Use when: build agent, AI agent, autonomous agent, tool ...",
+      "tags": [],
+      "path": ".agent/skills/ai-agents-architect/SKILL.md"
+    },
+    {
+      "name": "ai-engineer",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/ai-engineer/SKILL.md"
+    },
+    {
+      "name": "anthropic-routines",
+      "description": "How to write a Evalove Routine .md file: required frontmatter fields (schedule, routine_id_env_key, budget, trust-spec parsing), body conventions, and MCP grant patterns. Use when authoring o...",
+      "tags": [
+        "orchestration",
+        "evalove-specific",
+        "agents",
+        "routines"
+      ],
+      "path": ".agent/skills/anthropic-routines/SKILL.md"
+    },
+    {
+      "name": "api-design-principles",
+      "description": "Master REST and GraphQL API design principles to build intuitive, scalable, and maintainable APIs that delight developers. Use when designing new APIs, reviewing API specifications, or establishing...",
+      "tags": [],
+      "path": ".agent/skills/api-design-principles/SKILL.md"
+    },
+    {
+      "name": "api-documentation",
+      "description": "API documentation workflow for generating OpenAPI specs, creating developer guides, and maintaining comprehensive API documentation.",
+      "tags": [],
+      "path": ".agent/skills/api-documentation/SKILL.md"
+    },
+    {
+      "name": "api-documentation-generator",
+      "description": "Generate comprehensive, developer-friendly API documentation from code, including endpoints, parameters, examples, and best practices",
+      "tags": [],
+      "path": ".agent/skills/api-documentation-generator/SKILL.md"
+    },
+    {
+      "name": "api-security-testing",
+      "description": "API security testing workflow for REST and GraphQL APIs covering authentication, authorization, rate limiting, input validation, and security best practices.",
+      "tags": [],
+      "path": ".agent/skills/api-security-testing/SKILL.md"
+    },
+    {
+      "name": "architecture",
+      "description": "Architectural decision-making framework. Requirements analysis, trade-off evaluation, ADR documentation. Use when making architecture decisions or analyzing system design.",
+      "tags": [],
+      "path": ".agent/skills/architecture/SKILL.md"
+    },
+    {
+      "name": "architecture-decision-records",
+      "description": "Write and maintain Architecture Decision Records (ADRs) following best practices for technical decision documentation. Use when documenting significant technical decisions, reviewing past architect...",
+      "tags": [],
+      "path": ".agent/skills/architecture-decision-records/SKILL.md"
+    },
+    {
+      "name": "architecture-patterns",
+      "description": "Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design. Use when architecting complex backend systems or refactoring existing ...",
+      "tags": [],
+      "path": ".agent/skills/architecture-patterns/SKILL.md"
+    },
+    {
+      "name": "auth-implementation-patterns",
+      "description": "Master authentication and authorization patterns including JWT, OAuth2, session management, and RBAC to build secure, scalable access control systems. Use when implementing auth systems, securing A...",
+      "tags": [],
+      "path": ".agent/skills/auth-implementation-patterns/SKILL.md"
+    },
+    {
+      "name": "board-meeting-protocol",
+      "description": "The Evalove 4-round board-meeting protocol: R0 framing, R1 independent verdicts, R2 cross-critique, R3 fresh-context synthesis. Includes JSON output schema per round, persona routing rules, a...",
+      "tags": [
+        "orchestration",
+        "evalove-specific",
+        "strategy",
+        "decision-making"
+      ],
+      "path": ".agent/skills/board-meeting-protocol/SKILL.md"
+    },
+    {
+      "name": "brainstorming",
+      "description": "Use before creative or constructive work (features, architecture, behavior). Transforms vague ideas into validated designs through disciplined reasoning and collaboration.",
+      "tags": [],
+      "path": ".agent/skills/brainstorming/SKILL.md"
+    },
+    {
+      "name": "broken-authentication",
+      "description": "This skill should be used when the user asks to \\\"test for broken authentication vulnerabilities\\\", \\\"assess session management security\\\", \\\"perform credential stuffing tests\\\", \\\"evaluate ...",
+      "tags": [],
+      "path": ".agent/skills/broken-authentication/SKILL.md"
+    },
+    {
+      "name": "cc-skill-coding-standards",
+      "description": "Universal coding standards, best practices, and patterns for TypeScript, JavaScript, React, and Node.js development.",
+      "tags": [],
+      "path": ".agent/skills/cc-skill-coding-standards/SKILL.md"
+    },
+    {
+      "name": "cc-skill-security-review",
+      "description": "Use this skill when adding authentication, handling user input, working with secrets, creating API endpoints, or implementing payment/sensitive features. Provides comprehensive security checklist a...",
+      "tags": [],
+      "path": ".agent/skills/cc-skill-security-review/SKILL.md"
+    },
+    {
+      "name": "clerk-auth",
+      "description": "Expert patterns for Clerk auth implementation, middleware, organizations, webhooks, and user sync Use when: adding authentication, clerk auth, user authentication, sign in, sign up.",
+      "tags": [],
+      "path": ".agent/skills/clerk-auth/SKILL.md"
+    },
+    {
+      "name": "cloud-devops",
+      "description": "Cloud infrastructure and DevOps workflow covering AWS, Azure, GCP, Kubernetes, Terraform, CI/CD, monitoring, and cloud-native development.",
+      "tags": [],
+      "path": ".agent/skills/cloud-devops/SKILL.md"
+    },
+    {
+      "name": "code-documentation-code-explain",
+      "description": "You are a code education expert specializing in explaining complex code through clear narratives, visual diagrams, and step-by-step breakdowns. Transform difficult concepts into understandable expl...",
+      "tags": [],
+      "path": ".agent/skills/code-documentation-code-explain/SKILL.md"
+    },
+    {
+      "name": "code-refactoring-tech-debt",
+      "description": "You are a technical debt expert specializing in identifying, quantifying, and prioritizing technical debt in software projects. Analyze the codebase to uncover debt, assess its impact, and create acti",
+      "tags": [],
+      "path": ".agent/skills/code-refactoring-tech-debt/SKILL.md"
+    },
+    {
+      "name": "code-review-excellence",
+      "description": "Master effective code review practices to provide constructive feedback, catch bugs early, and foster knowledge sharing while maintaining team morale. Use when reviewing pull requests, establishing...",
+      "tags": [],
+      "path": ".agent/skills/code-review-excellence/SKILL.md"
+    },
+    {
+      "name": "code-reviewer",
+      "description": "Elite code review expert specializing in modern AI-powered code",
+      "tags": [],
+      "path": ".agent/skills/code-reviewer/SKILL.md"
+    },
+    {
+      "name": "commit",
+      "description": "Create commit messages following Sentry conventions. Use when committing code changes, writing commit messages, or formatting git history. Follows conventional commits with Sentry-specific issue re...",
+      "tags": [],
+      "path": ".agent/skills/commit/SKILL.md"
+    },
+    {
+      "name": "competitive-landscape",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/competitive-landscape/SKILL.md"
+    },
+    {
+      "name": "context-compression",
+      "description": "Design and evaluate compression strategies for long-running sessions",
+      "tags": [],
+      "path": ".agent/skills/context-compression/SKILL.md"
+    },
+    {
+      "name": "copywriting",
+      "description": ">",
+      "tags": [],
+      "path": ".agent/skills/copywriting/SKILL.md"
+    },
+    {
+      "name": "core-components",
+      "description": "Core component library and design system patterns. Use when building UI, using design tokens, or working with the component library.",
+      "tags": [],
+      "path": ".agent/skills/core-components/SKILL.md"
+    },
+    {
+      "name": "create-pr",
+      "description": "Create pull requests following Sentry conventions. Use when opening PRs, writing PR descriptions, or preparing changes for review. Follows Sentry's code review guidelines.",
+      "tags": [],
+      "path": ".agent/skills/create-pr/SKILL.md"
+    },
+    {
+      "name": "data-engineer",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/data-engineer/SKILL.md"
+    },
+    {
+      "name": "data-storytelling",
+      "description": "Transform data into compelling narratives using visualization, context, and persuasive structure. Use when presenting analytics to stakeholders, creating data reports, or building executive present...",
+      "tags": [],
+      "path": ".agent/skills/data-storytelling/SKILL.md"
+    },
+    {
+      "name": "database",
+      "description": "Database development and operations workflow covering SQL, NoSQL, database design, migrations, optimization, and data engineering.",
+      "tags": [],
+      "path": ".agent/skills/database/SKILL.md"
+    },
+    {
+      "name": "database-design",
+      "description": "Database design principles and decision-making. Schema design, indexing strategy, ORM selection, serverless databases.",
+      "tags": [],
+      "path": ".agent/skills/database-design/SKILL.md"
+    },
+    {
+      "name": "debugger",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/debugger/SKILL.md"
+    },
+    {
+      "name": "debugging-strategies",
+      "description": "Master systematic debugging techniques, profiling tools, and root cause analysis to efficiently track down bugs across any codebase or technology stack. Use when investigating bugs, performance iss...",
+      "tags": [],
+      "path": ".agent/skills/debugging-strategies/SKILL.md"
+    },
+    {
+      "name": "deep-research",
+      "description": "Execute autonomous multi-step research using Google Gemini Deep Research Agent. Use for: market analysis, competitive landscaping, literature reviews, technical research, due diligence. Takes 2-10 ...",
+      "tags": [],
+      "path": ".agent/skills/deep-research/SKILL.md"
+    },
+    {
+      "name": "deploy-to-vercel",
+      "description": "Deploy applications and websites to Vercel. Use when the user requests deployment actions like \"deploy my app\", \"deploy and give me the link\", \"push this live\", or \"create a preview deployment\".",
+      "tags": [],
+      "path": ".agent/skills/deploy-to-vercel/SKILL.md"
+    },
+    {
+      "name": "deploy-to-vercel",
+      "description": "Deploy applications and websites to Vercel. Use when the user requests deployment actions like \"deploy my app\", \"deploy and give me the link\", \"push this live\", or \"create a preview deployment\".",
+      "tags": [],
+      "path": ".agent/skills/deploy-to-vercel/deploy-to-vercel/SKILL.md"
+    },
+    {
+      "name": "deployment-procedures",
+      "description": "Production deployment principles and decision-making. Safe deployment workflows, rollback strategies, and verification. Teaches thinking, not scripts.",
+      "tags": [],
+      "path": ".agent/skills/deployment-procedures/SKILL.md"
+    },
+    {
+      "name": "design-orchestration",
+      "description": "",
+      "tags": [],
+      "path": ".agent/skills/design-orchestration/SKILL.md"
+    },
+    {
+      "name": "design-taste-frontend",
+      "description": "Senior UI/UX Engineer. Architect digital interfaces overriding default LLM biases. Enforces metric-based rules, strict component architecture, CSS hardware acceleration, and balanced design engineerin...",
+      "tags": [],
+      "path": ".agent/skills/design-taste-frontend/SKILL.md"
+    },
+    {
+      "name": "dispatching-parallel-agents",
+      "description": "Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies",
+      "tags": [],
+      "path": ".agent/skills/dispatching-parallel-agents/SKILL.md"
+    },
+    {
+      "name": "documentation",
+      "description": "Documentation generation workflow covering API docs, architecture docs, README files, code comments, and technical writing.",
+      "tags": [],
+      "path": ".agent/skills/documentation/SKILL.md"
+    },
+    {
+      "name": "documentation-templates",
+      "description": "Documentation templates and structure guidelines. README, API docs, code comments, and AI-friendly documentation.",
+      "tags": [],
+      "path": ".agent/skills/documentation-templates/SKILL.md"
+    },
+    {
+      "name": "domain-driven-design",
+      "description": "Plan and route Domain-Driven Design work from strategic modeling to tactical implementation and evented architecture patterns.",
+      "tags": [
+        "ddd",
+        "domain",
+        "bounded-context",
+        "architecture"
+      ],
+      "path": ".agent/skills/domain-driven-design/SKILL.md"
+    },
+    {
+      "name": "e2e-testing",
+      "description": "End-to-end testing workflow with Playwright for browser automation, visual regression, cross-browser testing, and CI/CD integration.",
+      "tags": [],
+      "path": ".agent/skills/e2e-testing/SKILL.md"
+    },
+    {
+      "name": "e2e-testing-patterns",
+      "description": "Master end-to-end testing with Playwright and Cypress to build reliable test suites that catch bugs, improve confidence, and enable fast deployment. Use when implementing E2E tests, debugging flaky...",
+      "tags": [],
+      "path": ".agent/skills/e2e-testing-patterns/SKILL.md"
+    },
+    {
+      "name": "email-systems",
+      "description": "Email has the highest ROI of any marketing channel. $36 for every $1 spent. Yet most startups treat it as an afterthought - bulk blasts, no personalization, landing in spam folders.  This skill cov...",
+      "tags": [],
+      "path": ".agent/skills/email-systems/SKILL.md"
+    },
+    {
+      "name": "embedding-strategies",
+      "description": "Select and optimize embedding models for semantic search and RAG applications. Use when choosing embedding models, implementing chunking strategies, or optimizing embedding quality for specific dom...",
+      "tags": [],
+      "path": ".agent/skills/embedding-strategies/SKILL.md"
+    },
+    {
+      "name": "emilkowal-animations",
+      "description": "Emil Kowalski's animation best practices for web interfaces. Use when writing, reviewing, or implementing animations in React, CSS, or Framer Motion. Triggers on tasks involving transitions, easing, g...",
+      "tags": [],
+      "path": ".agent/skills/emilkowal-animations/SKILL.md"
+    },
+    {
+      "name": "emilkowal-animations",
+      "description": "Emil Kowalski's animation best practices for web interfaces. Use when writing, reviewing, or implementing animations in React, CSS, or Framer Motion. Triggers on tasks involving transitions, easing, g...",
+      "tags": [],
+      "path": ".agent/skills/emilkowal-animations/emilkowal-animations/SKILL.md"
+    },
+    {
+      "name": "error-handling-patterns",
+      "description": "Master error handling patterns across languages including exceptions, Result types, error propagation, and graceful degradation to build resilient applications. Use when implementing error handling...",
+      "tags": [],
+      "path": ".agent/skills/error-handling-patterns/SKILL.md"
+    },
+    {
+      "name": "find-bugs",
+      "description": "Find bugs, security vulnerabilities, and code quality issues in local branch changes. Use when asked to review changes, find bugs, security review, or audit code on the current branch.",
+      "tags": [],
+      "path": ".agent/skills/find-bugs/SKILL.md"
+    },
+    {
+      "name": "finishing-a-development-branch",
+      "description": "Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup",
+      "tags": [],
+      "path": ".agent/skills/finishing-a-development-branch/SKILL.md"
+    },
+    {
+      "name": "form-cro",
+      "description": ">",
+      "tags": [],
+      "path": ".agent/skills/form-cro/SKILL.md"
+    },
+    {
+      "name": "frontend-design",
+      "description": "Create distinctive, production-grade frontend interfaces with intentional aesthetics, high craft, and non-generic visual identity. Use when building or styling web UIs, components, pages, dashboard...",
+      "tags": [],
+      "path": ".agent/skills/frontend-design/SKILL.md"
+    },
+    {
+      "name": "frontend-dev-guidelines",
+      "description": "Opinionated frontend development standards for modern React + TypeScript applications. Covers Suspense-first data fetching, lazy loading, feature-based architecture, MUI v7 styling, TanStack Router...",
+      "tags": [],
+      "path": ".agent/skills/frontend-dev-guidelines/SKILL.md"
+    },
+    {
+      "name": "frontend-developer",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/frontend-developer/SKILL.md"
+    },
+    {
+      "name": "full-output-enforcement",
+      "description": "Overrides default LLM truncation behavior. Enforces complete code generation, bans placeholder patterns, and handles token-limit splits cleanly. Apply to any task requiring exhaustive, unabridged outp...",
+      "tags": [],
+      "path": ".agent/skills/full-output-enforcement/SKILL.md"
+    },
+    {
+      "name": "gdpr-data-handling",
+      "description": "Implement GDPR-compliant data handling with consent management, data subject rights, and privacy by design. Use when building systems that process EU personal data, implementing privacy controls, o...",
+      "tags": [],
+      "path": ".agent/skills/gdpr-data-handling/SKILL.md"
+    },
+    {
+      "name": "git-pr-workflows-git-workflow",
+      "description": "Orchestrate a comprehensive git workflow from code review through PR creation, leveraging specialized agents for quality assurance, testing, and deployment readiness. This workflow implements modern g",
+      "tags": [],
+      "path": ".agent/skills/git-pr-workflows-git-workflow/SKILL.md"
+    },
+    {
+      "name": "github-actions-templates",
+      "description": "Create production-ready GitHub Actions workflows for automated testing, building, and deploying applications. Use when setting up CI/CD with GitHub Actions, automating development workflows, or cre...",
+      "tags": [],
+      "path": ".agent/skills/github-actions-templates/SKILL.md"
+    },
+    {
+      "name": "high-end-visual-design",
+      "description": "Teaches the AI to design like a high-end agency. Defines the exact fonts, spacing, shadows, card structures, and animations that make a website feel expensive. Blocks all the common defaults that make...",
+      "tags": [],
+      "path": ".agent/skills/high-end-visual-design/SKILL.md"
+    },
+    {
+      "name": "humanizer",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/humanizer/SKILL.md"
+    },
+    {
+      "name": "inngest",
+      "description": "Inngest expert for serverless-first background jobs, event-driven workflows, and durable execution without managing queues or workers. Use when: inngest, serverless background job, event-driven wor...",
+      "tags": [],
+      "path": ".agent/skills/inngest/SKILL.md"
+    },
+    {
+      "name": "launch-strategy",
+      "description": "When the user wants to plan a product launch, feature announcement, or release strategy. Also use when the user mentions 'launch,' 'Product Hunt,' 'feature release,' 'announcement,' 'go-to-market,'...",
+      "tags": [],
+      "path": ".agent/skills/launch-strategy/SKILL.md"
+    },
+    {
+      "name": "linear-mvp-recipe",
+      "description": "Evalove's locked Linear label vocabulary, sub-ticket creation pattern, and single-synthesis-comment style. Use whenever any CEO or C-suite agent interacts with Linear tickets, creates sub-tic...",
+      "tags": [
+        "workflow",
+        "evalove-specific",
+        "linear",
+        "orchestration"
+      ],
+      "path": ".agent/skills/linear-mvp-recipe/SKILL.md"
+    },
+    {
+      "name": "llm-app-patterns",
+      "description": "Production-ready patterns for building LLM applications. Covers RAG pipelines, agent architectures, prompt IDEs, and LLMOps monitoring. Use when designing AI applications, implementing RAG, buildin...",
+      "tags": [],
+      "path": ".agent/skills/llm-app-patterns/SKILL.md"
+    },
+    {
+      "name": "llm-evaluation",
+      "description": "Implement comprehensive evaluation strategies for LLM applications using automated metrics, human feedback, and benchmarking. Use when testing LLM performance, measuring AI application quality, or ...",
+      "tags": [],
+      "path": ".agent/skills/llm-evaluation/SKILL.md"
+    },
+    {
+      "name": "market-sizing-analysis",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/market-sizing-analysis/SKILL.md"
+    },
+    {
+      "name": "marketing-psychology",
+      "description": "Apply behavioral science and mental models to marketing decisions, prioritized using a psychological leverage and feasibility scoring system.",
+      "tags": [],
+      "path": ".agent/skills/marketing-psychology/SKILL.md"
+    },
+    {
+      "name": "mcp-builder",
+      "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate exte...",
+      "tags": [],
+      "path": ".agent/skills/mcp-builder/SKILL.md"
+    },
+    {
+      "name": "mem0-patterns",
+      "description": "Mem0 episodic memory write/read patterns for Evalove agents: mandatory metadata fields, retry policy, and fallback to Anthropic Memory Tool after 3 failures. Use when any C-suite or lead agen...",
+      "tags": [
+        "memory",
+        "evalove-specific",
+        "agents",
+        "ai"
+      ],
+      "path": ".agent/skills/mem0-patterns/SKILL.md"
+    },
+    {
+      "name": "minimalist-ui",
+      "description": "Clean editorial-style interfaces. Warm monochrome palette, typographic contrast, flat bento grids, muted pastels. No gradients, no heavy shadows.",
+      "tags": [],
+      "path": ".agent/skills/minimalist-ui/SKILL.md"
+    },
+    {
+      "name": "multi-agent-brainstorming",
+      "description": "",
+      "tags": [],
+      "path": ".agent/skills/multi-agent-brainstorming/SKILL.md"
+    },
+    {
+      "name": "multi-agent-patterns",
+      "description": "Master orchestrator, peer-to-peer, and hierarchical multi-agent architectures",
+      "tags": [],
+      "path": ".agent/skills/multi-agent-patterns/SKILL.md"
+    },
+    {
+      "name": "nextjs-app-router-patterns",
+      "description": "Master Next.js 14+ App Router with Server Components, streaming, parallel routes, and advanced data fetching. Use when building Next.js applications, implementing SSR/SSG, or optimizing React Serve...",
+      "tags": [],
+      "path": ".agent/skills/nextjs-app-router-patterns/SKILL.md"
+    },
+    {
+      "name": "nextjs-best-practices",
+      "description": "Next.js App Router principles. Server Components, data fetching, routing patterns.",
+      "tags": [],
+      "path": ".agent/skills/nextjs-best-practices/SKILL.md"
+    },
+    {
+      "name": "nextjs-supabase-auth",
+      "description": "Expert integration of Supabase Auth with Next.js App Router Use when: supabase auth next, authentication next.js, login supabase, auth middleware, protected route.",
+      "tags": [],
+      "path": ".agent/skills/nextjs-supabase-auth/SKILL.md"
+    },
+    {
+      "name": "nodejs-backend-patterns",
+      "description": "Build production-ready Node.js backend services with Express/Fastify, implementing middleware patterns, error handling, authentication, database integration, and API design best practices. Use when...",
+      "tags": [],
+      "path": ".agent/skills/nodejs-backend-patterns/SKILL.md"
+    },
+    {
+      "name": "onboarding-cro",
+      "description": "When the user wants to optimize post-signup onboarding, user activation, first-run experience, or time-to-value. Also use when the user mentions \\\"onboarding flow,\\\" \\\"activation rate,\\\" \\\"u...",
+      "tags": [],
+      "path": ".agent/skills/onboarding-cro/SKILL.md"
+    },
+    {
+      "name": "paddle-integration",
+      "description": "Evalove billing patterns using Paddle: webhook signature verification, checkout session creation, customer portal URL generation, price ID conventions, and subscription lifecycle. Stripe is n...",
+      "tags": [
+        "billing",
+        "evalove-specific",
+        "backend",
+        "payments"
+      ],
+      "path": ".agent/skills/paddle-integration/SKILL.md"
+    },
+    {
+      "name": "page-cro",
+      "description": ">",
+      "tags": [],
+      "path": ".agent/skills/page-cro/SKILL.md"
+    },
+    {
+      "name": "parallel-agents",
+      "description": "Multi-agent orchestration patterns. Use when multiple independent tasks can run with different domain expertise or when comprehensive analysis requires multiple perspectives.",
+      "tags": [],
+      "path": ".agent/skills/parallel-agents/SKILL.md"
+    },
+    {
+      "name": "payment-integration",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/payment-integration/SKILL.md"
+    },
+    {
+      "name": "pgvector-rag-conventions",
+      "description": "Querying Evalove's five RAG corpora stored in Supabase pgvector: DECISIONS, sessions, codebase, brain, and skills. Use when any CEO, CTO, or Research-Lead agent needs semantic search over int...",
+      "tags": [
+        "rag",
+        "evalove-specific",
+        "database",
+        "ai",
+        "memory"
+      ],
+      "path": ".agent/skills/pgvector-rag-conventions/SKILL.md"
+    },
+    {
+      "name": "pitch-deck-visuals",
+      "description": "Investor pitch deck structure with slide-by-slide framework, visual design rules, and data presentation. Covers the 12-slide framework, chart types, team slides, and common investor turn-offs. Use for...",
+      "tags": [],
+      "path": ".agent/skills/pitch-deck-visuals/SKILL.md"
+    },
+    {
+      "name": "playwright-skill",
+      "description": "Complete browser automation with Playwright. Auto-detects dev servers, writes clean test scripts to /tmp. Test pages, fill forms, take screenshots, check responsive design, validate UX, test login ...",
+      "tags": [],
+      "path": ".agent/skills/playwright-skill/SKILL.md"
+    },
+    {
+      "name": "postgresql",
+      "description": "Design a PostgreSQL-specific schema. Covers best-practices, data types, indexing, constraints, performance patterns, and advanced features",
+      "tags": [],
+      "path": ".agent/skills/postgresql/SKILL.md"
+    },
+    {
+      "name": "pricing-strategy",
+      "description": "Design pricing, packaging, and monetization strategies based on value, customer willingness to pay, and growth objectives.",
+      "tags": [],
+      "path": ".agent/skills/pricing-strategy/SKILL.md"
+    },
+    {
+      "name": "prisma-expert",
+      "description": "Prisma ORM expert for schema design, migrations, query optimization, relations modeling, and database operations. Use PROACTIVELY for Prisma schema issues, migration problems, query performance, re...",
+      "tags": [],
+      "path": ".agent/skills/prisma-expert/SKILL.md"
+    },
+    {
+      "name": "product-manager-toolkit",
+      "description": "Comprehensive toolkit for product managers including RICE prioritization, customer interview analysis, PRD templates, discovery frameworks, and go-to-market strategies. Use for feature prioritizati...",
+      "tags": [],
+      "path": ".agent/skills/product-manager-toolkit/SKILL.md"
+    },
+    {
+      "name": "production-code-audit",
+      "description": "Autonomously deep-scan entire codebase line-by-line, understand architecture and patterns, then systematically transform it to production-grade, corporate-level professional quality with optimizations",
+      "tags": [],
+      "path": ".agent/skills/production-code-audit/SKILL.md"
+    },
+    {
+      "name": "prompt-caching",
+      "description": "Caching strategies for LLM prompts including Anthropic prompt caching, response caching, and CAG (Cache Augmented Generation) Use when: prompt caching, cache prompt, response cache, cag, cache augm...",
+      "tags": [],
+      "path": ".agent/skills/prompt-caching/SKILL.md"
+    },
+    {
+      "name": "prompt-engineering-patterns",
+      "description": "Master advanced prompt engineering techniques to maximize LLM performance, reliability, and controllability in production. Use when optimizing prompts, improving LLM outputs, or designing productio...",
+      "tags": [],
+      "path": ".agent/skills/prompt-engineering-patterns/SKILL.md"
+    },
+    {
+      "name": "qa-gate-protocol",
+      "description": "Evalove's 4-tier QA gate: Trivial/Lite/Full/Irreversible classification, reviewer assignment, evaluator-optimizer pattern, multi-judge setup, Codex CLI graceful degradation, and bypass rules....",
+      "tags": [
+        "quality",
+        "evalove-specific",
+        "testing",
+        "security"
+      ],
+      "path": ".agent/skills/qa-gate-protocol/SKILL.md"
+    },
+    {
+      "name": "radix-ui-design-system",
+      "description": "Build accessible design systems with Radix UI primitives. Headless component customization, theming strategies, and compound component patterns for production-grade UI libraries.",
+      "tags": [],
+      "path": ".agent/skills/radix-ui-design-system/SKILL.md"
+    },
+    {
+      "name": "rag-engineer",
+      "description": "Expert in building Retrieval-Augmented Generation systems. Masters embedding models, vector databases, chunking strategies, and retrieval optimization for LLM applications. Use when: building RAG, ...",
+      "tags": [],
+      "path": ".agent/skills/rag-engineer/SKILL.md"
+    },
+    {
+      "name": "react-patterns",
+      "description": "Modern React patterns and principles. Hooks, composition, performance, TypeScript best practices.",
+      "tags": [],
+      "path": ".agent/skills/react-patterns/SKILL.md"
+    },
+    {
+      "name": "react-ui-patterns",
+      "description": "Modern React UI patterns for loading states, error handling, and data fetching. Use when building UI components, handling async data, or managing UI states.",
+      "tags": [],
+      "path": ".agent/skills/react-ui-patterns/SKILL.md"
+    },
+    {
+      "name": "readme",
+      "description": "When the user wants to create or update a README.md file for a project. Also use when the user says 'write readme,' 'create readme,' 'document this project,' 'project documentation,' or asks for he...",
+      "tags": [],
+      "path": ".agent/skills/readme/SKILL.md"
+    },
+    {
+      "name": "redesign-existing-projects",
+      "description": "Upgrades existing websites and apps to premium quality. Audits current design, identifies generic AI patterns, and applies high-end design standards without breaking functionality. Works with any CSS ...",
+      "tags": [],
+      "path": ".agent/skills/redesign-existing-projects/SKILL.md"
+    },
+    {
+      "name": "requesting-code-review",
+      "description": "Use when completing tasks, implementing major features, or before merging to verify work meets requirements",
+      "tags": [],
+      "path": ".agent/skills/requesting-code-review/SKILL.md"
+    },
+    {
+      "name": "screenshots",
+      "description": "Generate marketing screenshots of your app using Playwright. Use when the user wants to create screenshots for Product Hunt, social media, landing pages, or documentation.",
+      "tags": [],
+      "path": ".agent/skills/screenshots/SKILL.md"
+    },
+    {
+      "name": "search-specialist",
+      "description": "Expert web researcher using advanced search techniques and",
+      "tags": [],
+      "path": ".agent/skills/search-specialist/SKILL.md"
+    },
+    {
+      "name": "secrets-management",
+      "description": "Implement secure secrets management for CI/CD pipelines using Vault, AWS Secrets Manager, or native platform solutions. Use when handling sensitive credentials, rotating secrets, or securing CI/CD ...",
+      "tags": [],
+      "path": ".agent/skills/secrets-management/SKILL.md"
+    },
+    {
+      "name": "aws-compliance-checker",
+      "description": "Automated compliance checking against CIS, PCI-DSS, HIPAA, and SOC 2 benchmarks",
+      "tags": [
+        "aws",
+        "compliance",
+        "audit",
+        "cis",
+        "pci-dss",
+        "hipaa",
+        "kiro-cli"
+      ],
+      "path": ".agent/skills/security/aws-compliance-checker/SKILL.md"
+    },
+    {
+      "name": "aws-iam-best-practices",
+      "description": "IAM policy review, hardening, and least privilege implementation",
+      "tags": [
+        "aws",
+        "iam",
+        "security",
+        "access-control",
+        "kiro-cli",
+        "least-privilege"
+      ],
+      "path": ".agent/skills/security/aws-iam-best-practices/SKILL.md"
+    },
+    {
+      "name": "aws-secrets-rotation",
+      "description": "Automate AWS secrets rotation for RDS, API keys, and credentials",
+      "tags": [
+        "aws",
+        "secrets-manager",
+        "security",
+        "automation",
+        "kiro-cli",
+        "credentials"
+      ],
+      "path": ".agent/skills/security/aws-secrets-rotation/SKILL.md"
+    },
+    {
+      "name": "aws-security-audit",
+      "description": "Comprehensive AWS security posture assessment using AWS CLI and security best practices",
+      "tags": [
+        "aws",
+        "security",
+        "audit",
+        "compliance",
+        "kiro-cli",
+        "security-assessment"
+      ],
+      "path": ".agent/skills/security/aws-security-audit/SKILL.md"
+    },
+    {
+      "name": "security-audit",
+      "description": "Comprehensive security auditing workflow covering web application testing, API security, penetration testing, vulnerability scanning, and security hardening.",
+      "tags": [],
+      "path": ".agent/skills/security-audit/SKILL.md"
+    },
+    {
+      "name": "security-scanning-security-dependencies",
+      "description": "You are a security expert specializing in dependency vulnerability analysis, SBOM generation, and supply chain security. Scan project dependencies across ecosystems to identify vulnerabilities, ass...",
+      "tags": [],
+      "path": ".agent/skills/security-scanning-security-dependencies/SKILL.md"
+    },
+    {
+      "name": "segment-cdp",
+      "description": "Expert patterns for Segment Customer Data Platform including Analytics.js, server-side tracking, tracking plans with Protocols, identity resolution, destinations configuration, and data governance ...",
+      "tags": [],
+      "path": ".agent/skills/segment-cdp/SKILL.md"
+    },
+    {
+      "name": "seo-content-writer",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/seo-content-writer/SKILL.md"
+    },
+    {
+      "name": "sharp-edges",
+      "description": "Identify error-prone APIs and dangerous configurations",
+      "tags": [],
+      "path": ".agent/skills/sharp-edges/SKILL.md"
+    },
+    {
+      "name": "social-content",
+      "description": "When the user wants help creating, scheduling, or optimizing social media content for LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use when the user mentions 'LinkedIn...",
+      "tags": [],
+      "path": ".agent/skills/social-content/SKILL.md"
+    },
+    {
+      "name": "sql-optimization-patterns",
+      "description": "Master SQL query optimization, indexing strategies, and EXPLAIN analysis to dramatically improve database performance and eliminate slow queries. Use when debugging slow queries, designing database...",
+      "tags": [],
+      "path": ".agent/skills/sql-optimization-patterns/SKILL.md"
+    },
+    {
+      "name": "startup-financial-modeling",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/startup-financial-modeling/SKILL.md"
+    },
+    {
+      "name": "startup-metrics-framework",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/startup-metrics-framework/SKILL.md"
+    },
+    {
+      "name": "stitch-design-taste",
+      "description": "Semantic Design System Skill for Google Stitch. Generates agent-friendly DESIGN.md files that enforce premium, anti-generic UI standards \u2014 strict typography, calibrated color, asymmetric layouts, perp...",
+      "tags": [],
+      "path": ".agent/skills/stitch-design-taste/SKILL.md"
+    },
+    {
+      "name": "stripe-integration",
+      "description": "Implement Stripe payment processing for robust, PCI-compliant payment flows including checkout, subscriptions, and webhooks. Use when integrating Stripe payments, building subscription systems, or ...",
+      "tags": [],
+      "path": ".agent/skills/stripe-integration/SKILL.md"
+    },
+    {
+      "name": "supabase-rls-conventions",
+      "description": "Evalove RLS conventions: per-user row-level security, service-role bypass patterns for Inngest jobs, war-room table deny-all policies, and audit_log write permissions. Use when writing or rev...",
+      "tags": [
+        "database",
+        "evalove-specific",
+        "security",
+        "supabase"
+      ],
+      "path": ".agent/skills/supabase-rls-conventions/SKILL.md"
+    },
+    {
+      "name": "systematic-debugging",
+      "description": "Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes",
+      "tags": [],
+      "path": ".agent/skills/systematic-debugging/SKILL.md"
+    },
+    {
+      "name": "tailwind-design-system",
+      "description": "Build scalable design systems with Tailwind CSS, design tokens, component libraries, and responsive patterns. Use when creating component libraries, implementing design systems, or standardizing UI...",
+      "tags": [],
+      "path": ".agent/skills/tailwind-design-system/SKILL.md"
+    },
+    {
+      "name": "tailwind-patterns",
+      "description": "Tailwind CSS v4 principles. CSS-first configuration, container queries, modern patterns, design token architecture.",
+      "tags": [],
+      "path": ".agent/skills/tailwind-patterns/SKILL.md"
+    },
+    {
+      "name": "tdd-orchestrator",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/tdd-orchestrator/SKILL.md"
+    },
+    {
+      "name": "tdd-workflow",
+      "description": "Test-Driven Development workflow principles. RED-GREEN-REFACTOR cycle.",
+      "tags": [],
+      "path": ".agent/skills/tdd-workflow/SKILL.md"
+    },
+    {
+      "name": "testing-patterns",
+      "description": "Jest testing patterns, factory functions, mocking strategies, and TDD workflow. Use when writing unit tests, creating test factories, or following TDD red-green-refactor cycle.",
+      "tags": [],
+      "path": ".agent/skills/testing-patterns/SKILL.md"
+    },
+    {
+      "name": "tool-design",
+      "description": "Build tools that agents can use effectively, including architectural reduction patterns",
+      "tags": [],
+      "path": ".agent/skills/tool-design/SKILL.md"
+    },
+    {
+      "name": "trust-spec-contracts",
+      "description": "The Evalove R3.x security model for agent-to-agent trust: HMAC signature verification, nonce replay prevention, sentinel-bracketed spec parsing, and issuer allowlists. Use when building or au...",
+      "tags": [
+        "security",
+        "evalove-specific",
+        "orchestration",
+        "war-room"
+      ],
+      "path": ".agent/skills/trust-spec-contracts/SKILL.md"
+    },
+    {
+      "name": "ui-visual-validator",
+      "description": "|",
+      "tags": [],
+      "path": ".agent/skills/ui-visual-validator/SKILL.md"
+    },
+    {
+      "name": "unit-testing-test-generate",
+      "description": "Generate comprehensive, maintainable unit tests across languages with strong coverage and edge case focus.",
+      "tags": [],
+      "path": ".agent/skills/unit-testing-test-generate/SKILL.md"
+    },
+    {
+      "name": "using-git-worktrees",
+      "description": "Use when starting feature work that needs isolation from current workspace or before executing implementation plans - creates isolated git worktrees with smart directory selection and safety verifi...",
+      "tags": [],
+      "path": ".agent/skills/using-git-worktrees/SKILL.md"
+    },
+    {
+      "name": "vector-database-engineer",
+      "description": "Expert in vector databases, embedding strategies, and semantic search implementation. Masters Pinecone, Weaviate, Qdrant, Milvus, and pgvector for RAG applications, recommendation systems, and similar",
+      "tags": [],
+      "path": ".agent/skills/vector-database-engineer/SKILL.md"
+    },
+    {
+      "name": "vercel-cli-with-tokens",
+      "description": "Deploy and manage projects on Vercel using token-based authentication. Use when working with Vercel CLI using access tokens rather than interactive login \u2014 e.g. \"deploy to vercel\", \"set up vercel\", \"a...",
+      "tags": [],
+      "path": ".agent/skills/vercel-cli-with-tokens/SKILL.md"
+    },
+    {
+      "name": "vercel-cli-with-tokens",
+      "description": "Deploy and manage projects on Vercel using token-based authentication. Use when working with Vercel CLI using access tokens rather than interactive login \u2014 e.g. \"deploy to vercel\", \"set up vercel\", \"a...",
+      "tags": [],
+      "path": ".agent/skills/vercel-cli-with-tokens/vercel-cli-with-tokens/SKILL.md"
+    },
+    {
+      "name": "vercel-composition-patterns",
+      "description": "",
+      "tags": [],
+      "path": ".agent/skills/vercel-composition-patterns/SKILL.md"
+    },
+    {
+      "name": "vercel-composition-patterns",
+      "description": "",
+      "tags": [],
+      "path": ".agent/skills/vercel-composition-patterns/vercel-composition-patterns/SKILL.md"
+    },
+    {
+      "name": "vercel-deployment",
+      "description": "Expert knowledge for deploying to Vercel with Next.js Use when: vercel, deploy, deployment, hosting, production.",
+      "tags": [],
+      "path": ".agent/skills/vercel-deployment/SKILL.md"
+    },
+    {
+      "name": "vercel-react-best-practices",
+      "description": "React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patter...",
+      "tags": [],
+      "path": ".agent/skills/vercel-react-best-practices/SKILL.md"
+    },
+    {
+      "name": "vercel-react-best-practices",
+      "description": "React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patter...",
+      "tags": [],
+      "path": ".agent/skills/vercel-react-best-practices/vercel-react-best-practices/SKILL.md"
+    },
+    {
+      "name": "vercel-react-native-skills",
+      "description": "",
+      "tags": [],
+      "path": ".agent/skills/vercel-react-native-skills/SKILL.md"
+    },
+    {
+      "name": "vercel-react-native-skills",
+      "description": "",
+      "tags": [],
+      "path": ".agent/skills/vercel-react-native-skills/vercel-react-native-skills/SKILL.md"
+    },
+    {
+      "name": "vercel-react-view-transitions",
+      "description": "Guide for implementing smooth, native-feeling animations using React's View Transition API (`<ViewTransition>` component, `addTransitionType`, and CSS view transition pseudo-elements). Use this skill ...",
+      "tags": [],
+      "path": ".agent/skills/vercel-react-view-transitions/SKILL.md"
+    },
+    {
+      "name": "vercel-react-view-transitions",
+      "description": "Guide for implementing smooth, native-feeling animations using React's View Transition API (`<ViewTransition>` component, `addTransitionType`, and CSS view transition pseudo-elements). Use this skill ...",
+      "tags": [],
+      "path": ".agent/skills/vercel-react-view-transitions/vercel-react-view-transitions/SKILL.md"
+    },
+    {
+      "name": "war-room-orchestration",
+      "description": "How CEO and C-suite dispatch work through the Evalove war-room trust-spec system: Linear label routing, Cloudflare bridge, HMAC-signed specs, fan-out/fan-in via Inngest, and audit_log enforce...",
+      "tags": [
+        "orchestration",
+        "evalove-specific",
+        "agents",
+        "war-room"
+      ],
+      "path": ".agent/skills/war-room-orchestration/SKILL.md"
+    },
+    {
+      "name": "wcag-audit-patterns",
+      "description": "Conduct WCAG 2.2 accessibility audits with automated testing, manual verification, and remediation guidance. Use when auditing websites for accessibility, fixing WCAG violations, or implementing ac...",
+      "tags": [],
+      "path": ".agent/skills/wcag-audit-patterns/SKILL.md"
+    },
+    {
+      "name": "web-design-guidelines",
+      "description": "Review UI code for Web Interface Guidelines compliance. Use when asked to \\\\\\\"review my UI\\\\\\\", \\\\\\\"check accessibility\\\\\\\", \\\\\\\"audit design\\\\\\\", \\\\\\\"review UX\\\\\\\", or \\\\\\\"check my site aga...",
+      "tags": [],
+      "path": ".agent/skills/web-design-guidelines/SKILL.md"
+    },
+    {
+      "name": "web-security-testing",
+      "description": "Web application security testing workflow for OWASP Top 10 vulnerabilities including injection, XSS, authentication flaws, and access control issues.",
+      "tags": [],
+      "path": ".agent/skills/web-security-testing/SKILL.md"
+    },
+    {
+      "name": "worktree-isolation-pattern",
+      "description": "The exact git worktree create, detect, and clean pattern for Evalove workers: detect-or-create from main-repo-root, child worktree commands, branch naming conventions (feat/fix/chore), atomic...",
+      "tags": [
+        "git",
+        "evalove-specific",
+        "workflow",
+        "workers"
+      ],
+      "path": ".agent/skills/worktree-isolation-pattern/SKILL.md"
+    },
+    {
+      "name": "writing-plans",
+      "description": "Use when you have a spec or requirements for a multi-step task, before touching code",
+      "tags": [],
+      "path": ".agent/skills/writing-plans/SKILL.md"
+    },
+    {
+      "name": "xss-html-injection",
+      "description": "This skill should be used when the user asks to \\\"test for XSS vulnerabilities\\\", \\\"perform cross-site scripting attacks\\\", \\\"identify HTML injection flaws\\\", \\\"exploit client-side injection...",
+      "tags": [],
+      "path": ".agent/skills/xss-html-injection/SKILL.md"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+# Skills library — too large for npm package (55MB, 426 folders)
+# Users install separately: npx antigravity-awesome-skills
+.agent/skills/
+
+# Project-specific memory — templates are generated fresh by installer
+.claude/memory/
+.claude/agent-memory/
+.claude/settings.local.json
+.claude/gsa-file-manifest.json
+
+# Dev / internal
+scripts/
+.planning/
+.disabled/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.editorconfig
+
+# Git
+.git/
+.gitignore
+
+# Node
+node_modules/
+*.log

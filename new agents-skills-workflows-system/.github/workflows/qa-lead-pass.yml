@@ -1,0 +1,343 @@
+name: QA Lead Pass
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read   # F12: Required for gh api repos/$REPO/issues/$PR_NUMBER/comments (bypass comment check)
+
+jobs:
+  qa-gate:
+    name: Verify QA Lead PASS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Check QA Lead PASS or bypass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ADAM_GITHUB_USER: ${{ vars.ADAM_GITHUB_USER }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          echo "=== QA Gate check for PR #${PR_NUMBER} on branch ${HEAD_BRANCH} ==="
+
+          # ── Step 1: Extract task slug from branch name ──────────────────────
+          # Branch patterns: feat/<slug>, fix/<slug>, chore/<slug>
+          # F10: Use tr to collapse internal slashes to dashes so multi-segment
+          # branches (feat/scope/slug) produce a single flat slug that matches
+          # the session file naming pattern *-scope-slug.md.
+          TASK_SLUG=$(echo "$HEAD_BRANCH" | sed -E 's|^(feat\|fix\|chore)/||' | tr / -)
+          echo "Task slug: ${TASK_SLUG}"
+
+          # ── Step 2: Look for session file ───────────────────────────────────
+          # First try slug match: docs/08-agents_work/sessions/*-<task-slug>.md
+          # Fallback: any session file added/modified in this PR's diff (handles
+          # multi-phase PRs and CEO-orchestrator branches that don't follow the
+          # feat/<slug> convention — session files are named per phase, not per branch).
+          SESSION_DIR="docs/08-agents_work/sessions"
+          SESSION_FILE=""
+
+          if [ -d "$SESSION_DIR" ]; then
+            SESSION_FILE=$(find "$SESSION_DIR" -maxdepth 1 -name "*-${TASK_SLUG}.md" -type f | sort | tail -1)
+          fi
+
+          if [ -z "$SESSION_FILE" ]; then
+            echo "No session file matching slug '${TASK_SLUG}'. Falling back to PR diff."
+            # List session files added/modified in this PR.
+            # F14: use gh api --paginate (gh pr view --json files caps at 100 files;
+            # large rethink/refactor PRs touching 300+ files would silently miss
+            # session files outside that window).
+            CHANGED_SESSIONS=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate \
+              --jq '.[].filename | select(test("^docs/08-agents_work/sessions/.*\\.md$"))' || echo "")
+            if [ -n "$CHANGED_SESSIONS" ]; then
+              echo "Found session files in PR diff:"
+              echo "$CHANGED_SESSIONS"
+              # Pick the most recently dated one (sort lexically)
+              SESSION_FILE=$(echo "$CHANGED_SESSIONS" | sort | tail -1)
+            fi
+          fi
+
+          echo "Session file found: ${SESSION_FILE:-none}"
+
+          # ── Step 3: Check for qa_verdict: PASS in session file ──────────────
+          # F11: Case-insensitive, whitespace-tolerant, handles quoted YAML values.
+          # Multi-session PRs: ALL changed session files must have qa_verdict: PASS.
+          QA_PASS=false
+          if [ -n "$SESSION_FILE" ] && [ -f "$SESSION_FILE" ]; then
+            # If we fell back to PR diff, validate all changed sessions
+            if [ -n "${CHANGED_SESSIONS:-}" ]; then
+              ALL_PASS=true
+              for s in $CHANGED_SESSIONS; do
+                if [ ! -f "$s" ]; then continue; fi
+                if grep -qiE 'qa_verdict:[[:space:]]+"?PASS"?[[:space:]]*$' "$s"; then
+                  echo "✓ qa_verdict: PASS in $s"
+                else
+                  echo "✗ qa_verdict: PASS missing in $s"
+                  grep "qa_verdict" "$s" || echo "  (no qa_verdict line at all)"
+                  ALL_PASS=false
+                fi
+              done
+              if [ "$ALL_PASS" = "true" ]; then QA_PASS=true; fi
+            else
+              if grep -qiE 'qa_verdict:[[:space:]]+"?PASS"?[[:space:]]*$' "$SESSION_FILE"; then
+                echo "✓ qa_verdict: PASS found in ${SESSION_FILE}"
+                QA_PASS=true
+              else
+                echo "✗ qa_verdict: PASS not found in ${SESSION_FILE}"
+                grep "qa_verdict" "$SESSION_FILE" || echo "(no qa_verdict line at all)"
+              fi
+            fi
+          else
+            echo "✗ No session file found for slug or in PR diff"
+          fi
+
+          # ── Step 4: Check for bypass label ─────────────────────────────────
+          HAS_BYPASS_LABEL=$(gh pr view "$PR_NUMBER" \
+            --repo "$REPO" \
+            --json labels \
+            --jq '[.labels[].name] | contains(["qa-lead-bypass"])')
+
+          echo "Has qa-lead-bypass label: ${HAS_BYPASS_LABEL}"
+
+          # ── Step 5: If bypass label present, check Adam's bypass comment ────
+          BYPASS_APPROVED=false
+          if [ "$HAS_BYPASS_LABEL" = "true" ]; then
+            if [ -z "$ADAM_GITHUB_USER" ]; then
+              echo "ERROR: ADAM_GITHUB_USER variable is not set — cannot validate bypass author"
+              exit 1
+            fi
+
+            # Look for a comment from Adam containing BYPASS REASON:
+            BYPASS_COMMENT=$(gh api \
+              "repos/$REPO/issues/$PR_NUMBER/comments" \
+              --jq ".[] | select(.user.login == \"$ADAM_GITHUB_USER\") | select(.body | test(\"BYPASS REASON:\")) | .id" \
+              | head -1)
+
+            if [ -n "$BYPASS_COMMENT" ]; then
+              echo "✓ Bypass comment found from ${ADAM_GITHUB_USER} (comment ID: ${BYPASS_COMMENT})"
+              BYPASS_APPROVED=true
+            else
+              echo "✗ No bypass comment from ${ADAM_GITHUB_USER} containing 'BYPASS REASON:'"
+            fi
+          fi
+
+          # ── Step 6: Final decision ──────────────────────────────────────────
+          if [ "$QA_PASS" = "true" ]; then
+            echo ""
+            echo "✅ QA GATE PASSED — qa_verdict: PASS found in session file"
+            exit 0
+          fi
+
+          if [ "$BYPASS_APPROVED" = "true" ]; then
+            echo ""
+            echo "⚠️  QA GATE BYPASSED — bypass label + Adam comment with BYPASS REASON: present"
+            echo "    Note: audit_log rule_violation row will be written by Inngest on next cycle"
+            exit 0
+          fi
+
+          # ── Step 7: Fail ────────────────────────────────────────────────────
+          echo ""
+          echo "❌ QA GATE FAILED"
+          echo ""
+          echo "To pass this check, ONE of the following must be true:"
+          echo ""
+          echo "  1. A session file at docs/08-agents_work/sessions/*-${TASK_SLUG}.md"
+          echo "     must contain the line: qa_verdict: PASS"
+          echo ""
+          echo "  2. The PR must have the 'qa-lead-bypass' label AND a comment from"
+          echo "     the authorized user containing 'BYPASS REASON:'"
+          echo ""
+          echo "Session file searched for: ${SESSION_DIR}/*-${TASK_SLUG}.md"
+          echo "Session file found:        ${SESSION_FILE:-none}"
+          exit 1
+
+      # ── F15: file-path tier-floor enforcement ──────────────────────────────
+      # Per 2026-05-16 board decision #4: deterministic file-path tier-floor map
+      # at .claude/qa-tier-floor.yml sets the MINIMUM risk tier any PR touching
+      # those paths must carry. The label-based check below (F13) is the
+      # COMPLEMENT — it enforces what the YAML demanded.
+      - name: Auto-tier from file-path tier-floor map
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          MAP_FILE=".claude/qa-tier-floor.yml"
+          if [ ! -f "$MAP_FILE" ]; then
+            echo "ℹ️  No $MAP_FILE — skipping auto-tier (label-based enforcement only)"
+            exit 0
+          fi
+
+          # Tier ranking (higher = stricter)
+          declare -A RANK
+          RANK[trivial]=0
+          RANK[lite]=1
+          RANK[full]=2
+          RANK[irreversible]=3
+
+          # List PR files (paginated)
+          CHANGED_FILES=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
+          echo "Changed files: $(echo "$CHANGED_FILES" | wc -l)"
+
+          # Extract patterns from YAML (simple parser; assumes `- pattern: "..."` followed by `tier: ...`)
+          REQUIRED_TIER="trivial"
+          REQUIRED_RANK=0
+          MATCH_REASON=""
+
+          while IFS= read -r file; do
+            current_pattern=""
+            while IFS= read -r line; do
+              case "$line" in
+                *"- pattern:"*)
+                  current_pattern=$(echo "$line" | sed -E 's/.*- pattern:[[:space:]]*"?([^"]+)"?.*/\1/')
+                  ;;
+                *"tier:"*)
+                  tier=$(echo "$line" | sed -E 's/.*tier:[[:space:]]*([a-z]+).*/\1/')
+                  # Convert glob pattern to bash extglob via simple match (handles ** and *)
+                  case "$file" in
+                    $current_pattern|${current_pattern//\*\*/\*})
+                      this_rank=${RANK[$tier]:-0}
+                      if [ "$this_rank" -gt "$REQUIRED_RANK" ]; then
+                        REQUIRED_RANK=$this_rank
+                        REQUIRED_TIER=$tier
+                        MATCH_REASON="$file matches $current_pattern → tier:$tier"
+                      fi
+                      ;;
+                  esac
+                  current_pattern=""
+                  ;;
+              esac
+            done < "$MAP_FILE"
+          done <<< "$CHANGED_FILES"
+
+          echo "Required tier floor: $REQUIRED_TIER (rank $REQUIRED_RANK)"
+          [ -n "$MATCH_REASON" ] && echo "Reason: $MATCH_REASON"
+
+          # If the floor is irreversible, the PR must already carry the risk:irreversible label.
+          # The label triggers the F13 step below which enforces tier: full|irreversible in the session file.
+          if [ "$REQUIRED_TIER" = "irreversible" ]; then
+            HAS_LABEL=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels \
+              --jq '[.labels[].name] | contains(["risk:irreversible"])')
+            if [ "$HAS_LABEL" != "true" ]; then
+              echo ""
+              echo "❌ BLOCKED — file-path tier-floor requires risk:irreversible label."
+              echo "   Reason: $MATCH_REASON"
+              echo "   Add the 'risk:irreversible' label or remove the affected file(s)."
+              exit 1
+            fi
+            echo "✓ risk:irreversible label present — F13 will enforce session-file tier"
+          fi
+
+          # If the floor is full but no risk:irreversible label, the session file
+          # must still carry tier: full (or higher). We surface this as a soft hint
+          # — full enforcement of full-tier sessions is Phase 6+ work.
+          if [ "$REQUIRED_TIER" = "full" ]; then
+            echo "ℹ️  Floor is 'full' — session file should declare tier: full|irreversible"
+            echo "    (Phase 6 will mechanically enforce this; for now, reviewer awareness)"
+          fi
+
+      # ── F13: risk:irreversible enforcement ─────────────────────────────────
+      # Per CONNECTIONS.md §B + 2026-05-16 board verdict (decision #3):
+      # a PR carrying risk:irreversible MUST have either `tier: full` or
+      # `tier: irreversible` in its session file. Lite/trivial-tier are insufficient.
+      - name: Enforce tier:full|irreversible for risk:irreversible PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Check if the PR has the risk:irreversible label
+          HAS_IRREVERSIBLE=$(gh pr view "$PR_NUMBER" \
+            --repo "$REPO" \
+            --json labels \
+            --jq '[.labels[].name] | contains(["risk:irreversible"])')
+
+          echo "Has risk:irreversible label: ${HAS_IRREVERSIBLE}"
+
+          if [ "$HAS_IRREVERSIBLE" != "true" ]; then
+            echo "No risk:irreversible label — tier enforcement not required"
+            exit 0
+          fi
+
+          echo "risk:irreversible label detected — checking for tier: full|irreversible in session file"
+
+          # Re-derive slug the same way as the QA gate step
+          TASK_SLUG=$(echo "$HEAD_BRANCH" | sed -E 's|^(feat\|fix\|chore)/||' | tr / -)
+          SESSION_DIR="docs/08-agents_work/sessions"
+          SESSION_FILE=""
+
+          if [ -d "$SESSION_DIR" ]; then
+            SESSION_FILE=$(find "$SESSION_DIR" -maxdepth 1 -name "*-${TASK_SLUG}.md" -type f | sort | tail -1)
+          fi
+
+          # F14: fallback to PR diff via paginated gh api when slug doesn't match
+          # (large rethink/refactor PRs touching 300+ files exceed gh pr view's
+          # 100-file cap; use --paginate on the raw API to inspect all files)
+          if [ -z "$SESSION_FILE" ]; then
+            echo "No session file matching slug '${TASK_SLUG}'. Falling back to PR diff."
+            CHANGED_SESSIONS=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate \
+              --jq '.[].filename | select(test("^docs/08-agents_work/sessions/.*\\.md$"))' || echo "")
+            if [ -n "$CHANGED_SESSIONS" ]; then
+              echo "Found session files in PR diff:"
+              echo "$CHANGED_SESSIONS"
+              SESSION_FILE=$(echo "$CHANGED_SESSIONS" | sort | tail -1)
+            fi
+          fi
+
+          echo "Session file: ${SESSION_FILE:-none}"
+
+          if [ -z "$SESSION_FILE" ] || [ ! -f "$SESSION_FILE" ]; then
+            echo ""
+            echo "❌ BLOCKED — risk:irreversible label requires a session file with tier: full or tier: irreversible."
+            echo "   No session file found for slug: ${TASK_SLUG} or in PR diff"
+            echo "   Per CONNECTIONS.md §B + 2026-05-16 board decision #3: risk:irreversible requires full or irreversible tier review."
+            exit 1
+          fi
+
+          # Multi-session PRs: ALL session files in the PR diff must carry an acceptable tier
+          if [ -n "${CHANGED_SESSIONS:-}" ]; then
+            ALL_OK=true
+            for s in $CHANGED_SESSIONS; do
+              if [ ! -f "$s" ]; then continue; fi
+              if grep -qiE 'tier:[[:space:]]+"?(full|irreversible)"?[[:space:]]*$' "$s"; then
+                echo "✓ Acceptable tier in $s"
+              else
+                echo "✗ Missing tier: full|irreversible in $s"
+                grep "tier" "$s" || echo "  (no tier line)"
+                ALL_OK=false
+              fi
+            done
+            [ "$ALL_OK" = "true" ] && exit 0 || exit 1
+          fi
+
+          if grep -qiE 'tier:[[:space:]]+"?(full|irreversible)"?[[:space:]]*$' "$SESSION_FILE"; then
+            FOUND_TIER=$(grep -iE 'tier:[[:space:]]+"?(full|irreversible)"?[[:space:]]*$' "$SESSION_FILE" | head -1)
+            echo "✓ Acceptable tier found in ${SESSION_FILE}: ${FOUND_TIER}"
+            exit 0
+          else
+            echo ""
+            echo "❌ BLOCKED — risk:irreversible label requires tier: full or tier: irreversible per board decision #3."
+            echo "   Session file found: ${SESSION_FILE}"
+            echo "   Neither tier: full nor tier: irreversible present in session frontmatter."
+            grep "tier" "$SESSION_FILE" || echo "(no tier line found)"
+            exit 1
+          fi

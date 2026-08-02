@@ -1,0 +1,85 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(pnpm *)",
+      "Bash(gh *)",
+      "Bash(node *)",
+      "Bash(python3 *)",
+      "Bash(mkdir *)",
+      "Bash(mv *)",
+      "Bash(cp *)",
+      "Bash(ls *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(wc *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(cat *)",
+      "Bash(awk *)",
+      "Bash(sed *)",
+      "Bash(diff *)",
+      "Bash(which *)",
+      "Bash(echo *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(chmod +x *)",
+      "Bash(npm install -g *)",
+      "Bash(pip install *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/gsa-check-update.js"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-tool-use.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/gsa-context-monitor.js"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-edit-typecheck.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/stop.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node .claude/hooks/gsa-statusline.js"
+  }
+}

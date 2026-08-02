@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "skills": {
+    "humanizer": {
+      "source": "blader/humanizer",
+      "sourceType": "github",
+      "computedHash": "c03da5ce68828393461eff0c81a2a81535342daee0c6ca292910395065218433"
+    },
+    "pitch-deck-visuals": {
+      "source": "inference-sh/skills",
+      "sourceType": "github",
+      "skillPath": "guides/design/pitch-deck-visuals/SKILL.md",
+      "computedHash": "58cfb48218fc2b1c2edc91b6251a27198ba750dc49ca594b8d32661b8ff2852b"
+    }
+  }
+}

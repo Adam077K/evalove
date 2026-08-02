@@ -1,0 +1,24 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────
+#  {{project_name}}-status.sh — Status bar right-side script
+#  Usage: bash {{project_name}}-status.sh <PROJECT_DIR>
+#  Called by tmux status-right every 10s.
+# ─────────────────────────────────────────────────────────────
+
+PROJECT_DIR="${1:-$HOME/VibeCoding/{{PROJECT_NAME}}}"
+# Session name passed as second arg; fall back to basename of project dir
+SESSION="${2:-$(basename "$PROJECT_DIR")}"
+
+# Count CEOs: windows named CEO-* in normal mode, or panes in GRID window
+if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+  count=$(tmux list-panes -t "$SESSION:GRID" 2>/dev/null | wc -l | tr -d ' ')
+else
+  count=$(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -c "^CEO-" || echo 0)
+fi
+name=$(basename "$PROJECT_DIR")
+
+printf " [%d CEO%s] %s  ·  %s " \
+  "$count" \
+  "$([ "$count" -ne 1 ] && echo 's')" \
+  "$name" \
+  "$(date '+%H:%M')"

@@ -1,0 +1,130 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────
+#  {{project_name}}-scratchpad.sh — Per-CEO context panel (9-line pane)
+#  Usage: bash {{project_name}}-scratchpad.sh <N> <wt_path>
+#  Runs in a split pane at bottom of CEO window. Refreshes every 15s.
+# ─────────────────────────────────────────────────────────────
+
+CEO_N="${1:-1}"
+WT_PATH="${2:-}"
+SESSION="${3:-{{project_name}}}"
+# Derive WORKTREES_DIR from WT_PATH so generated project scripts work correctly.
+# WT_PATH is e.g. /Users/user/VibeCoding/MyProject/.worktrees/ceo-1-1234567890
+# The parent of the worktree directory is always WORKTREES_DIR.
+if [ -n "$WT_PATH" ]; then
+  WORKTREES_DIR=$(dirname "$WT_PATH")
+else
+  WORKTREES_DIR="$HOME/VibeCoding/{{PROJECT_NAME}}/.worktrees"
+fi
+
+# ── Catppuccin Mocha ANSI colors ─────────────────────────────
+C_MAUVE="\033[38;2;203;166;247m"
+C_GREEN="\033[38;2;166;227;161m"
+C_BLUE="\033[38;2;137;180;250m"
+C_YELLOW="\033[38;2;249;226;175m"
+C_RED="\033[38;2;243;139;168m"
+C_TEAL="\033[38;2;148;226;213m"
+C_TEXT="\033[38;2;205;214;244m"
+C_SUBTEXT="\033[38;2;166;173;200m"
+C_OVERLAY="\033[38;2;108;112;134m"
+C_PEACH="\033[38;2;250;179;135m"
+RESET="\033[0m"
+BOLD="\033[1m"
+DIM="\033[2m"
+
+CEO_ANSI_COLORS=("$C_MAUVE" "$C_GREEN" "$C_BLUE" "$C_YELLOW" "$C_RED" "$C_TEAL")
+
+get_ceo_ansi() {
+  local n=$1
+  echo -e "${CEO_ANSI_COLORS[$(( (n - 1) % 6 ))]}"
+}
+
+render_scratchpad() {
+  # Check if Claude pane is still alive
+  local claude_dead
+  claude_dead=$(tmux display-message -t "${SESSION}:CEO-${CEO_N}.1" -p "#{pane_dead}" 2>/dev/null)
+  if [ "$claude_dead" = "1" ] || [ -z "$claude_dead" ]; then
+    local term_w; term_w=$(tput cols 2>/dev/null || echo 80)
+    printf "${C_RED}$(printf '━%.0s' $(seq 1 $term_w))${RESET}\n"
+    printf "  ${BOLD}${C_RED}⚠  CLAUDE EXITED${RESET}${C_SUBTEXT}  —  restart: claude${RESET}\n"
+    printf "${C_RED}$(printf '━%.0s' $(seq 1 $term_w))${RESET}\n"
+    return
+  fi
+
+  local now
+  now=$(date +%s)
+  local term_width
+  term_width=$(tput cols 2>/dev/null || echo 72)
+  local divider
+  divider=$(printf '─%.0s' $(seq 1 "$term_width"))
+  local ansi_color
+  ansi_color=$(get_ceo_ansi "$CEO_N")
+
+  # Task label
+  local task_label="—"
+  [ -f "$WORKTREES_DIR/ceo-${CEO_N}.task" ] && task_label=$(cat "$WORKTREES_DIR/ceo-${CEO_N}.task" 2>/dev/null | tr -d '\n')
+  [ -z "$task_label" ] && task_label="—"
+
+  # Branch
+  local branch="—"
+  [ -n "$WT_PATH" ] && branch=$(git -C "$WT_PATH" branch --show-current 2>/dev/null)
+  [ -z "$branch" ] && branch="—"
+
+  # Commit count
+  local commits="0"
+  [ -n "$WT_PATH" ] && commits=$(git -C "$WT_PATH" rev-list --count main..HEAD 2>/dev/null || echo "0")
+
+  # Time alive
+  local elapsed_str="—"
+  if [ -f "$WORKTREES_DIR/.registry" ]; then
+    local reg_line
+    reg_line=$(grep "^ceo-${CEO_N}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+    local start_ts=${reg_line#*:}
+    if [[ "$start_ts" =~ ^[0-9]+$ ]]; then
+      local elapsed=$(( now - start_ts ))
+      if [ "$elapsed" -lt 3600 ]; then
+        elapsed_str="$(( elapsed / 60 ))m"
+      else
+        elapsed_str="$(( elapsed / 3600 ))h$(( (elapsed % 3600) / 60 ))m"
+      fi
+    fi
+  fi
+
+  # Last commit message
+  local last_commit=""
+  [ -n "$WT_PATH" ] && last_commit=$(git -C "$WT_PATH" log -1 --pretty=format:"%s" 2>/dev/null)
+
+  # Git diff stat (last commit, max 2 files shown)
+  local diff_stat=""
+  if [ -n "$WT_PATH" ] && [ -n "$last_commit" ]; then
+    diff_stat=$(git -C "$WT_PATH" show --stat HEAD 2>/dev/null | tail -n +2 | head -3)
+  fi
+
+  # ── Render (9 lines max) ────────────────────────────────────
+  echo -e "${C_OVERLAY}${divider}${RESET}"
+  printf "  %b${BOLD}▸ CEO-%s${RESET}  ${C_SUBTEXT}%s${RESET}  ${C_OVERLAY}%s${RESET}  ${ansi_color}+%s${RESET}  ${C_OVERLAY}%s${RESET}\n" \
+    "$ansi_color" "$CEO_N" "$branch" "$task_label" "$commits" "$elapsed_str"
+
+  if [ -n "$last_commit" ]; then
+    printf "  ${C_TEXT}%s${RESET}\n" "$last_commit"
+  else
+    printf "  ${C_OVERLAY}(no commits yet)${RESET}\n"
+  fi
+
+  echo -e "${C_OVERLAY}${divider}${RESET}"
+
+  if [ -n "$diff_stat" ]; then
+    echo "$diff_stat" | head -2 | while IFS= read -r line; do
+      printf "  ${DIM}${C_SUBTEXT}%s${RESET}\n" "$line"
+    done
+  fi
+
+  printf "  ${DIM}${C_OVERLAY}{{project_name}} task %s \"label\"  │  {{project_name}} done %s${RESET}\n" "$CEO_N" "$CEO_N"
+}
+
+# ── Main loop ─────────────────────────────────────────────────
+while true; do
+  clear
+  render_scratchpad
+  sleep 15
+done

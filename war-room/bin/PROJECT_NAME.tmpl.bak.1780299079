@@ -1,0 +1,2768 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────
+#  {{project_name}} — {{PROJECT_NAME}} CEO War Room
+#  Usage:
+#    {{project_name}} [N]              Start war room with N CEOs (default: 3, max: 8)
+#    {{project_name}} [N] --grid       Start in grid mode (N panes in one GRID window)
+#    {{project_name}} add              Add a new CEO window to a running war room
+#    {{project_name}} done <N>         Handoff: commit worktree, close CEO window N
+#    {{project_name}} kill             Destroy the entire war room session + clean worktrees
+#    {{project_name}} ls               List all active CEO windows (rich format)
+#    {{project_name}} task <N> "label" Set task label for CEO-N
+#    {{project_name}} grid             Switch running session to grid view
+#    {{project_name}} restore          Restore last saved session
+#    {{project_name}} [N] --bare       Start N blank Claude sessions (no CEO/preamble)
+#    {{project_name}} clear-sessions   Delete saved session snapshot
+#    {{project_name}} migrate-sessions Move orphaned CEO sessions to main project
+# ─────────────────────────────────────────────────────────────
+
+SESSION="{{project_name}}"
+PROJECT_DIR="$HOME/VibeCoding/{{PROJECT_NAME}}"
+CEO_AGENT="$PROJECT_DIR/.claude/agents/ceo.md"
+WORKTREES_DIR="$PROJECT_DIR/.worktrees"
+PROJECT_STATE_DIR="$HOME/.{{project_name}}"
+SESSION_SNAPSHOT="$PROJECT_STATE_DIR/last.json"
+SNAPSHOTS_DIR="$PROJECT_STATE_DIR/snapshots"
+TMUX_SCRIPTS_DIR="$HOME/.tmux/scripts"
+
+# ─────────────────────────────────────────────────────────────
+#  COLORS (inline for main script — avoids sourcing dependency)
+# ─────────────────────────────────────────────────────────────
+
+COLORS=("#cba6f7" "#a6e3a1" "#89b4fa" "#f9e2af" "#f38ba8" "#94e2d5")
+COLOR_NAMES=("purple" "green" "blue" "yellow" "red" "cyan")
+
+# ANSI color codes for terminal output
+C_MAUVE="\033[38;2;203;166;247m"
+C_GREEN="\033[38;2;166;227;161m"
+C_BLUE="\033[38;2;137;180;250m"
+C_YELLOW="\033[38;2;249;226;175m"
+C_RED="\033[38;2;243;139;168m"
+C_TEAL="\033[38;2;148;226;213m"
+C_TEXT="\033[38;2;205;214;244m"
+C_SUBTEXT="\033[38;2;166;173;200m"
+C_OVERLAY="\033[38;2;108;112;134m"
+C_PEACH="\033[38;2;250;179;135m"
+RESET="\033[0m"
+BOLD="\033[1m"
+DIM="\033[2m"
+
+CEO_ANSI_COLORS=("$C_MAUVE" "$C_GREEN" "$C_BLUE" "$C_YELLOW" "$C_RED" "$C_TEAL")
+
+# CEO preamble — sent as the first message to every new Claude CEO session
+CEO_PREAMBLE='You are the CEO and Orchestrator - the entry point for every task in a 3-layer agent system. YOU are the CEO in this chat - read .agent/agents/ceo.md for your full instructions but do NOT deploy a subagent for the CEO role. You manage all other agents directly.
+
+Your role: Layer 1 (you): Understand, plan, and delegate. You decide team size, composition, and strategy for every task.
+
+Layer 2 — Team Leads (9 available, deploy any combination):
+- build-lead: all code work (features, fixes, refactors, architecture)
+- research-lead: competitors, market, tech evaluation, deep research
+- design-lead: UI/UX, screens, components, design systems
+- qa-lead: security audits, test coverage, pre-deploy quality gate
+- devops-lead: deployments, CI/CD, Vercel, infrastructure
+- data-lead: SQL queries, metrics, event tracking, dashboards
+- product-lead: PRDs, user stories, roadmaps, feature specs
+- growth-lead: copy, SEO, email campaigns, GTM strategy
+- business-lead: pricing, financials, OKRs, RICE scoring
+
+Layer 3 — Workers (called by Leads):
+- backend-developer, frontend-developer, database-engineer, ai-engineer
+- security-engineer, test-engineer, code-reviewer, researcher, technical-writer
+
+Before every task:
+1. Read CLAUDE.md and .claude/memory/LONG-TERM.md — project context and user preferences
+2. Read .agent/agents/ceo.md — your full operating instructions
+3. Read .agent/skills/MANIFEST.json — load 3-5 matching skills for this task domain
+4. Read .claude/memory/DECISIONS.md — prior architectural decisions
+5. Read relevant docs/ files — PRD.md, ENGINEERING_PRINCIPLES.md, etc.
+6. Check ~/.{{project_name}}/history/ — previous CEOs may have already worked on similar files. Run: ls ~/.{{project_name}}/history/ 2>/dev/null and read any relevant JSON records to avoid rediscovering what was already learned.
+7. Plan with the user before deploying agents.
+
+Skills: Load 3-5 relevant skills from .agent/skills/MANIFEST.json before starting. Tell your Leads and Workers to load their own relevant skills too. Skills teach the right patterns, approaches, and pitfalls. Tasks done without skills produce lower-quality results.
+
+Memory system: .claude/memory/LONG-TERM.md (user prefs, patterns), DECISIONS.md (architecture decisions), sessions/ (lead summaries), specs/ (product specs). Read before acting, update after completing work.
+
+Worktrees: Each agent works in an isolated git worktree. Code workers create worktrees before touching files. Commits use conventional format (feat/fix/chore). QA gate is mandatory before any merge.
+
+CRITICAL RULE: You are never allowed to deploy a CEO subagent. You ARE the CEO in this conversation, fully and directly. Read the CEO agent file and all related memory files yourself.'
+
+# Inject CEO agent reference + preamble into a tmux pane as ONE paste.
+# Single send-keys call so the whole prompt arrives as one pasted block —
+# prevents system-reminders from splitting between agent-ref and preamble.
+# Uses -l (literal) so tmux doesn't interpret parens/quotes as key names.
+inject_ceo_prompt() {
+  local target="$1"
+  tmux send-keys -t "$target" -l "@\"ceo (agent)\" ${CEO_PREAMBLE}"
+}
+
+# ─────────────────────────────────────────────────────────────
+#  HELPERS
+# ─────────────────────────────────────────────────────────────
+
+check_deps() {
+  if ! command -v tmux &>/dev/null; then
+    echo "✗ tmux not found. Run: brew install tmux"; exit 1
+  fi
+  if ! command -v claude &>/dev/null; then
+    echo "✗ claude not found. Install Claude Code first."; exit 1
+  fi
+  if ! command -v python3 &>/dev/null; then
+    echo "✗ python3 not found. Required for cost tracking and event logging."; exit 1
+  fi
+  if [ ! -f "$CEO_AGENT" ]; then
+    echo "✗ CEO agent not found at $CEO_AGENT"; exit 1
+  fi
+  if [ ! -d "$PROJECT_DIR/.git" ]; then
+    echo "✗ $PROJECT_DIR is not a git repo."; exit 1
+  fi
+  mkdir -p "$PROJECT_STATE_DIR"
+  mkdir -p "$TMUX_SCRIPTS_DIR"
+}
+
+next_ceo_number() {
+  local n=1
+  while tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^CEO-$n$"; do
+    ((n++))
+  done
+  echo "$n"
+}
+
+get_color()      { echo "${COLORS[$(( ($1 - 1) % 6 ))]}"; }
+get_color_name() { echo "${COLOR_NAMES[$(( ($1 - 1) % 6 ))]}"; }
+get_ansi_color() { echo "${CEO_ANSI_COLORS[$(( ($1 - 1) % 6 ))]}"; }
+
+create_worktree() {
+  local n=$1
+  local ts branch wt_path
+  ts=$(date +%s)
+  branch="ceo-${n}-${ts}"
+  wt_path="$WORKTREES_DIR/$branch"
+
+  mkdir -p "$WORKTREES_DIR"
+
+  local wt_err
+  wt_err=$(mktemp)
+  if ! git -C "$PROJECT_DIR" worktree add "$wt_path" -b "$branch" main &>"$wt_err"; then
+    echo "  ✗ git worktree add failed: $(cat "$wt_err")" >&2
+    rm -f "$wt_err"
+    return 1
+  fi
+  rm -f "$wt_err"
+
+  # Write registry entry: ceo-N:UNIX_TS
+  echo "ceo-${n}:${ts}" >> "$WORKTREES_DIR/.registry"
+
+  echo "$wt_path"
+}
+
+apply_window_style() {
+  local n=$1
+  local color
+  color=$(get_color "$n")
+  tmux set-window-option -t "$SESSION:CEO-$n" window-status-current-format \
+    "#[fg=#1e1e2e,bg=${color},bold] CEO-$n #[fg=${color},bg=#1e1e2e,nobold]" 2>/dev/null
+  tmux set-window-option -t "$SESSION:CEO-$n" window-status-format \
+    "#[fg=${color}] CEO-$n " 2>/dev/null
+}
+
+# Wait for a shell prompt in the given pane/window target before send-keys.
+# Prevents send-keys racing with .zshrc init (which can duplicate/eat chars).
+wait_for_shell_prompt() {
+  local target=$1
+  local deadline=$(( $(date +%s) + 5 ))
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    local content
+    content=$(tmux capture-pane -t "$target" -p 2>/dev/null | tail -3)
+    if echo "$content" | grep -qE '[%$#❯] *$'; then return 0; fi
+    sleep 0.2
+  done
+}
+
+send_launch_claude() {
+  # Usage: send_launch_claude <target> [resume_session_id]
+  local target=$1
+  local resume=$2
+  wait_for_shell_prompt "$target"
+  if [ -n "$resume" ]; then
+    tmux send-keys -t "$target" "claude --dangerously-skip-permissions --resume $resume" Enter
+  else
+    tmux send-keys -t "$target" "claude --dangerously-skip-permissions" Enter
+  fi
+}
+
+launch_claude_in_window() {
+  local n=$1
+  send_launch_claude "$SESSION:CEO-$n"
+}
+
+# Feature A2 — Smart Claude ready detection (window-based)
+# Polls pane content for Claude's ❯ prompt. 15s timeout → 5s fallback.
+# Note: pane_current_command shows "2.1.81" (version), NOT "claude" — so we
+# skip the command check and rely purely on the ❯ prompt character which is
+# unique to Claude Code's TUI.
+wait_for_claude_ready() {
+  local window_name=$1
+  local deadline=$(( $(date +%s) + 15 ))
+  local ready=0
+
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    local content
+    content=$(tmux capture-pane -t "$SESSION:${window_name}.1" -p -S -5 2>/dev/null)
+    if echo "$content" | grep -q '❯'; then
+      sleep 1
+      ready=1
+      break
+    fi
+    sleep 0.5
+  done
+
+  [ "$ready" -eq 0 ] && sleep 5
+  [ "$ready" -eq 1 ] && return 0 || return 1
+}
+
+# Feature A2 — Smart Claude ready detection (pane-based, for grid mode)
+wait_for_claude_ready_pane() {
+  local pane_target=$1
+  local deadline=$(( $(date +%s) + 15 ))
+  local ready=0
+
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    local content
+    content=$(tmux capture-pane -t "$pane_target" -p -S -5 2>/dev/null)
+    if echo "$content" | grep -q '❯'; then
+      sleep 1
+      ready=1
+      break
+    fi
+    sleep 0.5
+  done
+
+  [ "$ready" -eq 0 ] && sleep 5
+  [ "$ready" -eq 1 ] && return 0 || return 1
+}
+
+# Feature D1 — Capture Claude session ID for a CEO
+# Polls ~/.claude/sessions/*.json for file whose cwd == wt_path
+# Writes sessionId to .worktrees/ceo-N.session
+capture_session_id() {
+  local n=$1
+  local wt_path=$2
+  local deadline=$(( $(date +%s) + 10 ))
+  local session_file="$WORKTREES_DIR/ceo-${n}.session"
+
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    for f in "$HOME/.claude/sessions/"*.json; do
+      [ -f "$f" ] || continue
+      local cwd
+      cwd=$(python3 -c "import json,sys; d=json.load(open('$f')); print(d.get('cwd',''))" 2>/dev/null)
+      if [ "$cwd" = "$wt_path" ]; then
+        local sid
+        sid=$(python3 -c "import json,sys; d=json.load(open('$f')); print(d.get('sessionId',''))" 2>/dev/null)
+        if [ -n "$sid" ]; then
+          echo "$sid" > "$session_file"
+          return 0
+        fi
+      fi
+    done
+    sleep 0.5
+  done
+  # Not found — write empty placeholder so HQ doesn't error
+  echo "" > "$session_file"
+  return 1
+}
+
+# Move Claude Code session files from worktree project dir to main project dir.
+# This ensures /resume can find CEO sessions after worktree cleanup.
+# Args: wt_path (the worktree directory path)
+migrate_sessions() {
+  local wt_path="$1"
+  [ -z "$wt_path" ] && return 0
+
+  # Encode the worktree path the same way Claude Code does (/ → -)
+  local encoded_wt encoded_main
+  encoded_wt=$(echo "$wt_path" | sed 's|^/||; s|/|-|g; s|^|-|')
+  encoded_main=$(echo "$PROJECT_DIR" | sed 's|^/||; s|/|-|g; s|^|-|')
+
+  local wt_proj_dir="$HOME/.claude/projects/$encoded_wt"
+  local main_proj_dir="$HOME/.claude/projects/$encoded_main"
+
+  [ -d "$wt_proj_dir" ] || return 0
+  mkdir -p "$main_proj_dir"
+
+  # Move session files (JSONL + dirs) to main project, skip conflicts
+  for item in "$wt_proj_dir"/*; do
+    [ -e "$item" ] || continue
+    local base
+    base=$(basename "$item")
+    if [ ! -e "$main_proj_dir/$base" ]; then
+      mv "$item" "$main_proj_dir/" 2>/dev/null
+    fi
+  done
+
+  # Remove empty worktree project dir
+  rmdir "$wt_proj_dir" 2>/dev/null
+
+  # Remove stale worktree path from ~/.claude.json githubRepoPaths
+  local claude_json="$HOME/.claude.json"
+  [ -f "$claude_json" ] && python3 -c "
+import json, os, sys
+try:
+    with open('$claude_json') as f: d = json.load(f)
+    p = d.get('githubRepoPaths', {})
+    changed = False
+    for k in list(p):
+        before = len(p[k])
+        p[k] = [x for x in p[k] if os.path.exists(x)]
+        if not p[k]: del p[k]; changed = True
+        elif len(p[k]) != before: changed = True
+    if changed:
+        with open('$claude_json', 'w') as f: json.dump(d, f, indent=2)
+except: pass
+" 2>/dev/null
+}
+
+# Copy Claude session files back from main project dir to worktree project dir.
+# Called during restore — inverse of migrate_sessions.
+restore_sessions() {
+  local wt_path="$1"
+  local session_id="$2"
+  { [ -z "$wt_path" ] || [ -z "$session_id" ]; } && return 0
+
+  local encoded_wt encoded_main
+  encoded_wt=$(echo "$wt_path" | sed 's|^/||; s|/|-|g; s|^|-|')
+  encoded_main=$(echo "$PROJECT_DIR" | sed 's|^/||; s|/|-|g; s|^|-|')
+
+  local main_proj_dir="$HOME/.claude/projects/$encoded_main"
+  local wt_proj_dir="$HOME/.claude/projects/$encoded_wt"
+
+  if [ -d "$main_proj_dir" ] && [ -f "$main_proj_dir/${session_id}.jsonl" ]; then
+    mkdir -p "$wt_proj_dir"
+    cp "$main_proj_dir/${session_id}.jsonl" "$wt_proj_dir/" 2>/dev/null
+  fi
+}
+
+# Feature D2 — Launch scratchpad pane (9-line split at bottom of CEO window)
+launch_scratchpad() {
+  local n=$1
+  local wt_path=$2
+
+  tmux split-window -v -l 9 -t "$SESSION:CEO-$n" \
+    "bash \"$TMUX_SCRIPTS_DIR/{{project_name}}-scratchpad.sh\" \"$n\" \"$wt_path\" \"$SESSION\"" 2>/dev/null
+
+  # Return focus to main (top) pane
+  tmux select-pane -t "$SESSION:CEO-$n.1" 2>/dev/null
+}
+
+# Spawn CEO-N (not the first — CEO-1 is handled in cmd_start via new-session)
+spawn_ceo() {
+  local n=$1
+  local wt_path
+
+  wt_path=$(create_worktree "$n")
+  if [ -z "$wt_path" ] || [ ! -d "$wt_path" ]; then
+    echo "  ✗ Failed to create worktree for CEO-$n"
+    return 1
+  fi
+
+  # Write task file (empty initially)
+  echo "" > "$WORKTREES_DIR/ceo-${n}.task"
+
+  echo "  ✓ Worktree: $(basename "$wt_path")"
+  tmux new-window -t "$SESSION" -n "CEO-$n" -c "$wt_path"
+  apply_window_style "$n"
+  # Brief pause — let the shell in the new window fully initialize before sending keys
+  sleep 0.5
+  launch_claude_in_window "$n"
+  echo "  ✓ CEO-$n launched ($(get_color_name "$n"))"
+  _log_event "ceo_spawn" "n=$n branch=$(basename "$wt_path")"
+}
+
+remove_worktrees() {
+  # Remove worktree directories and prune git refs.
+  # Branches are intentionally kept so {{project_name}} restore can recreate worktrees.
+  # Use {{project_name}} prune-branches to delete old ceo-* branches manually.
+  git -C "$PROJECT_DIR" worktree list --porcelain 2>/dev/null \
+    | grep "^worktree " \
+    | awk '{print $2}' \
+    | grep "\.worktrees/ceo-" \
+    | while IFS= read -r wt; do
+        migrate_sessions "$wt"
+        rm -rf "$wt" 2>/dev/null && echo "  ✓ Removed $wt"
+      done
+  git -C "$PROJECT_DIR" worktree prune 2>/dev/null
+  # Clean up registry and task/session files (but NOT branches)
+  rm -f "$WORKTREES_DIR/.registry" "$WORKTREES_DIR"/ceo-*.task "$WORKTREES_DIR"/ceo-*.session "$WORKTREES_DIR"/ceo-*.meta 2>/dev/null
+}
+
+# Feature F11 — Append a structured event to the audit trail (JSONL)
+# Fire-and-forget: errors are suppressed so normal operations are never slowed.
+_log_event() {
+  local event_type="$1"
+  shift
+  local details="$*"
+  local ts
+  ts=$(date +%s)
+  mkdir -p "$PROJECT_STATE_DIR"
+  # Escape backslashes and double quotes for valid JSON
+  details="${details//\\/\\\\}"
+  details="${details//\"/\\\"}"
+  printf '{"ts":%s,"event":"%s","details":"%s"}\n' \
+    "$ts" "$event_type" "$details" >> "$PROJECT_STATE_DIR/events.jsonl" 2>/dev/null
+}
+
+# Feature D1 — Save session snapshot to ~/.{{project_name}}/last.json
+save_session_snapshot() {
+  mkdir -p "$PROJECT_STATE_DIR"
+  local ts
+  ts=$(date +%s)
+
+  # Detect grid mode: GRID window exists means we're in grid layout
+  local grid_mode=false
+  local grid_mode_json="false"
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    grid_mode=true
+    grid_mode_json="true"
+  fi
+
+  # Build JSON array of CEOs
+  local ceos_json="["
+  local first=1
+
+  # Helper: process one CEO entry given its number N
+  _snapshot_one_ceo() {
+    local n="$1"
+    local wt_path="" start_ts=""
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      start_ts="${reg_line#*:}"
+      if [[ "$start_ts" =~ ^[0-9]+$ ]]; then
+        local candidate="$WORKTREES_DIR/ceo-${n}-${start_ts}"
+        [ -d "$candidate" ] && wt_path="$candidate"
+      fi
+    fi
+    [ -z "$wt_path" ] && return
+
+    local branch="" task="" session_id=""
+    branch=$(git -C "$wt_path" branch --show-current 2>/dev/null)
+    [[ "$branch" != ceo-* ]] && return
+
+    [ -f "$WORKTREES_DIR/ceo-${n}.task" ] && task=$(cat "$WORKTREES_DIR/ceo-${n}.task" 2>/dev/null | tr -d '\n')
+    [ -f "$WORKTREES_DIR/ceo-${n}.session" ] && session_id=$(cat "$WORKTREES_DIR/ceo-${n}.session" 2>/dev/null | tr -d '\n')
+
+    # Fallback 1: look up session ID from ~/.claude/sessions/*.json by matching CWD
+    if [ -z "$session_id" ] && [ -n "$wt_path" ]; then
+      session_id=$(python3 -c "
+import json, os, glob
+wt = '$wt_path'
+for f in sorted(glob.glob(os.path.expanduser('~/.claude/sessions/*.json')), key=os.path.getmtime, reverse=True):
+    try:
+        d = json.load(open(f))
+        if d.get('cwd') == wt:
+            print(d.get('sessionId', '')); break
+    except: pass
+" 2>/dev/null)
+    fi
+
+    # Fallback 2: find the latest JSONL in the worktree project dir
+    if [ -z "$session_id" ] && [ -n "$wt_path" ]; then
+      local encoded_wt
+      encoded_wt=$(echo "$wt_path" | sed 's|^/||; s|/|-|g; s|^|-|')
+      local wt_proj_dir="$HOME/.claude/projects/$encoded_wt"
+      if [ -d "$wt_proj_dir" ]; then
+        local latest_jsonl
+        latest_jsonl=$(ls -t "$wt_proj_dir"/*.jsonl 2>/dev/null | head -1)
+        [ -n "$latest_jsonl" ] && session_id=$(basename "$latest_jsonl" .jsonl)
+      fi
+    fi
+
+    [ "$first" -eq 0 ] && ceos_json+=","
+    first=0
+    ceos_json+="{\"n\":$n,\"branch\":\"$branch\",\"wt_path\":\"$wt_path\",\"task\":\"$task\",\"start_ts\":${start_ts:-0},\"session_id\":\"$session_id\"}"
+  }
+
+  if $grid_mode; then
+    # Grid mode: iterate over GRID window panes (1-indexed)
+    local pane_count
+    pane_count=$(tmux list-panes -t "$SESSION:GRID" 2>/dev/null | wc -l | tr -d ' ')
+    for (( i=1; i<=pane_count; i++ )); do
+      _snapshot_one_ceo "$i"
+    done
+  else
+    # Normal mode: iterate over CEO-N windows
+    while IFS= read -r window_name; do
+      local n
+      n=$(echo "$window_name" | sed 's/CEO-//')
+      _snapshot_one_ceo "$n"
+    done < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-")
+  fi
+
+  ceos_json+="]"
+
+  local tmp_snapshot
+  tmp_snapshot=$(mktemp "$SESSION_SNAPSHOT.XXXXXX" 2>/dev/null || echo "$SESSION_SNAPSHOT.tmp")
+  cat > "$tmp_snapshot" <<EOF
+{
+  "version": 1,
+  "saved_at": $ts,
+  "project_dir": "$PROJECT_DIR",
+  "grid_mode": $grid_mode_json,
+  "ceos": $ceos_json
+}
+EOF
+  mv -f "$tmp_snapshot" "$SESSION_SNAPSHOT" 2>/dev/null
+
+  # Save to SNAPSHOTS_DIR — one file per unique war room session (not per save).
+  # Session identity = sorted CEO start_ts values. If the same CEOs are running,
+  # update the existing snapshot instead of creating a new file.
+  mkdir -p "$SNAPSHOTS_DIR"
+  local session_fingerprint
+  session_fingerprint=$(python3 -c "
+import json
+try:
+    d = json.load(open('$SESSION_SNAPSHOT'))
+    ts_list = sorted(str(c.get('start_ts',0)) for c in d.get('ceos',[]))
+    print('-'.join(ts_list))
+except:
+    print('$ts')
+" 2>/dev/null)
+  [ -z "$session_fingerprint" ] && session_fingerprint="$ts"
+
+  # Find existing snapshot with same fingerprint, or create new
+  local snap_file=""
+  for candidate in "$SNAPSHOTS_DIR"/*.json; do
+    [ -f "$candidate" ] || continue
+    local cand_fp
+    cand_fp=$(python3 -c "
+import json
+try:
+    d = json.load(open('$candidate'))
+    ts_list = sorted(str(c.get('start_ts',0)) for c in d.get('ceos',[]))
+    print('-'.join(ts_list))
+except:
+    print('')
+" 2>/dev/null)
+    if [ "$cand_fp" = "$session_fingerprint" ]; then
+      snap_file="$candidate"
+      break
+    fi
+  done
+
+  # No existing file for this session — create new with timestamp name
+  if [ -z "$snap_file" ]; then
+    snap_file="$SNAPSHOTS_DIR/${ts}.json"
+  fi
+
+  cp -f "$SESSION_SNAPSHOT" "$snap_file" 2>/dev/null
+
+  # Prune: keep only the 10 most recent files
+  local snap_count
+  snap_count=$(ls "$SNAPSHOTS_DIR"/*.json 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$snap_count" -gt 10 ]; then
+    ls -t "$SNAPSHOTS_DIR"/*.json 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────
+#  COMMANDS
+# ─────────────────────────────────────────────────────────────
+
+cmd_start() {
+  local count=${1:-3}
+  local grid_mode=${2:-0}
+  local bare_mode=${3:-0}
+
+  if ! [[ "$count" =~ ^[0-9]+$ ]] || [ "$count" -lt 1 ] || [ "$count" -gt 8 ]; then
+    echo "✗ CEO count must be 1–8. Got: $count"; exit 1
+  fi
+
+  check_deps
+
+  if tmux has-session -t "$SESSION" 2>/dev/null; then
+    if [ "$grid_mode" -eq 1 ]; then
+      # Grid flag explicitly passed — kill old session and start fresh in grid mode
+      echo "  Killing existing session to start grid mode..."
+      tmux kill-session -t "$SESSION" 2>/dev/null
+    else
+      echo "⚠ Session '$SESSION' already exists."
+      read -rp "  Attach to existing? [Y/n]: " ans
+      if [[ "$ans" =~ ^[Nn] ]]; then
+        tmux kill-session -t "$SESSION" 2>/dev/null
+      else
+        tmux attach -t "$SESSION"; exit 0
+      fi
+    fi
+    # Wait until the session is fully gone before proceeding
+    local attempts=0
+    while tmux has-session -t "$SESSION" 2>/dev/null && [ $attempts -lt 20 ]; do
+      sleep 0.1
+      (( attempts++ ))
+    done
+    if tmux has-session -t "$SESSION" 2>/dev/null; then
+      echo "✗ Failed to kill session '$SESSION'. Try: tmux kill-session -t $SESSION"
+      exit 1
+    fi
+    echo "  ✓ Old session killed"
+
+    # Clear resurrect save to prevent tmux-continuum auto-restore race
+    local resurrect_dir="$HOME/.local/share/tmux/resurrect"
+    local resurrect_link="$resurrect_dir/last"
+    if [ -L "$resurrect_link" ]; then
+      local resurrect_file="$resurrect_dir/$(readlink "$resurrect_link")"
+      [ -f "$resurrect_file" ] && sed -i '' "/${SESSION}/d" "$resurrect_file" 2>/dev/null
+    elif [ -f "$resurrect_link" ]; then
+      sed -i '' "/${SESSION}/d" "$resurrect_link" 2>/dev/null
+    fi
+  fi
+
+  # Always clear resurrect save before creating session — prevents tmux-continuum
+  # from auto-restoring an old session layout over the new one
+  local resurrect_dir="$HOME/.local/share/tmux/resurrect"
+  local resurrect_link="$resurrect_dir/last"
+  if [ -L "$resurrect_link" ]; then
+    local resurrect_file="$resurrect_dir/$(readlink "$resurrect_link")"
+    [ -f "$resurrect_file" ] && sed -i '' "/${SESSION}/d" "$resurrect_file" 2>/dev/null
+  elif [ -f "$resurrect_link" ]; then
+    sed -i '' "/${SESSION}/d" "$resurrect_link" 2>/dev/null
+  fi
+
+  # Prune stale worktree refs
+  git -C "$PROJECT_DIR" worktree prune 2>/dev/null
+
+  echo ""
+  echo -e "  ${BOLD}╔══════════════════════════════════════╗${RESET}"
+  if [ "$bare_mode" -eq 1 ]; then
+    printf "  ${BOLD}║   {{PROJECT_NAME_UPPER}} WAR ROOM — %d AGENT%s         ║${RESET}\n" "$count" "$([ "$count" -gt 1 ] && echo 's' || echo ' ')"
+  else
+    printf "  ${BOLD}║   {{PROJECT_NAME_UPPER}} WAR ROOM — %d CEO%s           ║${RESET}\n" "$count" "$([ "$count" -gt 1 ] && echo 's' || echo ' ')"
+  fi
+  echo -e "  ${BOLD}╚══════════════════════════════════════╝${RESET}"
+  echo ""
+
+  if [ "$grid_mode" -eq 1 ]; then
+    cmd_grid_start "$count" "$bare_mode"
+    return
+  fi
+
+  # ── Normal mode ──────────────────────────────────────────────
+  echo "  Spawning CEO-1..."
+  local first_wt
+  first_wt=$(create_worktree 1)
+  if [ -z "$first_wt" ] || [ ! -d "$first_wt" ]; then
+    echo "✗ Could not create first worktree. Aborting."; exit 1
+  fi
+  echo "  ✓ Worktree: $(basename "$first_wt")"
+  echo "" > "$WORKTREES_DIR/ceo-1.task"
+
+  if ! tmux new-session -d -s "$SESSION" -c "$first_wt" -n "CEO-1" 2>/dev/null; then
+    echo "✗ Could not create tmux session '$SESSION'. Run: tmux kill-session -t $SESSION"
+    exit 1
+  fi
+  apply_window_style 1
+  launch_claude_in_window 1
+  echo "  ✓ CEO-1 launched ($(get_color_name 1))"
+
+  # Spawn remaining CEOs
+  local -a wt_paths
+  wt_paths[1]="$first_wt"
+
+  if [ "$count" -ge 2 ]; then
+    for i in $(seq 2 "$count"); do
+      echo "  Spawning CEO-$i..."
+      spawn_ceo "$i"
+      # Read the wt_path directly from the tmux pane — no shared temp file
+      wt_paths[$i]=$(tmux display-message -t "$SESSION:CEO-$i.1" -p "#{pane_current_path}" 2>/dev/null)
+    done
+  fi
+
+  # Set status bar (session-local)
+  local project_name
+  project_name=$(basename "$PROJECT_DIR")
+  tmux set-option -t "$SESSION" status-right \
+    "#[fg=#fab387,bold]#(bash $TMUX_SCRIPTS_DIR/{{project_name}}-status.sh '$PROJECT_DIR' '$SESSION')#[default]" 2>/dev/null
+  tmux set-option -t "$SESSION" status-right-length 60 2>/dev/null
+  tmux set-option -t "$SESSION" status-interval 10 2>/dev/null
+
+  # Launch HQ window (last window in session)
+  tmux new-window -t "$SESSION" -n "HQ" -c "$PROJECT_DIR"
+  tmux send-keys -t "$SESSION:HQ" "bash $TMUX_SCRIPTS_DIR/{{project_name}}-hq.sh '$SESSION' '$PROJECT_DIR' '$WORKTREES_DIR'" Enter
+
+  echo ""
+  echo "  Waiting for Claude to start (smart detection)..."
+
+  # Feature A2 — Poll all CEOs in parallel for ready state
+  local pids=()
+  for i in $(seq 1 "$count"); do
+    ( wait_for_claude_ready "CEO-$i" ) &
+    pids+=($!)
+  done
+  for pid in "${pids[@]}"; do
+    wait "$pid"
+  done
+
+  # Inject CEO agent prompt + preamble (skip in bare mode)
+  if [ "$bare_mode" -eq 0 ]; then
+    for i in $(seq 1 "$count"); do
+      if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^CEO-$i$"; then
+        inject_ceo_prompt "$SESSION:CEO-$i.1"
+      fi
+    done
+    echo "  ✓ Agent prompt pre-typed in all windows"
+
+    # Feature F3 — Inject briefing if --brief was passed
+    if [ -n "$BRIEF_FILE" ]; then
+      echo "  Injecting briefing from $BRIEF_FILE..."
+      inject_briefing "$BRIEF_FILE" "$count"
+    fi
+  else
+    echo "  ✓ Bare mode — no agent prompt injected"
+  fi
+
+  # Launch scratchpads (after Claude ready so layout is stable)
+  for i in $(seq 1 "$count"); do
+    local wtp="${wt_paths[$i]}"
+    [ -n "$wtp" ] && [ -d "$wtp" ] && launch_scratchpad "$i" "$wtp"
+  done
+
+  # Capture session IDs in background (non-blocking)
+  for i in $(seq 1 "$count"); do
+    local wtp="${wt_paths[$i]}"
+    [ -n "$wtp" ] && ( capture_session_id "$i" "$wtp" ) &
+  done
+
+  _log_event "war_room_start" "count=$count mode=$([ "$GRID_MODE" -eq 1 ] && echo grid || echo normal)"
+
+  echo ""
+  echo "  ─────────────────────────────────────"
+  echo "  War room ready!"
+  echo "  Ctrl+b 1–$count       switch CEO"
+  echo "  Ctrl+b s            session picker"
+  echo "  {{project_name}} add          add CEO mid-run"
+  echo "  {{project_name}} done N       close CEO-N"
+  echo "  {{project_name}} ls           list CEOs"
+  echo "  {{project_name}} task N \"...\" set task label"
+  echo "  {{project_name}} kill         destroy + save snapshot"
+  echo "  {{project_name}} restore      restore last session"
+  echo "  ─────────────────────────────────────"
+  echo ""
+
+  tmux select-window -t "$SESSION:CEO-1"
+  tmux attach -t "$SESSION"
+}
+
+cmd_add() {
+  check_deps
+
+  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "✗ No war room running. Start with: {{project_name}} [N]"; exit 1
+  fi
+
+  local n
+  n=$(next_ceo_number)
+  [ "$n" -gt 8 ] && echo "✗ Maximum 8 CEOs." && exit 1
+
+  echo "  + Spawning CEO-$n..."
+  if spawn_ceo "$n"; then
+    echo "" > "$WORKTREES_DIR/ceo-${n}.task"
+    echo "  ✓ CEO-$n window created"
+    _log_event "ceo_add" "n=$n"
+
+    # Everything slow runs in the background so this terminal is free immediately.
+    # disown ensures the job survives if the quick terminal is dismissed.
+    local _n="$n" _session="$SESSION" _wdir="$WORKTREES_DIR" _scripts="$TMUX_SCRIPTS_DIR"
+    (
+      wait_for_claude_ready "CEO-$_n" 2>/dev/null
+      inject_ceo_prompt "$_session:CEO-$_n.1"
+      local _wt
+      _wt=$(tmux display-message -t "$_session:CEO-$_n.1" -p "#{pane_current_path}" 2>/dev/null)
+      [ -n "$_wt" ] && [ -d "$_wt" ] && \
+        tmux split-window -v -l 9 -t "$_session:CEO-$_n" \
+          "bash \"$_scripts/{{project_name}}-scratchpad.sh\" \"$_n\" \"$_wt\" \"$_session\"" 2>/dev/null && \
+        tmux select-pane -t "$_session:CEO-$_n.1" 2>/dev/null
+      [ -n "$_wt" ] && capture_session_id "$_n" "$_wt" 2>/dev/null
+    ) &
+    disown $!
+
+    echo "  ✓ CEO-$n finishing setup in background — switch to {{project_name}} to see it"
+  fi
+}
+
+cmd_done() {
+  local n=$1
+  [ -z "$n" ] && echo "Usage: {{project_name}} done <N>" && exit 1
+  ! tmux has-session -t "$SESSION" 2>/dev/null && echo "✗ No war room running." && exit 1
+  ! tmux list-windows -t "$SESSION" -F "#{window_name}" | grep -q "^CEO-$n$" && echo "✗ CEO-$n not found." && exit 1
+
+  # Derive worktree path from registry (reliable)
+  # pane_current_path is unreliable — Claude subagents can cd into different dirs
+  local wt_path=""
+  if [ -f "$WORKTREES_DIR/.registry" ]; then
+    local reg_line
+    reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+    local ts="${reg_line#*:}"
+    if [[ "$ts" =~ ^[0-9]+$ ]]; then
+      local candidate="$WORKTREES_DIR/ceo-${n}-${ts}"
+      [ -d "$candidate" ] && wt_path="$candidate"
+    fi
+  fi
+
+  if [ -n "$wt_path" ] && [ -d "$wt_path" ]; then
+    local branch
+    branch=$(git -C "$wt_path" branch --show-current 2>/dev/null)
+
+    if [ -n "$(git -C "$wt_path" status --porcelain 2>/dev/null)" ]; then
+      git -C "$wt_path" add -A
+      git -C "$wt_path" commit -m "chore(ceo-$n): session handoff $(date '+%Y-%m-%d %H:%M')" 2>/dev/null
+      echo "  ✓ Committed changes on $branch"
+    fi
+
+    local push_ok=0
+    git -C "$wt_path" push -u origin "$branch" 2>/dev/null && push_ok=1
+    if [ "$push_ok" -eq 1 ]; then
+      echo "  ✓ Pushed $branch"
+    else
+      echo "  ⚠ Push skipped (no remote or nothing to push)"
+    fi
+
+    mkdir -p "$PROJECT_DIR/docs/08-agents_work"
+    local handoff_file="$PROJECT_DIR/docs/08-agents_work/ceo-$n-$(date +%Y%m%d-%H%M).md"
+    local task_label="—"
+    [ -f "$WORKTREES_DIR/ceo-${n}.task" ] && task_label=$(cat "$WORKTREES_DIR/ceo-${n}.task" 2>/dev/null | tr -d '\n')
+    [ -z "$task_label" ] && task_label="—"
+
+    # Time alive
+    local elapsed_str="—"
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local start_ts=${reg_line#*:}
+      if [[ "$start_ts" =~ ^[0-9]+$ ]]; then
+        local elapsed_sec=$(( $(date +%s) - start_ts ))
+        if [ "$elapsed_sec" -lt 3600 ]; then
+          elapsed_str="$(( elapsed_sec / 60 ))m"
+        else
+          elapsed_str="$(( elapsed_sec / 3600 ))h$(( (elapsed_sec % 3600) / 60 ))m"
+        fi
+      fi
+    fi
+
+    # Commits ahead of main
+    local commits_ahead
+    commits_ahead=$(git -C "$wt_path" rev-list --count main..HEAD 2>/dev/null || echo "0")
+
+    # Diff stat (top 10 files)
+    local diff_stat
+    diff_stat=$(git -C "$wt_path" diff --stat main...HEAD 2>/dev/null | grep '|' | head -10)
+
+    # Commit log
+    local commit_log
+    commit_log=$(git -C "$wt_path" log main..HEAD --pretty=format:"%s" 2>/dev/null | head -10)
+
+    {
+      echo "# CEO-$n Handoff — $(date '+%Y-%m-%d %H:%M')"
+      echo ""
+      echo "**Branch:** $branch"
+      echo "**Task:** $task_label"
+      echo "**Time alive:** $elapsed_str"
+      echo "**Commits ahead of main:** $commits_ahead"
+      echo ""
+      if [ -n "$diff_stat" ]; then
+        echo "## Files changed"
+        echo '```'
+        echo "$diff_stat"
+        echo '```'
+        echo ""
+      fi
+      if [ -n "$commit_log" ]; then
+        echo "## Commits"
+        echo "$commit_log" | while IFS= read -r msg; do echo "- $msg"; done
+      fi
+    } > "$handoff_file"
+
+    # Write structured history record for Seance queries
+    mkdir -p "$PROJECT_STATE_DIR/history"
+    local history_file="$PROJECT_STATE_DIR/history/ceo-${n}-$(date +%s).json"
+    local changed_files_json
+    changed_files_json=$(git -C "$wt_path" diff --name-only main...HEAD 2>/dev/null | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))" 2>/dev/null || echo '[]')
+    local last_commit_msg
+    last_commit_msg=$(git -C "$wt_path" log -1 --format='%s' 2>/dev/null || echo '')
+    local commit_count_val
+    commit_count_val=$(git -C "$wt_path" rev-list --count main..HEAD 2>/dev/null || echo 0)
+
+    python3 -c "
+import json, sys
+d = {
+    'ceo': int(sys.argv[1]),
+    'branch': sys.argv[2],
+    'task': sys.argv[3],
+    'timestamp': int(sys.argv[4]),
+    'date': sys.argv[5],
+    'files_changed': json.loads(sys.argv[6]),
+    'commit_count': int(sys.argv[7]),
+    'last_commit': sys.argv[8]
+}
+print(json.dumps(d, indent=2))
+" "$n" "$branch" "$task_label" "$(date +%s)" "$(date '+%Y-%m-%d %H:%M')" "$changed_files_json" "$commit_count_val" "$last_commit_msg" > "$history_file"
+    echo "  ✓ History record saved"
+    _log_event "ceo_done" "n=$n branch=$branch"
+
+    migrate_sessions "$wt_path"
+    rm -rf "$wt_path"
+    git -C "$PROJECT_DIR" worktree prune 2>/dev/null
+    # Only delete branch if push succeeded — otherwise keep it for recovery
+    [ "$push_ok" -eq 1 ] && git -C "$PROJECT_DIR" branch -D "$branch" 2>/dev/null
+    echo "  ✓ Worktree removed"
+  fi
+
+  # Remove registry entry and task/session files for this CEO
+  if [ -f "$WORKTREES_DIR/.registry" ]; then
+    sed -i '' "/^ceo-${n}:/d" "$WORKTREES_DIR/.registry" 2>/dev/null
+  fi
+  rm -f "$WORKTREES_DIR/ceo-${n}.task" "$WORKTREES_DIR/ceo-${n}.session" 2>/dev/null
+
+  tmux kill-window -t "$SESSION:CEO-$n"
+  echo "  ✓ CEO-$n closed"
+}
+
+cmd_kill() {
+  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "  No war room running."; exit 0
+  fi
+
+  # Check all CEO worktrees for uncommitted changes and warn before proceeding
+  local dirty_ceos=()
+  while IFS= read -r window_name; do
+    local n
+    n=$(echo "$window_name" | sed 's/CEO-//')
+    # Derive worktree path from registry (reliable), not pane_current_path
+    # (Claude spawns subagents that cd into different dirs, making pane_current_path unreliable)
+    local wt_path=""
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local reg_ts="${reg_line#*:}"
+      if [[ "$reg_ts" =~ ^[0-9]+$ ]]; then
+        local candidate="$WORKTREES_DIR/ceo-${n}-${reg_ts}"
+        [ -d "$candidate" ] && wt_path="$candidate"
+      fi
+    fi
+    if [ -n "$wt_path" ] && [ -d "$wt_path" ]; then
+      local dirty
+      dirty=$(git -C "$wt_path" status --porcelain 2>/dev/null)
+      if [ -n "$dirty" ]; then
+        dirty_ceos+=("CEO-$n ($wt_path)")
+      fi
+    fi
+  done < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-")
+
+  if [ "${#dirty_ceos[@]}" -gt 0 ]; then
+    echo ""
+    echo "  ⚠ WARNING: The following CEOs have uncommitted changes:"
+    for entry in "${dirty_ceos[@]}"; do
+      echo "    • $entry"
+    done
+    echo ""
+    read -rp "  Kill anyway? Uncommitted work will be lost. [y/N]: " ans
+    if [[ ! "$ans" =~ ^[Yy] ]]; then
+      echo "  Aborted. Run '{{project_name}} done N' to commit each CEO first."; exit 0
+    fi
+  fi
+
+  # Save snapshot if there are active CEOs (individual windows OR grid panes)
+  local ceo_count
+  ceo_count=$(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -c "^CEO-") || ceo_count=0
+  local grid_pane_count=0
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    grid_pane_count=$(tmux list-panes -t "$SESSION:GRID" 2>/dev/null | wc -l | tr -d ' ')
+  fi
+  if [ "$ceo_count" -gt 0 ] || [ "$grid_pane_count" -gt 0 ]; then
+    echo "  Saving session snapshot..."
+    save_session_snapshot
+    echo "  ✓ Snapshot saved to $SESSION_SNAPSHOT"
+    _log_event "war_room_kill" "ceo_count=$((ceo_count + grid_pane_count)) snapshot_saved=true"
+  else
+    echo "  (no CEOs — keeping existing snapshot)"
+    _log_event "war_room_kill" "ceo_count=0 snapshot_saved=false"
+  fi
+
+  echo "  Cleaning up worktrees..."
+  remove_worktrees
+
+  tmux kill-session -t "$SESSION"
+
+  # Clear resurrect save to prevent tmux-continuum auto-restore
+  local resurrect_dir="$HOME/.local/share/tmux/resurrect"
+  local resurrect_link="$resurrect_dir/last"
+  if [ -L "$resurrect_link" ]; then
+    local resurrect_file="$resurrect_dir/$(readlink "$resurrect_link")"
+    [ -f "$resurrect_file" ] && sed -i '' "/${SESSION}/d" "$resurrect_file" 2>/dev/null
+  elif [ -f "$resurrect_link" ]; then
+    sed -i '' "/${SESSION}/d" "$resurrect_link" 2>/dev/null
+  fi
+
+  echo "  ✓ War room killed"
+}
+
+# Feature C3 — Rich ls output
+cmd_ls() {
+  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "  No war room running."; exit 0
+  fi
+
+  local now
+  now=$(date +%s)
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}{{PROJECT_NAME_UPPER}} WAR ROOM${RESET} ${C_OVERLAY}─────────────────────────────────────────────────${RESET}"
+
+  local ceo_count=0
+
+  while IFS= read -r window_name; do
+    local n
+    n=$(echo "$window_name" | sed 's/CEO-//')
+    local ansi_color
+    ansi_color=$(get_ansi_color "$n")
+
+    local wt_path
+    wt_path=$(tmux display-message -t "$SESSION:$window_name" -p "#{pane_current_path}" 2>/dev/null)
+
+    # Active/idle: check last 3 lines of pane for prompt
+    local status_indicator
+    local last_lines
+    last_lines=$(tmux capture-pane -t "$SESSION:$window_name" -p -S -3 2>/dev/null | sed 's/[[:space:]]*$//')
+    if echo "$last_lines" | grep -qE '(❯ |> )$'; then
+      status_indicator="${C_OVERLAY}○${RESET}"
+    else
+      status_indicator="${C_GREEN}●${RESET}"
+    fi
+
+    # Task label
+    local task_label="—"
+    [ -f "$WORKTREES_DIR/ceo-${n}.task" ] && task_label=$(cat "$WORKTREES_DIR/ceo-${n}.task" 2>/dev/null | tr -d '\n')
+    [ -z "$task_label" ] && task_label="—"
+
+    # Priority and domain from .meta file
+    local priority="" domain=""
+    if [ -f "$WORKTREES_DIR/ceo-${n}.meta" ]; then
+      priority=$(grep "^priority=" "$WORKTREES_DIR/ceo-${n}.meta" 2>/dev/null | head -1 | cut -d= -f2)
+      domain=$(grep "^domain=" "$WORKTREES_DIR/ceo-${n}.meta" 2>/dev/null | head -1 | cut -d= -f2)
+    fi
+    # Prepend priority badge to task label
+    if [ -n "$priority" ]; then
+      local pri_color="$C_SUBTEXT"
+      case "$priority" in
+        P1) pri_color="$C_RED" ;;
+        P2) pri_color="$C_PEACH" ;;
+      esac
+      task_label="${pri_color}[$priority]${RESET} ${C_TEXT}$task_label"
+    fi
+
+    # Branch
+    local branch="—"
+    [ -n "$wt_path" ] && branch=$(git -C "$wt_path" branch --show-current 2>/dev/null)
+    [ -z "$branch" ] && branch="—"
+
+    # Commit count
+    local commits="0"
+    [ -n "$wt_path" ] && commits=$(git -C "$wt_path" rev-list --count main..HEAD 2>/dev/null || echo "0")
+
+    # Time alive
+    local elapsed_str="—"
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local start_ts=${reg_line#*:}
+      if [[ "$start_ts" =~ ^[0-9]+$ ]]; then
+        local elapsed=$(( now - start_ts ))
+        if [ "$elapsed" -lt 3600 ]; then
+          local elapsed_min=$(( elapsed / 60 ))
+          elapsed_str="${elapsed_min}m"
+        else
+          local elapsed_hr=$(( elapsed / 3600 ))
+          elapsed_str="${elapsed_hr}h"
+        fi
+      fi
+    fi
+
+    # Commit count grammar
+    local commit_word="commits"
+    [ "$commits" -eq 1 ] && commit_word="commit"
+
+    # Cost (quick inline — read session file and sum tokens)
+    local cost_str=""
+    local sid=""
+    [ -f "$WORKTREES_DIR/ceo-${n}.session" ] && sid=$(cat "$WORKTREES_DIR/ceo-${n}.session" 2>/dev/null | tr -d '\n')
+    if [ -n "$sid" ]; then
+      local encoded_path jsonl=""
+      if [ -n "$wt_path" ]; then
+        encoded_path=$(echo "$wt_path" | sed 's|^/||; s|/|-|g; s|^|-|')
+        local c1="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+        [ -f "$c1" ] && jsonl="$c1"
+      fi
+      if [ -z "$jsonl" ]; then
+        encoded_path=$(echo "$PROJECT_DIR" | sed 's|^/||; s|/|-|g; s|^|-|')
+        local c2="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+        [ -f "$c2" ] && jsonl="$c2"
+      fi
+      if [ -n "$jsonl" ] && [ -f "$jsonl" ]; then
+        cost_str=$(python3 - "$jsonl" <<'PYEOF'
+import sys, json
+jsonl_path = sys.argv[1]
+PRICING = {
+    "sonnet": {"input": 3.0, "output": 15.0, "cache_creation": 3.75, "cache_read": 0.30},
+    "opus":   {"input": 5.0, "output": 25.0, "cache_creation": 6.25, "cache_read": 0.50},
+    "haiku":  {"input": 1.0, "output": 5.0,  "cache_creation": 1.25, "cache_read": 0.10},
+}
+def detect_tier(m):
+    if not m: return "sonnet"
+    m = m.lower()
+    return "opus" if "opus" in m else "haiku" if "haiku" in m else "sonnet"
+t = {"input":0,"output":0,"cc":0,"cr":0}
+model = "claude-sonnet-4-6"
+try:
+    size = __import__('os').path.getsize(jsonl_path)
+    if size > 20971520:
+        print(""); sys.exit(0)
+    for line in open(jsonl_path):
+        try:
+            d = json.loads(line)
+        except: continue
+        if d.get("type") != "assistant": continue
+        msg = d.get("message", {})
+        if msg.get("model"): model = msg["model"]
+        u = msg.get("usage", {})
+        t["input"]  += u.get("input_tokens", 0)
+        t["output"] += u.get("output_tokens", 0)
+        t["cc"]     += u.get("cache_creation_input_tokens", 0)
+        t["cr"]     += u.get("cache_read_input_tokens", 0)
+except: print(""); sys.exit(0)
+p = PRICING[detect_tier(model)]
+total = t["input"]/1e6*p["input"] + t["output"]/1e6*p["output"] + t["cc"]/1e6*p["cache_creation"] + t["cr"]/1e6*p["cache_read"]
+print(f"${total:.2f}")
+PYEOF
+)
+      fi
+    fi
+    [ -z "$cost_str" ] && cost_str="—"
+
+    printf "  %b  ${ansi_color}${BOLD}%-6s${RESET}  ${C_TEXT}%-18s${RESET}  ${C_SUBTEXT}%-22s${RESET}  %b${BOLD}%s${RESET} ${commit_word}  ${C_OVERLAY}%-6s${RESET}  ${C_PEACH}%s${RESET}\n" \
+      "$status_indicator" "$window_name" "$task_label" "$branch" "$ansi_color" "$commits" "$elapsed_str" "$cost_str"
+
+    ((ceo_count++))
+  done < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-")
+
+  echo -e "  ${C_OVERLAY}─────────────────────────────────────────────────────────────${RESET}"
+  echo -e "  ${C_SUBTEXT}${ceo_count} CEO$([ "$ceo_count" -ne 1 ] && echo 's')   ${C_GREEN}● active  ${C_OVERLAY}○ idle${RESET}"
+  echo ""
+}
+
+# Feature C3 — Set task label for a CEO
+cmd_task() {
+  local n=$1
+  local label=$2
+  [ -z "$n" ] || [ -z "$label" ] && echo "Usage: {{project_name}} task <N> \"label\"" && exit 1
+
+  mkdir -p "$WORKTREES_DIR"
+  echo "$label" > "$WORKTREES_DIR/ceo-${n}.task"
+  echo "  ✓ CEO-$n task set to: $label"
+}
+
+# Feature B1 — Grid mode start
+cmd_grid_start() {
+  local count=${1:-3}
+  local bare_mode=${2:-0}
+
+  check_deps 2>/dev/null || true
+
+  echo "  Starting grid mode with $count panes..."
+
+  # Create all worktrees first
+  local -a grid_wt_paths
+  for i in $(seq 1 "$count"); do
+    local wt
+    wt=$(create_worktree "$i")
+    if [ -z "$wt" ] || [ ! -d "$wt" ]; then
+      echo "  ✗ Failed to create worktree for CEO-$i"; exit 1
+    fi
+    grid_wt_paths[$i]="$wt"
+    echo "" > "$WORKTREES_DIR/ceo-${i}.task"
+    echo "  ✓ Worktree $i: $(basename "$wt")"
+  done
+
+  # Create session with GRID window (first pane = CEO-1)
+  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    tmux new-session -d -s "$SESSION" -c "${grid_wt_paths[1]}" -n "GRID"
+  else
+    tmux new-window -t "$SESSION" -n "GRID" -c "${grid_wt_paths[1]}"
+  fi
+
+  # Set status bar
+  tmux set-option -t "$SESSION" status-right \
+    "#[fg=#fab387,bold]#(bash $TMUX_SCRIPTS_DIR/{{project_name}}-status.sh '$PROJECT_DIR' '$SESSION')#[default]" 2>/dev/null
+  tmux set-option -t "$SESSION" status-right-length 60 2>/dev/null
+  tmux set-option -t "$SESSION" status-interval 10 2>/dev/null
+
+  # Launch Claude in pane 1 (already exists from new-session/new-window)
+  send_launch_claude "$SESSION:GRID.1"
+
+  # Apply border color to pane 1 (CEO-1)
+  local color1
+  color1=$(get_color 1)
+  tmux set-option -p -t "$SESSION:GRID.1" pane-border-style "fg=${color1}" 2>/dev/null
+  tmux set-option -p -t "$SESSION:GRID.1" pane-active-border-style "fg=${color1},bold" 2>/dev/null
+
+  # Split panes for CEO 2..N (guard: macOS seq counts down when start > end)
+  if [ "$count" -ge 2 ]; then
+    for i in $(seq 2 "$count"); do
+      tmux split-window -h -t "$SESSION:GRID" -c "${grid_wt_paths[$i]}"
+      send_launch_claude "$SESSION:GRID.$i"
+      local color_i
+      color_i=$(get_color "$i")
+      tmux set-option -p -t "$SESSION:GRID.$i" pane-border-style "fg=${color_i}" 2>/dev/null
+      tmux set-option -p -t "$SESSION:GRID.$i" pane-active-border-style "fg=${color_i},bold" 2>/dev/null
+    done
+  fi
+
+  # Apply layout — equal columns for 2-3, tiled for 4+
+  if [ "$count" -ge 4 ]; then
+    tmux select-layout -t "$SESSION:GRID" tiled 2>/dev/null
+  elif [ "$count" -ge 2 ]; then
+    tmux select-layout -t "$SESSION:GRID" even-horizontal 2>/dev/null
+  fi
+
+  # HQ window
+  tmux new-window -t "$SESSION" -n "HQ" -c "$PROJECT_DIR"
+  tmux send-keys -t "$SESSION:HQ" "bash $TMUX_SCRIPTS_DIR/{{project_name}}-hq.sh '$SESSION' '$PROJECT_DIR' '$WORKTREES_DIR'" Enter
+
+  echo "  Waiting for Claude to start in all grid panes..."
+
+  # Poll all panes in parallel (1-indexed because tmux pane-base-index 1)
+  local pids=()
+  for i in $(seq 1 "$count"); do
+    ( wait_for_claude_ready_pane "$SESSION:GRID.$i" ) &
+    pids+=($!)
+  done
+  for pid in "${pids[@]}"; do
+    wait "$pid"
+  done
+
+  # Inject agent prompt (skip in bare mode)
+  if [ "$bare_mode" -eq 0 ]; then
+    for i in $(seq 1 "$count"); do
+      inject_ceo_prompt "$SESSION:GRID.$i"
+    done
+
+    # Feature F3 — Inject briefing if --brief was passed
+    if [ -n "$BRIEF_FILE" ]; then
+      echo "  Injecting briefing from $BRIEF_FILE..."
+      inject_briefing "$BRIEF_FILE" "$count"
+    fi
+  else
+    echo "  ✓ Bare mode — no agent prompt injected"
+  fi
+
+  # Capture session IDs in background
+  for i in $(seq 1 "$count"); do
+    local wtp="${grid_wt_paths[$i]}"
+    [ -n "$wtp" ] && ( capture_session_id "$i" "$wtp" ) &
+  done
+
+  echo "  ✓ Grid war room ready ($count panes)"
+
+  tmux select-window -t "$SESSION:GRID"
+  tmux attach -t "$SESSION"
+}
+
+# Feature B1 — Grid view from running session
+cmd_grid_view() {
+  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "✗ No war room running."; exit 1
+  fi
+
+  # Check if GRID window already exists
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    tmux select-window -t "$SESSION:GRID"
+    [ -z "$TMUX" ] && tmux attach -t "$SESSION"
+    return 0
+  fi
+
+  # Build GRID window from existing CEO windows
+  local ceo_windows
+  mapfile -t ceo_windows < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-" | sort)
+  local count=${#ceo_windows[@]}
+
+  if [ "$count" -eq 0 ]; then
+    echo "✗ No CEO windows found."; exit 1
+  fi
+
+  # Get wt_paths for all CEOs
+  local -a ceo_wt_paths
+  for wname in "${ceo_windows[@]}"; do
+    local n
+    n=$(echo "$wname" | sed 's/CEO-//')
+    local wtp
+    wtp=$(tmux display-message -t "$SESSION:$wname" -p "#{pane_current_path}" 2>/dev/null)
+    ceo_wt_paths[$n]="$wtp"
+  done
+
+  # Create GRID window
+  local first_n
+  first_n=$(echo "${ceo_windows[0]}" | sed 's/CEO-//')
+  tmux new-window -t "$SESSION" -n "GRID" -c "${ceo_wt_paths[$first_n]}"
+  send_launch_claude "$SESSION:GRID.1"
+
+  if [ "$count" -ge 2 ]; then
+    for i in $(seq 1 $(( count - 1 )) ); do
+      local n
+      n=$(echo "${ceo_windows[$i]}" | sed 's/CEO-//')
+      tmux split-window -h -t "$SESSION:GRID" -c "${ceo_wt_paths[$n]}"
+      send_launch_claude "$SESSION:GRID.$(( i + 1 ))"
+    done
+  fi
+
+  if [ "$count" -ge 4 ]; then
+    tmux select-layout -t "$SESSION:GRID" tiled 2>/dev/null
+  elif [ "$count" -ge 2 ]; then
+    tmux select-layout -t "$SESSION:GRID" even-horizontal 2>/dev/null
+  fi
+
+  tmux select-window -t "$SESSION:GRID"
+  [ -z "$TMUX" ] && tmux attach -t "$SESSION"
+}
+
+# Feature D1 — Restore last saved session
+# Usage: cmd_restore [arg]
+#   (no arg)       — show numbered picker of last 10 snapshots
+#   latest / 0     — restore most recent snapshot directly (no picker)
+#   1-10           — restore Nth entry from picker directly
+cmd_restore() {
+  local restore_arg="${1:-}"
+  check_deps
+
+  # Determine which snapshot file to use
+  local chosen_snapshot=""
+
+  # Build sorted list of snapshots (newest first)
+  local -a snap_files=()
+  if [ -d "$SNAPSHOTS_DIR" ]; then
+    while IFS= read -r f; do
+      snap_files+=("$f")
+    done < <(ls -t "$SNAPSHOTS_DIR"/*.json 2>/dev/null | head -10)
+  fi
+
+  if [ "${#snap_files[@]}" -eq 0 ] && [ ! -f "$SESSION_SNAPSHOT" ]; then
+    echo "✗ No session snapshots found."; exit 1
+  fi
+
+  # If no snapshots dir yet, fall back to last.json only
+  if [ "${#snap_files[@]}" -eq 0 ]; then
+    snap_files=("$SESSION_SNAPSHOT")
+  fi
+
+  if [ "$restore_arg" = "latest" ] || [ "$restore_arg" = "0" ]; then
+    # Backward-compat: restore most recent directly
+    chosen_snapshot="${snap_files[0]}"
+  elif [[ "$restore_arg" =~ ^[1-9][0-9]*$ ]]; then
+    local pick_idx=$(( restore_arg - 1 ))
+    if [ "$pick_idx" -ge "${#snap_files[@]}" ]; then
+      echo "✗ No snapshot #${restore_arg} (only ${#snap_files[@]} available)."; exit 1
+    fi
+    chosen_snapshot="${snap_files[$pick_idx]}"
+  else
+    # Interactive picker
+    echo ""
+    echo -e "  ${BOLD}${C_PEACH}{{PROJECT_NAME_UPPER}} SESSION HISTORY${RESET}"
+    echo -e "  ${C_OVERLAY}─────────────────────────────────────────────────────────────${RESET}"
+    printf "  ${BOLD}${C_TEXT}%-4s %-20s %-6s %-8s %s${RESET}\n" "#" "Date/Time" "CEOs" "Mode" "Tasks"
+    echo -e "  ${C_OVERLAY}─────────────────────────────────────────────────────────────${RESET}"
+
+    local i=1
+    for sf in "${snap_files[@]}"; do
+      local dt ceo_count mode tasks
+      dt=$(python3 -c "
+import json, datetime
+try:
+    d = json.load(open('${sf}'))
+except:
+    d = {}
+ts = d.get('saved_at', 0)
+if ts:
+    print(datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M'))
+else:
+    print('unknown')
+" 2>/dev/null)
+      ceo_count=$(python3 -c "
+import json
+try:
+    d = json.load(open('${sf}'))
+    print(len(d.get('ceos', [])))
+except:
+    print('?')
+" 2>/dev/null)
+      mode=$(python3 -c "
+import json
+try:
+    d = json.load(open('${sf}'))
+    print('grid' if d.get('grid_mode') else 'normal')
+except:
+    print('?')
+" 2>/dev/null)
+      tasks=$(python3 -c "
+import json
+try:
+    d = json.load(open('${sf}'))
+    labels = [c.get('task','') for c in d.get('ceos',[]) if c.get('task','')]
+    if labels:
+        joined = ', '.join(labels)
+        print('(' + (joined[:40] + '...' if len(joined) > 40 else joined) + ')')
+    else:
+        print('(no labels)')
+except:
+    print('')
+" 2>/dev/null)
+
+      if [ "$i" -eq 1 ]; then
+        printf "  ${C_PEACH}${BOLD}%-4s${RESET} ${C_TEXT}%-20s${RESET} ${C_GREEN}%-6s${RESET} ${C_SUBTEXT}%-8s${RESET} ${C_OVERLAY}%s${RESET}\n" \
+          "$i" "$dt" "$ceo_count" "$mode" "$tasks"
+      else
+        printf "  ${C_TEXT}%-4s${RESET} ${C_SUBTEXT}%-20s${RESET} ${C_SUBTEXT}%-6s${RESET} ${C_OVERLAY}%-8s${RESET} ${DIM}${C_OVERLAY}%s${RESET}\n" \
+          "$i" "$dt" "$ceo_count" "$mode" "$tasks"
+      fi
+      (( i++ ))
+    done
+
+    echo -e "  ${C_OVERLAY}─────────────────────────────────────────────────────────────${RESET}"
+    local total="${#snap_files[@]}"
+    printf "  ${C_TEXT}Pick session [1-%s, Enter=1]: ${RESET}" "$total"
+    read -r user_pick
+
+    # Default to 1 on empty input
+    [ -z "$user_pick" ] && user_pick=1
+
+    if ! [[ "$user_pick" =~ ^[1-9][0-9]*$ ]] || [ "$user_pick" -gt "$total" ]; then
+      echo "✗ Invalid selection '$user_pick'."; exit 1
+    fi
+
+    chosen_snapshot="${snap_files[$(( user_pick - 1 ))]}"
+  fi
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}Restoring {{PROJECT_NAME}} session...${RESET}"
+  echo ""
+
+  local saved_at project_dir
+  saved_at=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d.get('saved_at',0))" 2>/dev/null)
+  project_dir=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d.get('project_dir',''))" 2>/dev/null)
+
+  if [ -n "$saved_at" ] && [[ "$saved_at" =~ ^[0-9]+$ ]]; then
+    local saved_human
+    saved_human=$(date -r "$saved_at" '+%Y-%m-%d %H:%M' 2>/dev/null || date '+%Y-%m-%d %H:%M')
+    echo "  Snapshot from: $saved_human"
+    echo "  Project: $project_dir"
+    echo ""
+  fi
+
+  if tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "  ⚠ Session '$SESSION' already running — killing it to restore..."
+    tmux kill-session -t "$SESSION" 2>/dev/null
+    sleep 0.5
+  fi
+
+  git -C "$PROJECT_DIR" worktree prune 2>/dev/null
+
+  # Parse and restore each CEO
+  local ceo_count
+  ceo_count=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(len(d.get('ceos',[])))" 2>/dev/null || echo 0)
+
+  # Read grid_mode flag — default false for backward compat with old snapshots
+  local grid_mode
+  grid_mode=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(str(d.get('grid_mode', False)).lower())" 2>/dev/null || echo "false")
+
+  local session_created=0
+  local -a restored_ns
+  local -a restored_wts
+  local -a restored_sids
+
+  for idx in $([ "$ceo_count" -ge 1 ] && seq 0 $(( ceo_count - 1 ))); do
+    local n branch wt_path task start_ts session_id
+    n=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d['ceos'][$idx]['n'])" 2>/dev/null)
+    branch=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d['ceos'][$idx].get('branch',''))" 2>/dev/null)
+    wt_path=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d['ceos'][$idx].get('wt_path',''))" 2>/dev/null)
+    task=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d['ceos'][$idx].get('task',''))" 2>/dev/null)
+    start_ts=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d['ceos'][$idx].get('start_ts',0))" 2>/dev/null)
+    session_id=$(python3 -c "import json; d=json.load(open('${chosen_snapshot}')); print(d['ceos'][$idx].get('session_id',''))" 2>/dev/null)
+
+    # Guard: skip if branch is empty or not a ceo-* branch
+    if [ -z "$branch" ] || [[ "$branch" != ceo-* ]]; then
+      echo "  ⚠ CEO-$n: invalid branch '$branch' in snapshot. Skipping."
+      continue
+    fi
+    if ! git -C "$PROJECT_DIR" branch --list "$branch" 2>/dev/null | grep -qF "$branch"; then
+      echo "  ⚠ CEO-$n: branch '$branch' not found. Skipping."
+      continue
+    fi
+
+    # Recreate worktree if missing
+    if [ ! -d "$wt_path" ]; then
+      echo "  Recreating worktree for CEO-$n ($branch)..."
+      if ! git -C "$PROJECT_DIR" worktree add "$wt_path" "$branch" 2>/dev/null; then
+        echo "  ✗ Could not recreate worktree for CEO-$n. Skipping."
+        continue
+      fi
+    fi
+
+    # Write task and registry files
+    echo "$task" > "$WORKTREES_DIR/ceo-${n}.task"
+    echo "ceo-${n}:${start_ts}" >> "$WORKTREES_DIR/.registry"
+
+    if [ "$grid_mode" = "true" ]; then
+      # ── Grid mode: single GRID window, one pane per CEO ──────────
+      if [ "$session_created" -eq 0 ]; then
+        # First CEO: create session + GRID window
+        tmux new-session -d -s "$SESSION" -c "$wt_path" -n "GRID"
+        session_created=1
+      else
+        # Subsequent CEOs: split an additional pane in GRID
+        tmux split-window -h -t "$SESSION:GRID" -c "$wt_path"
+      fi
+
+      local pane_target="$SESSION:GRID.$n"
+      local color_n
+      color_n=$(get_color "$n")
+      tmux set-option -p -t "$pane_target" pane-border-style "fg=${color_n}" 2>/dev/null
+      tmux set-option -p -t "$pane_target" pane-active-border-style "fg=${color_n},bold" 2>/dev/null
+
+      sleep 0.5
+      if [ -n "$session_id" ]; then
+        restore_sessions "$wt_path" "$session_id"
+        send_launch_claude "$pane_target" "$session_id"
+        echo "  ✓ CEO-$n (GRID.$n): resuming conversation ($session_id)"
+      else
+        send_launch_claude "$pane_target"
+        echo "  ✓ CEO-$n (GRID.$n): fresh Claude session"
+      fi
+    else
+      # ── Normal mode: individual CEO-N windows ────────────────────
+      if [ "$session_created" -eq 0 ]; then
+        tmux new-session -d -s "$SESSION" -c "$wt_path" -n "CEO-$n"
+        session_created=1
+      else
+        tmux new-window -t "$SESSION" -n "CEO-$n" -c "$wt_path"
+      fi
+
+      apply_window_style "$n"
+
+      sleep 0.5
+      if [ -n "$session_id" ]; then
+        restore_sessions "$wt_path" "$session_id"
+        send_launch_claude "$SESSION:CEO-$n.1" "$session_id"
+        echo "  ✓ CEO-$n: resuming conversation ($session_id)"
+      else
+        send_launch_claude "$SESSION:CEO-$n.1"
+        echo "  ✓ CEO-$n: fresh Claude session"
+      fi
+    fi
+
+    restored_ns+=("$n")
+    restored_wts+=("$wt_path")
+    restored_sids+=("$session_id")
+  done
+
+  if [ "$session_created" -eq 0 ]; then
+    echo "✗ No CEOs could be restored."; exit 1
+  fi
+
+  # Apply grid layout after all panes exist
+  if [ "$grid_mode" = "true" ]; then
+    local restored_count="${#restored_ns[@]}"
+    if [ "$restored_count" -ge 4 ]; then
+      tmux select-layout -t "$SESSION:GRID" tiled 2>/dev/null
+    elif [ "$restored_count" -ge 2 ]; then
+      tmux select-layout -t "$SESSION:GRID" even-horizontal 2>/dev/null
+    fi
+  fi
+
+  # Set status bar
+  tmux set-option -t "$SESSION" status-right \
+    "#[fg=#fab387,bold]#(bash $TMUX_SCRIPTS_DIR/{{project_name}}-status.sh '$PROJECT_DIR' '$SESSION')#[default]" 2>/dev/null
+  tmux set-option -t "$SESSION" status-right-length 60 2>/dev/null
+  tmux set-option -t "$SESSION" status-interval 10 2>/dev/null
+
+  # HQ window
+  tmux new-window -t "$SESSION" -n "HQ" -c "$PROJECT_DIR"
+  tmux send-keys -t "$SESSION:HQ" "bash $TMUX_SCRIPTS_DIR/{{project_name}}-hq.sh '$SESSION' '$PROJECT_DIR' '$WORKTREES_DIR'" Enter
+
+  echo ""
+  echo "  Waiting for Claude to start..."
+
+  # Poll all restored CEOs in parallel
+  local pids=()
+  if [ "$grid_mode" = "true" ]; then
+    for n in "${restored_ns[@]}"; do
+      ( wait_for_claude_ready_pane "$SESSION:GRID.$n" ) &
+      pids+=($!)
+    done
+  else
+    for n in "${restored_ns[@]}"; do
+      ( wait_for_claude_ready "CEO-$n" ) &
+      pids+=($!)
+    done
+  fi
+  for pid in "${pids[@]}"; do
+    wait "$pid"
+  done
+
+  # Skip prompt injection on restore — sessions are resumed with existing conversation
+  # (inject_ceo_prompt types /model + preamble, which is only needed for fresh sessions)
+
+  # Launch scratchpads (normal mode only — grid mode has no scratchpad panes)
+  if [ "$grid_mode" != "true" ]; then
+    for i in "${!restored_ns[@]}"; do
+      local n="${restored_ns[$i]}"
+      local wtp="${restored_wts[$i]}"
+      [ -n "$wtp" ] && [ -d "$wtp" ] && launch_scratchpad "$n" "$wtp"
+    done
+  fi
+
+  echo ""
+  echo "  ✓ Session restored with ${#restored_ns[@]} CEO(s) (grid_mode=$grid_mode)"
+  _log_event "war_room_restore" "ceo_count=${#restored_ns[@]},grid_mode=$grid_mode"
+  echo ""
+
+  if [ "$grid_mode" = "true" ]; then
+    tmux select-window -t "$SESSION:GRID"
+  else
+    tmux select-window -t "$SESSION:CEO-${restored_ns[0]}"
+  fi
+  tmux attach -t "$SESSION"
+}
+
+# Feature D1 — Clear saved session
+cmd_clear_sessions() {
+  if [ -f "$SESSION_SNAPSHOT" ]; then
+    rm -f "$SESSION_SNAPSHOT"
+    echo "  ✓ Session snapshot cleared."
+  else
+    echo "  No session snapshot found."
+  fi
+}
+
+# Migrate all orphaned worktree Claude sessions into the main project dir.
+# One-time cleanup + can be re-run safely (idempotent).
+cmd_migrate_sessions() {
+  local main_encoded
+  main_encoded=$(echo "$PROJECT_DIR" | sed 's|^/||; s|/|-|g; s|^|-|')
+  local main_proj_dir="$HOME/.claude/projects/$main_encoded"
+  mkdir -p "$main_proj_dir"
+
+  local count=0
+  for d in "$HOME/.claude/projects/${main_encoded}--worktrees-ceo-"*/; do
+    [ -d "$d" ] || continue
+    for item in "$d"*; do
+      [ -e "$item" ] || continue
+      local base
+      base=$(basename "$item")
+      [ ! -e "$main_proj_dir/$base" ] && mv "$item" "$main_proj_dir/" 2>/dev/null
+    done
+    rmdir "$d" 2>/dev/null && ((count++))
+  done
+
+  echo "  ✓ Migrated sessions from $count worktree project dir(s)"
+}
+
+cmd_prune_branches() {
+  local branches
+  branches=$(git -C "$PROJECT_DIR" branch 2>/dev/null | grep "ceo-")
+  if [ -z "$branches" ]; then
+    echo "  No ceo-* branches to prune."; return
+  fi
+  echo "  ceo-* branches that will be deleted:"
+  echo "$branches" | while read -r b; do echo "    $b"; done
+  read -rp "  Delete all? [y/N]: " ans
+  if [[ "$ans" =~ ^[Yy] ]]; then
+    echo "$branches" | while read -r b; do
+      git -C "$PROJECT_DIR" branch -D "$b" 2>/dev/null && echo "    ✓ deleted $b"
+    done
+    echo "  ✓ Branches deleted."
+  else
+    echo "  Cancelled."
+  fi
+}
+
+# Feature F1 — Send a message to a specific CEO
+cmd_send() {
+  local n=$1
+  shift
+
+  # Parse optional --type flag
+  local msg_type="info"
+  if [ "${1:-}" = "--type" ]; then
+    msg_type="${2:-info}"
+    shift 2
+  fi
+
+  case "$msg_type" in
+    task|status|blocker|merge_ready|question|info) ;;
+    *) echo "✗ Unknown type '$msg_type'. Valid: task status blocker merge_ready question info"; exit 1 ;;
+  esac
+
+  local msg="$*"
+  if [ -z "$n" ] || [ -z "$msg" ]; then
+    echo "Usage: {{project_name}} send <N> [--type TYPE] \"message\""
+    exit 1
+  fi
+  ! tmux has-session -t "$SESSION" 2>/dev/null && echo "✗ No war room running." && exit 1
+
+  local target=""
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^CEO-$n$"; then
+    target="$SESSION:CEO-$n.1"
+  elif tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    target="$SESSION:GRID.$n"
+  fi
+
+  if [ -z "$target" ]; then
+    echo "✗ CEO-$n not found."; exit 1
+  fi
+
+  # Persist message to inbox
+  mkdir -p "$PROJECT_STATE_DIR/messages"
+  local ts
+  ts=$(date +%s)
+  local inbox_file="$PROJECT_STATE_DIR/messages/ceo-${n}.jsonl"
+  python3 -c "import json,sys; print(json.dumps({'ts':int(sys.argv[1]),'from':'user','to':int(sys.argv[2]),'type':sys.argv[3],'msg':sys.argv[4],'read':False}))" \
+    "$ts" "$n" "$msg_type" "$msg" >> "$inbox_file"
+
+  # Build type badge prefix
+  local badge=""
+  case "$msg_type" in
+    task)        badge="[TASK] " ;;
+    status)      badge="[STATUS] " ;;
+    blocker)     badge="[BLOCKER] " ;;
+    merge_ready) badge="[MERGE READY] " ;;
+    question)    badge="[QUESTION] " ;;
+    info)        badge="" ;;
+    *)           badge="[${msg_type^^}] " ;;
+  esac
+
+  local full_msg="${badge}${msg}"
+  tmux send-keys -t "$target" -l "$full_msg"
+  tmux send-keys -t "$target" Enter
+  echo "  ✓ Sent to CEO-$n: $full_msg"
+  _log_event "message_send" "to=$n type=$msg_type"
+}
+
+# Feature F2 — Broadcast a message to ALL active CEOs
+cmd_broadcast() {
+  # Parse optional --type flag
+  local msg_type="info"
+  if [ "${1:-}" = "--type" ]; then
+    msg_type="${2:-info}"
+    shift 2
+  fi
+
+  case "$msg_type" in
+    task|status|blocker|merge_ready|question|info) ;;
+    *) echo "✗ Unknown type '$msg_type'. Valid: task status blocker merge_ready question info"; exit 1 ;;
+  esac
+
+  local msg="$*"
+  [ -z "$msg" ] && echo "Usage: {{project_name}} broadcast [--type TYPE] \"message\"" && exit 1
+  ! tmux has-session -t "$SESSION" 2>/dev/null && echo "✗ No war room running." && exit 1
+
+  # Build type badge prefix
+  local badge=""
+  case "$msg_type" in
+    task)        badge="[TASK] " ;;
+    status)      badge="[STATUS] " ;;
+    blocker)     badge="[BLOCKER] " ;;
+    merge_ready) badge="[MERGE READY] " ;;
+    question)    badge="[QUESTION] " ;;
+    info)        badge="" ;;
+    *)           badge="[${msg_type^^}] " ;;
+  esac
+
+  local full_msg="${badge}${msg}"
+  local ts
+  ts=$(date +%s)
+  mkdir -p "$PROJECT_STATE_DIR/messages"
+
+  local sent=0
+  # Try normal mode first (CEO-* windows)
+  while IFS= read -r wname; do
+    local ceo_n
+    ceo_n=$(echo "$wname" | sed 's/CEO-//')
+    tmux send-keys -t "$SESSION:${wname}.1" -l "$full_msg"
+    tmux send-keys -t "$SESSION:${wname}.1" Enter
+    local inbox_file="$PROJECT_STATE_DIR/messages/ceo-${ceo_n}.jsonl"
+    python3 -c "import json,sys; print(json.dumps({'ts':int(sys.argv[1]),'from':'user','to':int(sys.argv[2]),'type':sys.argv[3],'msg':sys.argv[4],'read':False}))" \
+      "$ts" "$ceo_n" "$msg_type" "$msg" >> "$inbox_file"
+    ((sent++))
+  done < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-")
+
+  # Try grid mode if no CEO windows found
+  if [ "$sent" -eq 0 ] && tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    local pane_count
+    pane_count=$(tmux list-panes -t "$SESSION:GRID" 2>/dev/null | wc -l | tr -d ' ')
+    for (( i=1; i<=pane_count; i++ )); do
+      tmux send-keys -t "$SESSION:GRID.$i" -l "$full_msg"
+      tmux send-keys -t "$SESSION:GRID.$i" Enter
+      local inbox_file="$PROJECT_STATE_DIR/messages/ceo-${i}.jsonl"
+      python3 -c "import json,sys; print(json.dumps({'ts':int(sys.argv[1]),'from':'user','to':int(sys.argv[2]),'type':sys.argv[3],'msg':sys.argv[4],'read':False}))" \
+        "$ts" "$i" "$msg_type" "$msg" >> "$inbox_file"
+      ((sent++))
+    done
+  fi
+
+  echo "  ✓ Broadcast to $sent CEOs: $full_msg"
+}
+
+# Feature F2b — Show message inbox for CEO-N (or all CEOs)
+cmd_inbox() {
+  local target_n="${1:-}"
+  local inbox_dir="$PROJECT_STATE_DIR/messages"
+
+  # Color constants for badge display
+  local C_BADGE_BLOCKER="\033[38;2;243;139;168m"   # C_RED
+  local C_BADGE_TASK="\033[38;2;250;179;135m"       # C_PEACH
+  local C_BADGE_MERGE="\033[38;2;166;227;161m"      # C_GREEN
+  local C_BADGE_QUESTION="\033[38;2;249;226;175m"   # C_YELLOW
+  local C_BADGE_OTHER="\033[38;2;166;173;200m"      # C_SUBTEXT
+
+  _print_inbox() {
+    local n=$1
+    local inbox_file="$inbox_dir/ceo-${n}.jsonl"
+
+    printf "\n  ${BOLD}${C_PEACH}INBOX — CEO-${n}${RESET}\n"
+    printf "  ──────────────────────────────────\n"
+
+    if [ ! -f "$inbox_file" ] || [ ! -s "$inbox_file" ]; then
+      printf "  ${C_OVERLAY}(no messages)${RESET}\n"
+      return
+    fi
+
+    # Read newest-first (reverse order), display up to 20
+    while IFS= read -r line; do
+      local ts msg_type msg
+      ts=$(echo "$line" | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print(d.get('ts',0))" 2>/dev/null)
+      msg_type=$(echo "$line" | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print(d.get('type','info'))" 2>/dev/null)
+      msg=$(echo "$line" | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print(d.get('msg',''))" 2>/dev/null)
+
+      local time_str
+      time_str=$(date -r "$ts" '+%H:%M' 2>/dev/null || date '+%H:%M')
+
+      local badge_color="$C_BADGE_OTHER"
+      local badge_label
+      case "$msg_type" in
+        task)        badge_color="$C_BADGE_TASK";    badge_label="[TASK]       " ;;
+        blocker)     badge_color="$C_BADGE_BLOCKER"; badge_label="[BLOCKER]    " ;;
+        merge_ready) badge_color="$C_BADGE_MERGE";   badge_label="[MERGE READY]" ;;
+        question)    badge_color="$C_BADGE_QUESTION";badge_label="[QUESTION]   " ;;
+        status)      badge_color="$C_BADGE_OTHER";   badge_label="[STATUS]     " ;;
+        *)           badge_color="$C_BADGE_OTHER";   badge_label="[INFO]       " ;;
+      esac
+
+      printf "  ${badge_color}${BOLD}%s${RESET}  ${C_OVERLAY}%s${RESET}  ${C_SUBTEXT}from: user${RESET}  ${C_TEXT}%s${RESET}\n" \
+        "$badge_label" "$time_str" "$msg"
+    done < <(python3 -c "
+import sys
+lines = open('$inbox_file').readlines()
+for l in reversed(lines[-20:]):
+    print(l.rstrip())
+" 2>/dev/null)
+  }
+
+  if [ -n "$target_n" ]; then
+    _print_inbox "$target_n"
+    echo ""
+  else
+    # Show all — detect from running war room or fall back to existing inbox files
+    local found_any=0
+    if tmux has-session -t "$SESSION" 2>/dev/null; then
+      while IFS=' ' read -r n _display _target; do
+        _print_inbox "$n"
+        found_any=1
+      done < <(
+        # Normal mode
+        tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-" | while IFS= read -r wname; do
+          local nn; nn=$(echo "$wname" | sed 's/CEO-//')
+          echo "$nn $wname ${wname}.1"
+        done
+        # Grid mode
+        if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+          local pc; pc=$(tmux list-panes -t "$SESSION:GRID" 2>/dev/null | wc -l | tr -d ' ')
+          for (( gi=1; gi<=pc; gi++ )); do echo "$gi CEO-$gi GRID.$gi"; done
+        fi
+      )
+    fi
+    # If no war room or nothing found, scan inbox files
+    if [ "$found_any" -eq 0 ] && [ -d "$inbox_dir" ]; then
+      for f in "$inbox_dir"/ceo-*.jsonl; do
+        [ -f "$f" ] || continue
+        local fn; fn=$(basename "$f" .jsonl); local nn="${fn#ceo-}"
+        _print_inbox "$nn"
+      done
+    fi
+    echo ""
+  fi
+}
+
+# Feature F3 — Inject briefing file tasks into CEO panes (with metadata parsing)
+inject_briefing() {
+  local brief_file=$1
+  local count=$2
+  [ ! -f "$brief_file" ] && echo "  ⚠ Briefing file not found: $brief_file" && return
+
+  for i in $(seq 1 "$count"); do
+    # Extract full section between ## CEO-N and the next ## CEO- header (or EOF)
+    local section
+    section=$(awk "/^## CEO-$i\$/{found=1; next} found && /^## CEO-/{exit} found{print}" "$brief_file")
+    [ -z "$section" ] && continue
+
+    # Parse YAML-style metadata (key: value lines before first blank or non-metadata line)
+    local meta_file="$WORKTREES_DIR/ceo-${i}.meta"
+    echo -n "" > "$meta_file"
+    local task_text=""
+    local in_meta=1
+    while IFS= read -r line; do
+      if [ "$in_meta" -eq 1 ] && echo "$line" | grep -qE '^(priority|domain|depends_on|expected_output):'; then
+        local key val
+        key=$(echo "$line" | cut -d: -f1)
+        val=$(echo "$line" | cut -d: -f2- | sed 's/^ //')
+        echo "${key}=${val}" >> "$meta_file"
+      else
+        in_meta=0
+        task_text+="$line "
+      fi
+    done <<< "$section"
+
+    # Set task label from expected_output or first content line
+    local task_label
+    task_label=$(grep "^expected_output=" "$meta_file" 2>/dev/null | head -1 | cut -d= -f2)
+    [ -z "$task_label" ] && task_label=$(echo "$task_text" | sed 's/^ //' | head -c 50)
+    [ -n "$task_label" ] && echo "$task_label" > "$WORKTREES_DIR/ceo-${i}.task"
+
+    # Send the full section to the CEO pane
+    local task
+    task=$(echo "$section" | sed '/^$/d' | head -20 | tr '\n' ' ')
+    local target=""
+    if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^CEO-$i$"; then
+      target="$SESSION:CEO-$i.1"
+    elif tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+      target="$SESSION:GRID.$i"
+    fi
+    if [ -n "$target" ]; then
+      tmux send-keys -t "$target" -l "$task"
+      tmux send-keys -t "$target" Enter
+      echo "  ✓ CEO-$i briefed: ${task_label:0:50}"
+    fi
+  done
+}
+
+# Feature F4 — Show git diff for CEO-N's worktree vs main
+cmd_diff() {
+  local n=$1
+  [ -z "$n" ] && echo "Usage: {{project_name}} diff <N>" && exit 1
+  ! tmux has-session -t "$SESSION" 2>/dev/null && echo "✗ No war room running." && exit 1
+
+  local target=""
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^CEO-$n$"; then
+    target="$SESSION:CEO-$n.1"
+  elif tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    target="$SESSION:GRID.$n"
+  fi
+  [ -z "$target" ] && echo "✗ CEO-$n not found." && exit 1
+
+  local wt_path
+  wt_path=$(tmux display-message -t "$target" -p "#{pane_current_path}" 2>/dev/null)
+  [ -z "$wt_path" ] || [ ! -d "$wt_path" ] && echo "✗ Worktree not found for CEO-$n." && exit 1
+
+  echo ""
+  echo "  CEO-$n diff vs main ($(basename "$wt_path")):"
+  echo "  ─────────────────────────────────────"
+  git -C "$wt_path" diff main...HEAD --stat 2>/dev/null || echo "  (no changes)"
+  echo ""
+}
+
+# Feature F5 — Merge CEO-N's branch into main (4-tier escalation pipeline)
+cmd_merge() {
+  local n=$1
+  [ -z "$n" ] && echo "Usage: {{project_name}} merge <N>" && exit 1
+
+  local branch
+  branch=$(git -C "$PROJECT_DIR" branch 2>/dev/null | grep -E "^ *\*? *ceo-${n}-[0-9]+$" | tr -d ' *' | tail -1)
+  [ -z "$branch" ] && echo "✗ No ceo-$n branch found." && exit 1
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}Merging $branch → main${RESET}"
+  echo ""
+
+  git -C "$PROJECT_DIR" checkout main 2>/dev/null || { echo "  ✗ Could not checkout main."; exit 1; }
+  git -C "$PROJECT_DIR" fetch origin main 2>/dev/null
+
+  # ── Tier 1: Fast-forward ──
+  local main_tip branch_tip merge_base
+  main_tip=$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null)
+  branch_tip=$(git -C "$PROJECT_DIR" rev-parse "$branch" 2>/dev/null)
+  merge_base=$(git -C "$PROJECT_DIR" merge-base HEAD "$branch" 2>/dev/null)
+
+  if [ "$main_tip" = "$merge_base" ]; then
+    echo -e "  ${C_GREEN}Tier 1:${RESET} Fast-forward merge"
+    git -C "$PROJECT_DIR" merge --ff-only "$branch" 2>/dev/null
+    if [ $? -eq 0 ]; then
+      echo -e "  ✓ Fast-forward merge complete"
+      _log_event "merge_complete" "branch=$branch tier=fast-forward"
+      git -C "$PROJECT_DIR" branch -D "$branch" 2>/dev/null
+      echo -e "  ✓ Branch $branch deleted"
+      return 0
+    fi
+  fi
+
+  # ── Tier 2: Auto-merge ──
+  echo -e "  ${C_PEACH}Tier 2:${RESET} Auto-merge (no-ff)"
+  git -C "$PROJECT_DIR" merge "$branch" --no-edit 2>/dev/null
+  if [ $? -eq 0 ]; then
+    echo -e "  ✓ Auto-merge complete"
+    _log_event "merge_complete" "branch=$branch tier=auto-merge"
+    git -C "$PROJECT_DIR" branch -D "$branch" 2>/dev/null
+    echo -e "  ✓ Branch $branch deleted"
+    return 0
+  fi
+
+  # ── Tier 3: AI-assisted merge ──
+  echo -e "  ${C_PEACH}Tier 3:${RESET} AI-assisted conflict resolution"
+  echo ""
+
+  # Get list of conflicted files
+  local conflict_files
+  conflict_files=$(git -C "$PROJECT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
+
+  if [ -z "$conflict_files" ]; then
+    echo "  ✗ Merge failed but no conflict markers found. Aborting."
+    git -C "$PROJECT_DIR" merge --abort 2>/dev/null
+    exit 1
+  fi
+
+  local conflict_count
+  conflict_count=$(echo "$conflict_files" | grep -c '.')
+  echo "  Found $conflict_count conflicted file(s):"
+  echo "$conflict_files" | while read -r f; do echo "    • $f"; done
+  echo ""
+
+  # Try to resolve each file with Claude
+  local resolved=0 failed=0
+  while IFS= read -r conflict_file; do
+    [ -z "$conflict_file" ] && continue
+    local full_path="$PROJECT_DIR/$conflict_file"
+
+    echo -n "  Resolving $conflict_file... "
+
+    # Guard: skip files that are too large to safely resolve via AI
+    local line_count
+    line_count=$(wc -l < "$full_path" 2>/dev/null || echo 0)
+    if [ "$line_count" -gt 2000 ]; then
+      echo -e "${C_RED}✗${RESET} (too large: ${line_count} lines — resolve manually)"
+      ((failed++))
+      continue
+    fi
+    local conflict_content
+    conflict_content=$(cat "$full_path" 2>/dev/null)
+
+    # Use Claude to resolve the conflict
+    local resolved_content
+    resolved_content=$(echo "$conflict_content" | claude --print --model claude-sonnet-4-6 \
+      "You are resolving a git merge conflict. The file below has <<<<<<< ======= >>>>>>> conflict markers. Output ONLY the resolved file content — no explanation, no markdown fences, no commentary. Merge both sides intelligently, keeping all intended changes from both branches. If unclear, prefer the incoming (HEAD) changes. Here is the conflicted file:" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$resolved_content" ] && ! echo "$resolved_content" | grep -q "<<<<<<<" && ! echo "$resolved_content" | grep -q "=======" && ! echo "$resolved_content" | grep -q ">>>>>>>"; then
+      echo "$resolved_content" > "$full_path"
+      git -C "$PROJECT_DIR" add "$conflict_file" 2>/dev/null
+      echo -e "${C_GREEN}✓${RESET}"
+      ((resolved++))
+    else
+      echo -e "${C_RED}✗${RESET} (AI could not resolve)"
+      ((failed++))
+    fi
+  done <<< "$conflict_files"
+
+  echo ""
+
+  if [ "$failed" -eq 0 ]; then
+    # All resolved — complete the merge
+    git -C "$PROJECT_DIR" commit --no-edit 2>/dev/null
+    echo -e "  ✓ AI resolved all $resolved conflict(s)"
+    _log_event "merge_complete" "branch=$branch tier=ai-assisted"
+    git -C "$PROJECT_DIR" branch -D "$branch" 2>/dev/null
+    echo -e "  ✓ Branch $branch deleted"
+    return 0
+  fi
+
+  # ── Tier 4: Human escalation ──
+  echo -e "  ${C_RED}Tier 4:${RESET} Human escalation required"
+  echo ""
+
+  if [ "$resolved" -eq 0 ]; then
+    echo -e "  AI could not resolve any conflicts. Aborting merge."
+    git -C "$PROJECT_DIR" merge --abort 2>/dev/null
+    echo "  Run '{{project_name}} merge $n' again after fixing conflicts manually."
+  else
+    echo "  $resolved file(s) resolved by AI, $failed remain:"
+    git -C "$PROJECT_DIR" diff --name-only --diff-filter=U 2>/dev/null | while read -r f; do
+      echo "    ✗ $f"
+    done
+    echo ""
+    echo "  The merge is in progress. To resolve remaining files:"
+    echo "    cd $PROJECT_DIR"
+    echo "    # edit the conflicted files"
+    echo "    git add <resolved files>"
+    echo "    git merge --continue"
+    echo ""
+    echo "  Or abort: git merge --abort"
+  fi
+}
+
+# Feature F9 — File ownership tracking and overlap detection
+cmd_files() {
+  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "  No war room running."; exit 0
+  fi
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}FILE OWNERSHIP${RESET} ${C_OVERLAY}─────────────────────────────────────────${RESET}"
+  echo ""
+
+  # Collect files per CEO
+  declare -A file_owners  # file -> "1,3" (CEO numbers)
+  declare -A ceo_files    # ceo_n -> file list
+
+  while IFS= read -r window_name; do
+    local n
+    n=$(echo "$window_name" | sed 's/CEO-//')
+
+    # Get worktree path from registry
+    local wt_path=""
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local ts="${reg_line#*:}"
+      if [[ "$ts" =~ ^[0-9]+$ ]]; then
+        local candidate="$WORKTREES_DIR/ceo-${n}-${ts}"
+        [ -d "$candidate" ] && wt_path="$candidate"
+      fi
+    fi
+    [ -z "$wt_path" ] && continue
+
+    # Get files changed by this CEO vs main
+    local changed_files
+    changed_files=$(git -C "$wt_path" diff --name-only main...HEAD 2>/dev/null)
+    [ -z "$changed_files" ] && continue
+
+    local ansi_color
+    ansi_color="${CEO_ANSI_COLORS[$(( (n - 1) % 6 ))]}"
+
+    ceo_files[$n]="$changed_files"
+
+    while IFS= read -r file; do
+      [ -z "$file" ] && continue
+      if [ -n "${file_owners[$file]:-}" ]; then
+        file_owners[$file]="${file_owners[$file]},$n"
+      else
+        file_owners[$file]="$n"
+      fi
+    done <<< "$changed_files"
+  done < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-")
+
+  # Display per-CEO file lists
+  for n in $(echo "${!ceo_files[@]}" | tr ' ' '\n' | sort -n); do
+    local ansi_color
+    ansi_color="${CEO_ANSI_COLORS[$(( (n - 1) % 6 ))]}"
+    echo -e "  ${ansi_color}${BOLD}CEO-$n${RESET}"
+    while IFS= read -r file; do
+      [ -z "$file" ] && continue
+      local owners="${file_owners[$file]}"
+      if [[ "$owners" == *","* ]]; then
+        echo -e "    ${C_RED}⚠${RESET} $file ${C_RED}(also: CEO-$(echo "$owners" | sed "s/\(^\|,\)${n}\(,\|$\)/\1\2/" | sed 's/^,//; s/,$//' | sed 's/,,/,/g'))${RESET}"
+      else
+        echo "    $file"
+      fi
+    done <<< "${ceo_files[$n]}"
+    echo ""
+  done
+
+  # Summary of overlaps
+  local overlap_count=0
+  for file in "${!file_owners[@]}"; do
+    [[ "${file_owners[$file]}" == *","* ]] && ((overlap_count++))
+  done
+
+  if [ "$overlap_count" -gt 0 ]; then
+    echo -e "  ${C_RED}⚠ $overlap_count file(s) touched by multiple CEOs — merge conflicts likely${RESET}"
+  else
+    echo -e "  ${C_GREEN}✓ No file overlaps detected${RESET}"
+  fi
+  echo ""
+}
+
+# Feature F8 — Token and cost tracking
+# Reads Claude Code JSONL session files to compute token usage and cost.
+# Model pricing (per million tokens):
+#   Sonnet 4.6: input $3, output $15, cache_creation $3.75, cache_read $0.30
+#   Opus 4.6:   input $5, output $25, cache_creation $6.25, cache_read $0.50
+#   Haiku 4.5:  input $1, output $5,  cache_creation $1.25, cache_read $0.10
+
+# Compute cost for a single CEO session. Outputs a formatted block to stdout.
+# Args: n (CEO number), sid (session id), wt_path (worktree path, may be empty)
+_compute_ceo_cost() {
+  local n=$1
+  local sid=$2
+  local wt_path=$3
+
+  if [ -z "$sid" ]; then
+    printf "  ${C_OVERLAY}CEO-%s  (no session ID)${RESET}\n" "$n"
+    return
+  fi
+
+  # Find the JSONL file — try worktree path first, then main project
+  local encoded_path jsonl=""
+  if [ -n "$wt_path" ]; then
+    encoded_path=$(echo "$wt_path" | sed 's|^/||; s|/|-|g; s|^|-|')
+    local candidate="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+    [ -f "$candidate" ] && jsonl="$candidate"
+  fi
+  if [ -z "$jsonl" ] || [ ! -f "$jsonl" ]; then
+    encoded_path=$(echo "$PROJECT_DIR" | sed 's|^/||; s|/|-|g; s|^|-|')
+    local candidate2="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+    [ -f "$candidate2" ] && jsonl="$candidate2"
+  fi
+
+  if [ -z "$jsonl" ] || [ ! -f "$jsonl" ]; then
+    printf "  ${C_OVERLAY}CEO-%s  (session file not found: %s)${RESET}\n" "$n" "$sid"
+    return
+  fi
+
+  # Safety: skip very large files (>20MB)
+  local size
+  size=$(stat -f%z "$jsonl" 2>/dev/null || stat -c%s "$jsonl" 2>/dev/null || echo 0)
+  if [ "$size" -gt 20971520 ]; then
+    printf "  ${C_OVERLAY}CEO-%s  (session file too large to parse)${RESET}\n" "$n"
+    return
+  fi
+
+  # Branch + task
+  local branch="—" task_label="—"
+  [ -n "$wt_path" ] && branch=$(git -C "$wt_path" branch --show-current 2>/dev/null)
+  [ -z "$branch" ] && branch="—"
+  [ -f "$WORKTREES_DIR/ceo-${n}.task" ] && task_label=$(cat "$WORKTREES_DIR/ceo-${n}.task" 2>/dev/null | tr -d '\n')
+  [ -z "$task_label" ] && task_label="—"
+
+  local ansi_color
+  ansi_color=$(get_ansi_color "$n")
+
+  # Parse JSONL for token usage and model via python3
+  python3 - "$jsonl" "$n" "$branch" "$task_label" "$ansi_color" <<'PYEOF'
+import sys, json
+
+jsonl_path = sys.argv[1]
+n          = sys.argv[2]
+branch     = sys.argv[3]
+task       = sys.argv[4]
+# ANSI color escape passed as arg — strip for python; we'll just use plain output
+# and let bash handle color wrapping
+
+# Pricing per million tokens
+PRICING = {
+    "sonnet": {"input": 3.0,  "output": 15.0, "cache_creation": 3.75, "cache_read": 0.30},
+    "opus":   {"input": 5.0,  "output": 25.0, "cache_creation": 6.25, "cache_read": 0.50},
+    "haiku":  {"input": 1.0,  "output": 5.0,  "cache_creation": 1.25, "cache_read": 0.10},
+}
+
+def detect_tier(model_str):
+    if not model_str:
+        return "sonnet"
+    m = model_str.lower()
+    if "opus" in m:
+        return "opus"
+    if "haiku" in m:
+        return "haiku"
+    return "sonnet"
+
+totals = {"input": 0, "output": 0, "cache_creation": 0, "cache_read": 0}
+model_seen = "claude-sonnet-4-6"  # default
+
+try:
+    with open(jsonl_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except:
+                continue
+            if d.get("type") != "assistant":
+                continue
+            msg = d.get("message", {})
+            # Track model
+            if msg.get("model"):
+                model_seen = msg["model"]
+            usage = msg.get("usage", {})
+            totals["input"]          += usage.get("input_tokens", 0)
+            totals["output"]         += usage.get("output_tokens", 0)
+            totals["cache_creation"] += usage.get("cache_creation_input_tokens", 0)
+            totals["cache_read"]     += usage.get("cache_read_input_tokens", 0)
+except Exception as e:
+    print(f"  (parse error: {e})")
+    sys.exit(0)
+
+tier = detect_tier(model_seen)
+p = PRICING[tier]
+
+cost_input    = totals["input"]          / 1_000_000 * p["input"]
+cost_output   = totals["output"]         / 1_000_000 * p["output"]
+cost_cc       = totals["cache_creation"] / 1_000_000 * p["cache_creation"]
+cost_cr       = totals["cache_read"]     / 1_000_000 * p["cache_read"]
+total_cost    = cost_input + cost_output + cost_cc + cost_cr
+
+def fmt_tokens(n):
+    return f"{n:,}"
+
+def fmt_cost(c):
+    return f"${c:.2f}"
+
+print(f"  CEO-{n} — {branch} — task: {task}")
+print(f"    Model:          {model_seen}")
+print(f"    Input:          {fmt_tokens(totals['input']):>12} tokens   {fmt_cost(cost_input)}")
+print(f"    Output:         {fmt_tokens(totals['output']):>12} tokens   {fmt_cost(cost_output)}")
+print(f"    Cache creation: {fmt_tokens(totals['cache_creation']):>12} tokens   {fmt_cost(cost_cc)}")
+print(f"    Cache read:     {fmt_tokens(totals['cache_read']):>12} tokens   {fmt_cost(cost_cr)}")
+print(f"    {'─' * 45}")
+print(f"    Total:                                    {fmt_cost(total_cost)}")
+print(f"  __TOTAL__{total_cost:.6f}")
+PYEOF
+}
+
+cmd_cost() {
+  local target_n="${1:-}"
+  local show_total=0
+
+  if [ "$target_n" = "--total" ]; then
+    target_n=""
+    show_total=1
+  fi
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}{{PROJECT_NAME_UPPER}} TOKEN COST${RESET} ${C_OVERLAY}────────────────────────────────────────────${RESET}"
+  echo ""
+
+  local grand_total=0
+
+  if [ -n "$target_n" ]; then
+    # Single CEO
+    local sid="" wt_path=""
+    [ -f "$WORKTREES_DIR/ceo-${target_n}.session" ] && sid=$(cat "$WORKTREES_DIR/ceo-${target_n}.session" 2>/dev/null | tr -d '\n')
+
+    # Derive wt_path from registry
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${target_n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local ts="${reg_line#*:}"
+      if [[ "$ts" =~ ^[0-9]+$ ]]; then
+        local candidate="$WORKTREES_DIR/ceo-${target_n}-${ts}"
+        [ -d "$candidate" ] && wt_path="$candidate"
+      fi
+    fi
+
+    local output
+    output=$(_compute_ceo_cost "$target_n" "$sid" "$wt_path")
+    echo "$output" | grep -v "^  __TOTAL__"
+    local ceo_total
+    ceo_total=$(echo "$output" | grep "^  __TOTAL__" | sed 's/.*__TOTAL__//')
+    [ -n "$ceo_total" ] && grand_total=$(python3 -c "print($grand_total + ${ceo_total:-0})" 2>/dev/null || echo "$grand_total")
+  else
+    # All active CEOs (from tmux if running, else from snapshot)
+    local ceo_nums=()
+
+    if tmux has-session -t "$SESSION" 2>/dev/null; then
+      while IFS= read -r wname; do
+        ceo_nums+=("$(echo "$wname" | sed 's/CEO-//')")
+      done < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-")
+    elif [ -f "$SESSION_SNAPSHOT" ]; then
+      mapfile -t ceo_nums < <(python3 -c "
+import json
+d = json.load(open('$SESSION_SNAPSHOT'))
+for c in d.get('ceos', []):
+    print(c['n'])
+" 2>/dev/null)
+    fi
+
+    if [ "${#ceo_nums[@]}" -eq 0 ]; then
+      echo -e "  ${C_OVERLAY}No active CEOs found. Start a war room or check the snapshot.${RESET}"
+      echo ""
+      return
+    fi
+
+    for n in "${ceo_nums[@]}"; do
+      local sid="" wt_path=""
+      [ -f "$WORKTREES_DIR/ceo-${n}.session" ] && sid=$(cat "$WORKTREES_DIR/ceo-${n}.session" 2>/dev/null | tr -d '\n')
+
+      if [ -f "$WORKTREES_DIR/.registry" ]; then
+        local reg_line
+        reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+        local ts="${reg_line#*:}"
+        if [[ "$ts" =~ ^[0-9]+$ ]]; then
+          local candidate="$WORKTREES_DIR/ceo-${n}-${ts}"
+          [ -d "$candidate" ] && wt_path="$candidate"
+        fi
+      fi
+
+      local output
+      output=$(_compute_ceo_cost "$n" "$sid" "$wt_path")
+      echo "$output" | grep -v "^  __TOTAL__"
+      local ceo_total
+      ceo_total=$(echo "$output" | grep "^  __TOTAL__" | sed 's/.*__TOTAL__//')
+      [ -n "$ceo_total" ] && grand_total=$(python3 -c "print($grand_total + ${ceo_total:-0})" 2>/dev/null || echo "$grand_total")
+      echo ""
+    done
+  fi
+
+  if [ "$show_total" -eq 1 ] || [ -z "$target_n" ]; then
+    echo -e "  ${C_OVERLAY}─────────────────────────────────────────────────────────────${RESET}"
+    local grand_fmt
+    grand_fmt=$(python3 -c "print(f'\${${grand_total}:.2f}')" 2>/dev/null || echo "\$0.00")
+    echo -e "  ${BOLD}${C_PEACH}Total session cost:${RESET}  ${BOLD}${C_TEXT}${grand_fmt}${RESET}"
+    echo ""
+  fi
+}
+
+# Feature F6 — Show history of agent handoff docs
+cmd_log() {
+  local log_dir="$PROJECT_DIR/docs/08-agents_work"
+  if [ ! -d "$log_dir" ]; then
+    echo "  No agent work history found."; exit 0
+  fi
+
+  local files
+  files=$(ls -t "$log_dir"/ceo-*.md 2>/dev/null)
+  [ -z "$files" ] && echo "  No handoff documents found." && exit 0
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}{{PROJECT_NAME_UPPER}} AGENT LOG${RESET}"
+  echo "  ─────────────────────────────────────────"
+  echo "$files" | while IFS= read -r f; do
+    local basename_f
+    basename_f=$(basename "$f" .md)
+    local first_line
+    first_line=$(head -1 "$f" 2>/dev/null | sed 's/^# //')
+    printf "  ${C_SUBTEXT}%s${RESET}  ${C_TEXT}%s${RESET}\n" "$basename_f" "$first_line"
+  done
+  echo ""
+}
+
+# Feature F10 — Seance: query past CEO work history
+_render_history_record() {
+  local file="$1"
+  local ceo task date branch commit_count last_commit files_json
+
+  ceo=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('ceo','?'))" "$file" 2>/dev/null)
+  task=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('task','—'))" "$file" 2>/dev/null)
+  date=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('date',''))" "$file" 2>/dev/null)
+  branch=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('branch',''))" "$file" 2>/dev/null)
+  commit_count=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('commit_count',0))" "$file" 2>/dev/null)
+  last_commit=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('last_commit',''))" "$file" 2>/dev/null)
+  files_json=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); [print(f) for f in d.get('files_changed',[])]" "$file" 2>/dev/null)
+
+  local ansi_color
+  ansi_color=$(get_ansi_color "$ceo")
+
+  echo -e "  ${ansi_color}${BOLD}CEO-$ceo${RESET}  ${C_SUBTEXT}$date${RESET}  ${C_TEXT}$task${RESET}"
+  echo -e "    ${C_OVERLAY}branch:${RESET} $branch  ${C_OVERLAY}commits:${RESET} $commit_count"
+  [ -n "$last_commit" ] && echo -e "    ${C_OVERLAY}last:${RESET} $last_commit"
+
+  if [ -n "$files_json" ]; then
+    local file_count
+    file_count=$(echo "$files_json" | grep -c '.' 2>/dev/null || echo 0)
+    if [ "$file_count" -le 5 ]; then
+      echo "$files_json" | while read -r fname; do
+        echo -e "    ${C_SUBTEXT}$fname${RESET}"
+      done
+    else
+      echo "$files_json" | head -3 | while read -r fname; do
+        echo -e "    ${C_SUBTEXT}$fname${RESET}"
+      done
+      echo -e "    ${C_SUBTEXT}... and $((file_count - 3)) more files${RESET}"
+    fi
+  fi
+  echo ""
+}
+
+cmd_history() {
+  local query="$1"
+
+  local history_dir="$PROJECT_STATE_DIR/history"
+  if [ ! -d "$history_dir" ] || [ -z "$(ls -A "$history_dir" 2>/dev/null)" ]; then
+    echo "  No history records found. Complete CEO sessions with '{{project_name}} done N' to build history."
+    return
+  fi
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}CEO HISTORY${RESET} ${C_OVERLAY}──────────────────────────────────────────${RESET}"
+  echo ""
+
+  if [ -n "$query" ]; then
+    echo -e "  ${C_SUBTEXT}Searching for:${RESET} $query"
+    echo ""
+
+    local found=0
+    for f in "$history_dir"/*.json; do
+      [ -f "$f" ] || continue
+      if grep -qil "$query" "$f" 2>/dev/null; then
+        _render_history_record "$f"
+        ((found++))
+      fi
+    done
+
+    if [ "$found" -eq 0 ]; then
+      echo "  No matching records found."
+    else
+      echo -e "  ${C_SUBTEXT}$found record(s) found${RESET}"
+    fi
+  else
+    local count=0
+    for f in $(ls -t "$history_dir"/*.json 2>/dev/null); do
+      [ -f "$f" ] || continue
+      _render_history_record "$f"
+      ((count++))
+      [ "$count" -ge 20 ] && break
+    done
+
+    echo -e "  ${C_SUBTEXT}$count record(s) total${RESET}"
+  fi
+  echo ""
+}
+
+# Feature F11 — Event stream viewer
+cmd_events() {
+  local event_file="$PROJECT_STATE_DIR/events.jsonl"
+  local filter="$1"
+  local count="${2:-30}"
+
+  if [ "$filter" = "clear" ]; then
+    rm -f "$event_file"
+    echo "  ✓ Event log cleared"
+    return
+  fi
+
+  if [ ! -f "$event_file" ]; then
+    echo "  No events recorded yet."
+    return
+  fi
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}EVENT LOG${RESET} ${C_OVERLAY}──────────────────────────────────────────────${RESET}"
+  echo ""
+
+  python3 - "$event_file" "$count" "${filter:-}" <<'PYEOF'
+import json, sys
+from datetime import datetime
+event_file = sys.argv[1]
+limit = int(sys.argv[2]) if sys.argv[2] else 30
+filter_type = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else ""
+COLORS = {
+    "war_room_start": "\033[38;2;166;227;161m", "war_room_kill": "\033[38;2;243;138;168m",
+    "war_room_restore": "\033[38;2;137;180;250m", "ceo_spawn": "\033[38;2;166;227;161m",
+    "ceo_add": "\033[38;2;166;227;161m", "ceo_done": "\033[38;2;148;226;213m",
+    "merge_complete": "\033[38;2;249;226;175m", "message_send": "\033[38;2;180;190;254m",
+    "message_broadcast": "\033[38;2;180;190;254m",
+}
+RESET, DIM = "\033[0m", "\033[2m"
+lines = []
+try:
+    for line in open(event_file):
+        try:
+            d = json.loads(line.strip())
+            if filter_type and d.get("event") != filter_type: continue
+            lines.append(d)
+        except: continue
+except: pass
+for d in lines[-limit:]:
+    ts = d.get("ts", 0)
+    event = d.get("event", "unknown")
+    details = d.get("details", "")
+    time_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S") if ts else "?"
+    color = COLORS.get(event, DIM)
+    print(f"  {DIM}{time_str}{RESET}  {color}{event:20s}{RESET}  {details}")
+if not lines: print("  (no matching events)")
+else: print(f"\n  {DIM}{len(lines)} event(s) total{RESET}")
+PYEOF
+
+  echo ""
+}
+
+# Feature F12 — Auto-generate briefing file with Claude
+cmd_brief_generate() {
+  local task_desc="$1"
+  local ceo_count="${2:-3}"
+
+  if [ -z "$task_desc" ]; then
+    echo "Usage: {{project_name}} brief generate \"task description\" [N]"
+    exit 1
+  fi
+
+  echo ""
+  echo -e "  ${BOLD}${C_PEACH}Generating briefing for $ceo_count CEOs...${RESET}"
+  echo ""
+
+  local brief_file="$PROJECT_DIR/brief-$(date +%Y%m%d-%H%M%S).md"
+
+  claude -p --model claude-sonnet-4-6 "You are planning work for $ceo_count parallel AI coding agents (called CEOs). Each CEO works in an isolated git worktree on its own branch.
+
+Task: $task_desc
+
+Generate a briefing file in this exact format (one section per CEO):
+
+## CEO-1
+priority: P1
+domain: [backend|frontend|database|design|infrastructure]
+depends_on:
+expected_output: [one-line description of deliverable]
+
+[2-4 lines describing the specific task for this CEO]
+
+## CEO-2
+...
+
+Rules:
+- Minimize file overlap between CEOs (they work in parallel — overlapping files cause merge conflicts)
+- Put independent work in CEO-1 and CEO-2; dependent work in higher numbers
+- Be specific about which files/components each CEO should create or modify
+- Keep each CEO scope focused (one feature area per CEO)
+- Priority: P1 = critical path, P2 = important, P3 = nice-to-have" > "$brief_file" 2>/dev/null
+
+  if [ $? -eq 0 ] && grep -q '^## CEO-' "$brief_file" 2>/dev/null; then
+    echo "  ✓ Briefing saved to: $brief_file"
+    echo ""
+    cat "$brief_file"
+    echo ""
+    echo -e "  ${C_SUBTEXT}To use: {{project_name}} $ceo_count --brief $brief_file${RESET}"
+  else
+    echo "  ✗ Failed to generate briefing"
+    rm -f "$brief_file"
+    exit 1
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────
+#  ROUTER
+# ─────────────────────────────────────────────────────────────
+
+# Parse --grid and --brief flags
+GRID_MODE=0
+BARE_MODE=0
+BRIEF_FILE=""
+BRIEF_NEXT=0
+ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--grid" ]; then
+    GRID_MODE=1
+  elif [ "$arg" = "--bare" ]; then
+    BARE_MODE=1
+  elif [ "$arg" = "--brief" ]; then
+    BRIEF_NEXT=1
+  elif [ "${BRIEF_NEXT:-0}" -eq 1 ]; then
+    BRIEF_FILE="$arg"
+    BRIEF_NEXT=0
+  else
+    ARGS+=("$arg")
+  fi
+done
+
+CMD="${ARGS[0]:-}"
+
+case "$CMD" in
+  add)            cmd_add ;;
+  done)           cmd_done "${ARGS[1]}" ;;
+  kill)           cmd_kill ;;
+  ls)             cmd_ls ;;
+  task)           cmd_task "${ARGS[1]}" "${ARGS[2]}" ;;
+  grid)           cmd_grid_view ;;
+  restore)        cmd_restore "${ARGS[1]:-}" ;;
+  clear-sessions)   cmd_clear_sessions ;;
+  prune-branches)   cmd_prune_branches ;;
+  migrate-sessions)  cmd_migrate_sessions ;;
+  send)           cmd_send "${ARGS[1]}" "${ARGS[@]:2}" ;;
+  broadcast)      cmd_broadcast "${ARGS[@]:1}" ;;
+  inbox)          cmd_inbox "${ARGS[1]}" ;;
+  diff)           cmd_diff "${ARGS[1]}" ;;
+  merge)          cmd_merge "${ARGS[1]}" ;;
+  files)          cmd_files ;;
+  history)        cmd_history "${ARGS[1]}" ;;
+  log)            cmd_log ;;
+  cost)           cmd_cost "${ARGS[1]}" ;;
+  events)
+    if [ "${ARGS[1]}" = "clear" ]; then
+      cmd_events "clear"
+    else
+      cmd_events "${ARGS[1]:-}" "${ARGS[2]:-}"
+    fi
+    ;;
+  brief)
+    if [ "${ARGS[1]}" = "generate" ]; then
+      cmd_brief_generate "${ARGS[2]}" "${ARGS[3]}"
+    else
+      echo "Usage: {{project_name}} brief generate \"task\" [N]"
+      exit 1
+    fi
+    ;;
+  clap)
+    # Delegate to {{project_name}}-clap with remaining args
+    exec {{project_name}}-clap "${ARGS[@]:1}"
+    ;;
+  help|-h|--help)
+    echo ""
+    echo -e "  ${BOLD}{{project_name}}${RESET} — {{PROJECT_NAME}} CEO War Room"
+    echo ""
+    echo "  Usage:"
+    echo "    {{project_name}} [N]               Start war room with N CEOs (default 3)"
+    echo "    {{project_name}} [N] --grid        Start in grid mode (N panes in one window)"
+    echo "    {{project_name}} [N] --bare        Start N blank Claude sessions (no CEO agent/preamble)"
+    echo "    {{project_name}} [N] --brief file  Start with briefing file (## CEO-N sections)"
+    echo "    {{project_name}} add               Add CEO mid-run"
+    echo "    {{project_name}} done <N>          Handoff and close CEO-N"
+    echo "    {{project_name}} kill              Destroy war room + clean worktrees + save snapshot"
+    echo "    {{project_name}} ls                List active CEOs (rich format)"
+    echo "    {{project_name}} task <N> \"label\"  Set task label for CEO-N"
+    echo "    {{project_name}} grid              Switch running session to grid view"
+    echo "    {{project_name}} restore           Restore last saved session"
+    echo "    {{project_name}} clear-sessions    Delete saved session snapshot"
+    echo "    {{project_name}} send <N> [--type TYPE] \"msg\"  Send typed message to CEO-N"
+    echo "    {{project_name}} broadcast [--type TYPE] \"msg\" Send typed message to all CEOs"
+    echo "    {{project_name}} inbox [N]                      Show message inbox for CEO-N (or all)"
+    echo "    {{project_name}} diff <N>          Show CEO-N's changes vs main"
+    echo "    {{project_name}} merge <N>         Merge CEO-N's branch into main"
+    echo "    {{project_name}} files             Show file ownership per CEO + overlap warnings"
+    echo "    {{project_name}} history [query]   Show past CEO work sessions (search by keyword)"
+    echo "    {{project_name}} log               Show agent work history"
+    echo "    {{project_name}} migrate-sessions  Move orphaned CEO sessions to main project"
+    echo "    {{project_name}} cost [N]          Show token cost for CEO-N (or all if omitted)"
+    echo "    {{project_name}} cost --total      Show aggregate cost for full war room session"
+    echo "    {{project_name}} events [type] [N]           Show last N events (filter by type)"
+    echo "    {{project_name}} events clear                Clear the event log"
+    echo "    {{project_name}} brief generate \"task\" [N]   Auto-generate briefing for N CEOs"
+    echo "    {{project_name}} clap install                Install clap detector"
+    echo "    {{project_name}} clap start                  Start listening for double claps"
+    echo "    {{project_name}} clap stop                   Stop listening"
+    echo "    {{project_name}} clap status                 Check detector status"
+    echo "    {{project_name}} clap tune                   Live RMS meter for calibration"
+    echo "    {{project_name}} clap logs                   Tail trigger log"
+    echo ""
+    ;;
+  *)
+    count="${ARGS[0]:-3}"
+    # If it looks like a number, start the war room. Otherwise it's a typo.
+    if [[ "$count" =~ ^[0-9]+$ ]]; then
+      cmd_start "$count" "$GRID_MODE" "$BARE_MODE"
+    else
+      echo "✗ Unknown command: '$count'"
+      echo "  Run '{{project_name}} help' for usage."
+      exit 1
+    fi
+    ;;
+esac

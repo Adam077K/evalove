@@ -1,0 +1,112 @@
+# File-path tier-floor map — QA-Lead enforcement (template)
+# Adopted from Evalove agent system; retune patterns for your repo layout.
+#
+# Used by .github/workflows/qa-lead-pass.yml to set the MINIMUM risk tier
+# any PR touching the matching files must carry. Workers may upgrade; never downgrade.
+#
+# Tiers (ascending severity): trivial < lite < full < irreversible
+# Match order: first match wins (most-specific patterns FIRST).
+#
+# Update protocol: append-only; if a pattern's tier changes, add a `supersedes:`
+# entry and keep the old one commented for one release cycle.
+
+version: 1
+generated: 2026-05-25
+
+rules:
+  # ──────────────── IRREVERSIBLE ────────────────
+  # Money flows, schema changes, workflow definitions, agent identity.
+  # Require: tier:full review + 2-of-3 multi-judge + Founder sign-off.
+  - pattern: "**/supabase/migrations/**"
+    tier: irreversible
+    reason: "DB schema change — destructive replay impossible"
+  - pattern: "**/prisma/migrations/**"
+    tier: irreversible
+    reason: "Prisma schema migrations"
+  - pattern: "**/drizzle/migrations/**"
+    tier: irreversible
+    reason: "Drizzle schema migrations"
+  - pattern: ".github/workflows/**"
+    tier: irreversible
+    reason: "CI/CD changes affect every PR; bad workflow blocks merges"
+  - pattern: ".claude/agents/**"
+    tier: irreversible
+    reason: "Agent definitions; bad prompt cascades across every spawn"
+  - pattern: ".agent/agents/**"
+    tier: irreversible
+    reason: "Mirror of .claude/agents"
+  - pattern: ".claude/settings.json"
+    tier: irreversible
+    reason: "Runtime permission boundary"
+  - pattern: ".claude/qa-tier-floor.yml"
+    tier: irreversible
+    reason: "This file itself — bad tier map silently downgrades reviews"
+  - pattern: ".claude/hooks/**"
+    tier: irreversible
+    reason: "PostToolUse / SessionStart hooks execute on every action"
+  - pattern: "**/api/billing/**"
+    tier: irreversible
+    reason: "Payment/billing flow — silent failure = lost revenue"
+  - pattern: "**/api/webhooks/**"
+    tier: irreversible
+    reason: "External webhook handlers — idempotency-critical"
+  - pattern: "**/api/payments/**"
+    tier: irreversible
+    reason: "Payment processing endpoints"
+
+  # ──────────────── FULL ────────────────
+  # API routes, auth, agent business logic, DB queries from app code.
+  - pattern: "**/api/**"
+    tier: full
+    reason: "Public API surface; security + correctness"
+  - pattern: "**/lib/agents/**"
+    tier: full
+    reason: "Agent execution + LLM routing"
+  - pattern: "**/lib/auth/**"
+    tier: full
+    reason: "Auth helpers — session + role checks"
+  - pattern: "**/middleware.ts"
+    tier: full
+    reason: "Every request runs through middleware"
+  - pattern: "**/middleware.js"
+    tier: full
+    reason: "Every request runs through middleware"
+  - pattern: "**/inngest/**"
+    tier: full
+    reason: "Background jobs — failures retry silently"
+  - pattern: "**/lib/credit*/**"
+    tier: full
+    reason: "Credit / quota logic — pricing-critical"
+
+  # ──────────────── LITE ────────────────
+  # General app code: UI components, pages, utilities.
+  - pattern: "**/components/**"
+    tier: lite
+    reason: "UI components; visual review sufficient"
+  - pattern: "apps/**/src/**"
+    tier: lite
+    reason: "Monorepo app source — auth/api branches caught above"
+  - pattern: "src/**"
+    tier: lite
+    reason: "Root app source — auth/api branches caught above"
+  - pattern: "packages/**"
+    tier: lite
+    reason: "Shared packages — affect all consumers"
+
+  # ──────────────── TRIVIAL ────────────────
+  # Docs, planning, brand guidelines — text only, no executable risk.
+  - pattern: "docs/**"
+    tier: trivial
+    reason: "Documentation — Haiku schema-lint sufficient"
+  - pattern: "**/*.md"
+    tier: trivial
+    reason: "Markdown — text only"
+  - pattern: "**/CHANGELOG*"
+    tier: trivial
+    reason: "Changelog edits"
+  - pattern: "README*"
+    tier: trivial
+    reason: "Readme edits"
+
+# Default tier for unmatched files: lite
+# (set in qa-lead-pass.yml workflow; do not duplicate here)

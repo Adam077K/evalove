@@ -1,0 +1,104 @@
+# File-path tier-floor map — Beamix QA-Lead enforcement
+# Locked 2026-05-16 (board decision #4 — replaces Haiku tier classifier; zero LLM cost).
+# Used by .github/workflows/qa-lead-pass.yml to set the MINIMUM risk tier
+# any PR touching the matching files must carry. Workers may upgrade; never downgrade.
+#
+# Tiers (ascending severity): trivial < lite < full < irreversible
+# Match order: first match wins (most-specific patterns FIRST).
+#
+# Update protocol: append-only; if a pattern's tier changes, add a `supersedes:`
+# entry and keep the old one commented for one release cycle.
+
+version: 1
+generated: 2026-05-16
+
+rules:
+  # ──────────────── IRREVERSIBLE ────────────────
+  # Money flows, schema changes, workflow definitions, agent identity.
+  # Require: tier:full review + 2-of-3 multi-judge + Adam sign-off.
+  - pattern: "apps/web/supabase/migrations/**"
+    tier: irreversible
+    reason: "DB schema change — destructive replay impossible"
+  - pattern: "supabase/migrations/**"
+    tier: irreversible
+    reason: "Root-level Supabase migrations directory"
+  - pattern: ".github/workflows/**"
+    tier: irreversible
+    reason: "CI/CD changes affect every PR; bad workflow blocks merges"
+  - pattern: ".claude/agents/**"
+    tier: irreversible
+    reason: "Agent definitions; bad prompt cascades across every spawn"
+  - pattern: ".claude/settings.json"
+    tier: irreversible
+    reason: "Runtime permission boundary"
+  - pattern: ".claude/qa-tier-floor.yml"
+    tier: irreversible
+    reason: "This file itself — bad tier map silently downgrades reviews"
+  - pattern: ".claude/hooks/**"
+    tier: irreversible
+    reason: "PostToolUse / SessionStart hooks execute on every action"
+  - pattern: "apps/web/src/app/api/billing/**"
+    tier: irreversible
+    reason: "Paddle webhook + checkout flow — silent failure = lost revenue"
+  - pattern: "apps/web/src/app/api/webhooks/**"
+    tier: irreversible
+    reason: "External webhook handlers — idempotency-critical"
+
+  # ──────────────── FULL ────────────────
+  # API routes, auth, agent business logic, DB queries from app code.
+  - pattern: "apps/web/src/app/api/**"
+    tier: full
+    reason: "Public API surface; security + correctness"
+  - pattern: "apps/web/src/lib/agents/**"
+    tier: full
+    reason: "Agent execution + LLM routing"
+  - pattern: "apps/web/src/lib/auth/**"
+    tier: full
+    reason: "Auth helpers — Supabase session + role checks"
+  - pattern: "apps/web/src/lib/credit*/**"
+    tier: full
+    reason: "Credit hold/confirm/release — pricing-critical"
+  - pattern: "apps/web/src/middleware.ts"
+    tier: full
+    reason: "Every request runs through middleware"
+  - pattern: "apps/web/src/inngest/**"
+    tier: full
+    reason: "Background jobs — failures retry silently"
+
+  # ──────────────── LITE ────────────────
+  # General app code: UI components, pages, utilities.
+  - pattern: "apps/web/src/components/**"
+    tier: lite
+    reason: "UI components; visual review sufficient"
+  - pattern: "apps/web/src/app/**"
+    tier: lite
+    reason: "App router pages — auth/api branches caught by full-tier patterns above"
+  - pattern: "apps/web/src/lib/**"
+    tier: lite
+    reason: "General libs not caught by full-tier patterns above"
+  - pattern: "apps/web/src/**"
+    tier: lite
+    reason: "Catch-all for app code"
+  - pattern: "packages/**"
+    tier: lite
+    reason: "Shared packages — affect all consumers"
+
+  # ──────────────── TRIVIAL ────────────────
+  # Docs, planning, brand guidelines — text only, no executable risk.
+  - pattern: "docs/**"
+    tier: trivial
+    reason: "Documentation — Haiku schema-lint sufficient"
+  - pattern: ".claude/memory/**"
+    tier: trivial
+    reason: "Memory files — append-only, no runtime impact"
+  - pattern: ".claude/skills/**"
+    tier: trivial
+    reason: "Skill SKILL.md files — load-on-demand; reader-validated"
+  - pattern: "**/*.md"
+    tier: trivial
+    reason: "Default for markdown not caught above"
+
+  # Anything not matched defaults to LITE (safe-by-default).
+  - pattern: "**"
+    tier: lite
+    reason: "Default — anything not matched above"

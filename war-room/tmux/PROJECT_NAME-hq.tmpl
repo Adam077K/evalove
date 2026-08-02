@@ -1,0 +1,605 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────
+#  {{project_name}}-hq.sh — HQ Dashboard render loop
+#  Usage: bash {{project_name}}-hq.sh <SESSION> <PROJECT_DIR> <WORKTREES_DIR>
+#  Refreshes every 5s. Run inside a tmux window.
+# ─────────────────────────────────────────────────────────────
+
+SESSION="${1:-{{project_name}}}"
+PROJECT_DIR="${2:-$HOME/VibeCoding/{{PROJECT_NAME}}}"
+WORKTREES_DIR="${3:-$PROJECT_DIR/.worktrees}"
+PROJECT_STATE_DIR="$HOME/.{{project_name}}"
+SESSION_SNAPSHOT="$PROJECT_STATE_DIR/last.json"
+SNAPSHOTS_DIR="$PROJECT_STATE_DIR/snapshots"
+
+# ── Catppuccin Mocha ANSI colors ─────────────────────────────
+C_MAUVE="\033[38;2;203;166;247m"
+C_GREEN="\033[38;2;166;227;161m"
+C_BLUE="\033[38;2;137;180;250m"
+C_YELLOW="\033[38;2;249;226;175m"
+C_RED="\033[38;2;243;139;168m"
+C_TEAL="\033[38;2;148;226;213m"
+C_TEXT="\033[38;2;205;214;244m"
+C_SUBTEXT="\033[38;2;166;173;200m"
+C_OVERLAY="\033[38;2;108;112;134m"
+C_PEACH="\033[38;2;250;179;135m"
+C_SURFACE="\033[38;2;49;50;68m"
+RESET="\033[0m"
+BOLD="\033[1m"
+DIM="\033[2m"
+
+CEO_ANSI_COLORS=("$C_MAUVE" "$C_GREEN" "$C_BLUE" "$C_YELLOW" "$C_RED" "$C_TEAL")
+
+get_ceo_ansi() {
+  local n=$1
+  echo -e "${CEO_ANSI_COLORS[$(( (n - 1) % 6 ))]}"
+}
+
+# ── Helpers ───────────────────────────────────────────────────
+
+# Read last user message from Claude JSONL (safe: skips files >5MB)
+# Args: n (CEO number), wt_path (worktree directory)
+get_last_user_message() {
+  local n=$1
+  local wt_path=$2
+  local session_file="$WORKTREES_DIR/ceo-${n}.session"
+  [ ! -f "$session_file" ] && echo "(unknown)" && return
+
+  local sid
+  sid=$(cat "$session_file" 2>/dev/null | tr -d '\n')
+  [ -z "$sid" ] && echo "(unknown)" && return
+
+  # Find the JSONL file — try worktree path first (live session), then main project (migrated)
+  # Claude Code encodes CWD as: strip leading /, replace / with -, prepend -
+  # e.g. /Users/foo/proj/.worktrees/ceo-1 → -Users-foo-proj--worktrees-ceo-1
+  local encoded_path jsonl=""
+  if [ -n "$wt_path" ]; then
+    encoded_path=$(echo "$wt_path" | sed 's|^/||; s|/|-|g; s|^|-|')
+    jsonl="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+  fi
+  if [ -z "$jsonl" ] || [ ! -f "$jsonl" ]; then
+    encoded_path=$(echo "$PROJECT_DIR" | sed 's|^/||; s|/|-|g; s|^|-|')
+    jsonl="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+  fi
+  [ ! -f "$jsonl" ] && echo "(unknown)" && return
+
+  # Safety: skip large files
+  local size
+  size=$(stat -f%z "$jsonl" 2>/dev/null || stat -c%s "$jsonl" 2>/dev/null || echo 0)
+  [ "$size" -gt 5242880 ] && echo "(task unknown)" && return
+
+  # Find last user entry and extract message content
+  local msg
+  msg=$(python3 -c "
+import json, sys
+lines = open('$jsonl').readlines()
+for line in reversed(lines):
+    try:
+        d = json.loads(line)
+        if d.get('type') == 'user':
+            content = d.get('message', {}).get('content', '')
+            if isinstance(content, list):
+                for item in content:
+                    if isinstance(item, dict) and item.get('type') == 'text':
+                        text = item.get('text', '')
+                        print(text[:60])
+                        sys.exit(0)
+            elif isinstance(content, str) and content:
+                print(content[:60])
+                sys.exit(0)
+    except:
+        pass
+print('(unknown)')
+" 2>/dev/null)
+
+  echo "${msg:-(unknown)}"
+}
+
+# Elapsed time as human-readable string
+elapsed_human() {
+  local start_ts=$1
+  local now
+  now=$(date +%s)
+  local elapsed=$(( now - start_ts ))
+  if [ "$elapsed" -lt 3600 ]; then
+    echo "$(( elapsed / 60 ))m"
+  else
+    echo "$(( elapsed / 3600 ))h$(( (elapsed % 3600) / 60 ))m"
+  fi
+}
+
+# Color block for a CEO
+color_block() {
+  local n=$1
+  local ansi
+  ansi=$(get_ceo_ansi "$n")
+  echo -e "${ansi}████${RESET}"
+}
+
+# Returns "N DISPLAY PANE_TARGET" lines for every active CEO.
+# Normal mode: CEO-N windows → target is "CEO-N.1" (pane 1 = Claude (pane-base-index 1), not scratchpad)
+# Grid mode:   GRID window  → target is "GRID.N"  (pane N directly)
+# Callers use:  tmux display-message -t "$SESSION:$target" ...
+get_ceo_targets() {
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    local pane_count
+    pane_count=$(tmux list-panes -t "$SESSION:GRID" 2>/dev/null | wc -l | tr -d ' ')
+    for (( i=1; i<=pane_count; i++ )); do
+      echo "$i CEO-$i GRID.$i"
+    done
+  else
+    while IFS= read -r wname; do
+      local n
+      n=$(echo "$wname" | sed 's/CEO-//')
+      echo "$n $wname ${wname}.1"
+    done < <(tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep "^CEO-")
+  fi
+}
+
+# ── Snapshot save (called every 5 render cycles) ──────────────
+save_snapshot_hq() {
+  local ts
+  ts=$(date +%s)
+  local ceos_json="["
+  local first=1
+
+  while IFS=' ' read -r n _display target; do
+    # Derive worktree path from registry (reliable) not pane_current_path (unreliable)
+    local wt_path="" start_ts=""
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      start_ts="${reg_line#*:}"
+      if [[ "$start_ts" =~ ^[0-9]+$ ]]; then
+        local candidate="$WORKTREES_DIR/ceo-${n}-${start_ts}"
+        [ -d "$candidate" ] && wt_path="$candidate"
+      fi
+    fi
+
+    [ -z "$wt_path" ] && continue
+
+    local branch="" task="" session_id=""
+    branch=$(git -C "$wt_path" branch --show-current 2>/dev/null)
+    [[ "$branch" != ceo-* ]] && continue
+
+    [ -f "$WORKTREES_DIR/ceo-${n}.task" ] && task=$(cat "$WORKTREES_DIR/ceo-${n}.task" 2>/dev/null | tr -d '\n')
+    [ -f "$WORKTREES_DIR/ceo-${n}.session" ] && session_id=$(cat "$WORKTREES_DIR/ceo-${n}.session" 2>/dev/null | tr -d '\n')
+
+    # Fallback: look up session ID from ~/.claude/sessions/*.json by matching CWD
+    if [ -z "$session_id" ] && [ -n "$wt_path" ]; then
+      session_id=$(python3 -c "
+import json, os, glob
+wt = '$wt_path'
+for f in sorted(glob.glob(os.path.expanduser('~/.claude/sessions/*.json')), key=os.path.getmtime, reverse=True):
+    try:
+        d = json.load(open(f))
+        if d.get('cwd') == wt:
+            print(d.get('sessionId', '')); break
+    except: pass
+" 2>/dev/null)
+      # Write it back so future cycles don't need the fallback
+      [ -n "$session_id" ] && echo "$session_id" > "$WORKTREES_DIR/ceo-${n}.session" 2>/dev/null
+    fi
+
+    [ "$first" -eq 0 ] && ceos_json+=","
+    first=0
+    ceos_json+="{\"n\":$n,\"branch\":\"$branch\",\"wt_path\":\"$wt_path\",\"task\":\"$task\",\"start_ts\":${start_ts:-0},\"session_id\":\"$session_id\"}"
+  done < <(get_ceo_targets)
+
+  ceos_json+="]"
+
+  # Detect grid mode: GRID window exists
+  local grid_mode_json="false"
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^GRID$"; then
+    grid_mode_json="true"
+  fi
+
+  mkdir -p "$PROJECT_STATE_DIR"
+  local tmp_snapshot
+  tmp_snapshot=$(mktemp "$SESSION_SNAPSHOT.XXXXXX" 2>/dev/null || echo "$SESSION_SNAPSHOT.tmp")
+  cat > "$tmp_snapshot" <<EOF
+{
+  "version": 1,
+  "saved_at": $ts,
+  "project_dir": "$PROJECT_DIR",
+  "grid_mode": $grid_mode_json,
+  "ceos": $ceos_json
+}
+EOF
+  mv -f "$tmp_snapshot" "$SESSION_SNAPSHOT" 2>/dev/null
+
+  # Compute a fingerprint of the current CEO set to avoid saving duplicate snapshots.
+  # Fingerprint = CEO count + sorted list of branch:task pairs (changes if a CEO is
+  # added/removed or a task label changes — cheap and sufficient for change detection).
+  local fingerprint
+  fingerprint=$(python3 -c "
+import json, hashlib
+try:
+    d = json.load(open('$SESSION_SNAPSHOT'))
+    ceos = d.get('ceos', [])
+    sig = str(len(ceos)) + '|' + '|'.join(
+        sorted(c.get('branch','') + ':' + c.get('task','') for c in ceos)
+    )
+    print(hashlib.md5(sig.encode()).hexdigest()[:12])
+except:
+    print('')
+" 2>/dev/null)
+
+  # Only update the snapshot file if fingerprint changed since last save
+  if [ -n "$fingerprint" ] && [ "$fingerprint" != "${_hq_last_fingerprint:-}" ]; then
+    _hq_last_fingerprint="$fingerprint"
+    mkdir -p "$SNAPSHOTS_DIR"
+
+    # Session identity = sorted CEO start_ts values.
+    # Update existing snapshot for this session instead of creating duplicates.
+    local session_fp
+    session_fp=$(python3 -c "
+import json
+try:
+    d = json.load(open('$SESSION_SNAPSHOT'))
+    ts_list = sorted(str(c.get('start_ts',0)) for c in d.get('ceos',[]))
+    print('-'.join(ts_list))
+except:
+    print('$ts')
+" 2>/dev/null)
+    [ -z "$session_fp" ] && session_fp="$ts"
+
+    local snap_file=""
+    for candidate in "$SNAPSHOTS_DIR"/*.json; do
+      [ -f "$candidate" ] || continue
+      local cand_fp
+      cand_fp=$(python3 -c "
+import json
+try:
+    d = json.load(open('$candidate'))
+    ts_list = sorted(str(c.get('start_ts',0)) for c in d.get('ceos',[]))
+    print('-'.join(ts_list))
+except:
+    print('')
+" 2>/dev/null)
+      if [ "$cand_fp" = "$session_fp" ]; then
+        snap_file="$candidate"
+        break
+      fi
+    done
+
+    [ -z "$snap_file" ] && snap_file="$SNAPSHOTS_DIR/${ts}.json"
+    cp -f "$SESSION_SNAPSHOT" "$snap_file" 2>/dev/null
+
+    # Prune: keep only the 10 most recent files
+    local snap_count
+    snap_count=$(ls "$SNAPSHOTS_DIR"/*.json 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$snap_count" -gt 10 ]; then
+      ls -t "$SNAPSHOTS_DIR"/*.json 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null
+    fi
+  fi
+}
+
+# ── Main render function ──────────────────────────────────────
+render_hq() {
+  local now
+  now=$(date +%s)
+  local time_str
+  time_str=$(date '+%H:%M:%S')
+  local term_width
+  term_width=$(tput cols 2>/dev/null || echo 72)
+  local divider
+  divider=$(printf '━%.0s' $(seq 1 "$term_width"))
+
+  # Count live CEOs
+  local ceo_count=0
+  while IFS=' ' read -r _n _display target; do
+    local dead
+    dead=$(tmux display-message -t "$SESSION:$target" -p "#{pane_dead}" 2>/dev/null)
+    [ "$dead" != "1" ] && ((ceo_count++))
+  done < <(get_ceo_targets)
+
+  # Header
+  echo -e "${C_OVERLAY}${divider}${RESET}"
+  echo -e "  ${BOLD}${C_PEACH}{{PROJECT_NAME_UPPER}} HQ${RESET}  ${C_OVERLAY}·${RESET}  ${C_TEXT}${ceo_count} CEO$([ "$ceo_count" -ne 1 ] && echo 's')${RESET}  ${C_OVERLAY}·${RESET}  ${C_SUBTEXT}${time_str}${RESET}"
+  echo -e "${C_OVERLAY}${divider}${RESET}"
+  echo ""
+
+  # Per-CEO rows
+  while IFS=' ' read -r n display_name target; do
+    # Dead pane check — hide row entirely
+    local dead
+    dead=$(tmux display-message -t "$SESSION:$target" -p "#{pane_dead}" 2>/dev/null)
+    [ "$dead" = "1" ] && continue
+
+    local ansi_color
+    ansi_color=$(get_ceo_ansi "$n")
+
+    # Derive worktree path from registry — pane_current_path is unreliable
+    # (Claude spawns subagents that cd into different dirs, changing the reported path)
+    local wt_path=""
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local ts="${reg_line#*:}"
+      if [[ "$ts" =~ ^[0-9]+$ ]]; then
+        local candidate="$WORKTREES_DIR/ceo-${n}-${ts}"
+        [ -d "$candidate" ] && wt_path="$candidate"
+      fi
+    fi
+
+    # Active/idle detection
+    local status_dot
+    local last_lines
+    last_lines=$(tmux capture-pane -t "$SESSION:$target" -p -S -3 2>/dev/null | sed 's/[[:space:]]*$//')
+    local current_status="ACTIVE"
+    if echo "$last_lines" | grep -qE '(❯ |> )$'; then
+      status_dot="${C_OVERLAY}○${RESET}"
+      current_status="IDLE"
+    else
+      status_dot="${C_GREEN}●${RESET}"
+      current_status="ACTIVE"
+    fi
+
+    # Task label (read early — needed for notification below)
+    local task_label="—"
+    [ -f "$WORKTREES_DIR/ceo-${n}.task" ] && task_label=$(cat "$WORKTREES_DIR/ceo-${n}.task" 2>/dev/null | tr -d '\n')
+    [ -z "$task_label" ] && task_label="—"
+
+    # Feature F7 — macOS notification on ACTIVE → IDLE transition
+    if [ "${prev_ceo_status[$n]}" = "ACTIVE" ] && [ "$current_status" = "IDLE" ]; then
+      local notify_task="$task_label"
+      [ "$notify_task" = "—" ] && notify_task="CEO-$n"
+      osascript -e "display notification \"$notify_task finished working\" with title \"{{PROJECT_NAME}} War Room\"" 2>/dev/null &
+    fi
+    prev_ceo_status[$n]="$current_status"
+
+    # Color block (4 chars)
+    local cblock
+    cblock=$(color_block "$n")
+
+    # Branch
+    local branch="—"
+    [ -n "$wt_path" ] && branch=$(git -C "$wt_path" branch --show-current 2>/dev/null)
+    [ -z "$branch" ] && branch="—"
+
+    # Commits ahead of main
+    local commits="0"
+    [ -n "$wt_path" ] && commits=$(git -C "$wt_path" rev-list --count main..HEAD 2>/dev/null || echo "0")
+
+    # Time alive
+    local elapsed_str="—"
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local reg_line
+      reg_line=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local start_ts=${reg_line#*:}
+      if [[ "$start_ts" =~ ^[0-9]+$ ]]; then
+        elapsed_str=$(elapsed_human "$start_ts")
+      fi
+    fi
+
+    # Last user message (current task)
+    local current_task
+    current_task=$(get_last_user_message "$n" "$wt_path")
+
+    # Last commit message
+    local last_commit="(no commits yet)"
+    [ -n "$wt_path" ] && last_commit=$(git -C "$wt_path" log -1 --pretty=format:"%s" 2>/dev/null)
+    [ -z "$last_commit" ] && last_commit="(no commits yet)"
+
+    # Changed files in last commit
+    local changed_files=""
+    if [ -n "$wt_path" ] && [ "$last_commit" != "(no commits yet)" ]; then
+      changed_files=$(git -C "$wt_path" show --stat HEAD 2>/dev/null | tail -n +2 | grep '|' | head -3 | awk '{print $1}' | tr '\n' ' ')
+    fi
+    [ -z "$changed_files" ] && changed_files="—"
+
+    # Session cost (compact: read JSONL, sum tokens, compute cost)
+    local session_file="$WORKTREES_DIR/ceo-${n}.session"
+    local cost_str="—"
+    if [ -f "$session_file" ]; then
+      local sid
+      sid=$(cat "$session_file" 2>/dev/null | tr -d '\n')
+      if [ -n "$sid" ]; then
+        local encoded_path jsonl=""
+        if [ -n "$wt_path" ]; then
+          encoded_path=$(echo "$wt_path" | sed 's|^/||; s|/|-|g; s|^|-|')
+          local c1="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+          [ -f "$c1" ] && jsonl="$c1"
+        fi
+        if [ -z "$jsonl" ] || [ ! -f "$jsonl" ]; then
+          encoded_path=$(echo "$PROJECT_DIR" | sed 's|^/||; s|/|-|g; s|^|-|')
+          local c2="$HOME/.claude/projects/${encoded_path}/${sid}.jsonl"
+          [ -f "$c2" ] && jsonl="$c2"
+        fi
+        if [ -n "$jsonl" ] && [ -f "$jsonl" ]; then
+          cost_str=$(python3 - "$jsonl" <<'PYEOF'
+import sys, json, os
+jsonl_path = sys.argv[1]
+PRICING = {
+    "sonnet": {"input": 3.0, "output": 15.0, "cache_creation": 3.75, "cache_read": 0.30},
+    "opus":   {"input": 5.0, "output": 25.0, "cache_creation": 6.25, "cache_read": 0.50},
+    "haiku":  {"input": 1.0, "output": 5.0,  "cache_creation": 1.25, "cache_read": 0.10},
+}
+def tier(m):
+    if not m: return "sonnet"
+    m = m.lower()
+    return "opus" if "opus" in m else "haiku" if "haiku" in m else "sonnet"
+t = {"i":0,"o":0,"cc":0,"cr":0}
+model = ""
+try:
+    if os.path.getsize(jsonl_path) > 20971520:
+        print(""); sys.exit(0)
+    for line in open(jsonl_path):
+        try: d = json.loads(line)
+        except: continue
+        if d.get("type") != "assistant": continue
+        msg = d.get("message", {})
+        if msg.get("model"): model = msg["model"]
+        u = msg.get("usage", {})
+        t["i"]  += u.get("input_tokens", 0)
+        t["o"]  += u.get("output_tokens", 0)
+        t["cc"] += u.get("cache_creation_input_tokens", 0)
+        t["cr"] += u.get("cache_read_input_tokens", 0)
+except: print(""); sys.exit(0)
+p = PRICING[tier(model)]
+c = t["i"]/1e6*p["input"] + t["o"]/1e6*p["output"] + t["cc"]/1e6*p["cache_creation"] + t["cr"]/1e6*p["cache_read"]
+print(f"${c:.2f}")
+PYEOF
+)
+        fi
+      fi
+    fi
+
+    # Print CEO row
+    printf "  %b %b  %b${BOLD}%-8s${RESET}  ${C_SUBTEXT}%-20s${RESET}  ${C_OVERLAY}%-26s${RESET}  ${ansi_color}+%s${RESET}  ${C_OVERLAY}%s${RESET}\n" \
+      "$status_dot" "$cblock" "$ansi_color" "$display_name" "$task_label" "$branch" "$commits" "$elapsed_str"
+    printf "    ${DIM}${C_TEXT}task:${RESET}  ${C_TEXT}%s${RESET}\n" "$current_task"
+    printf "    ${DIM}${C_TEXT}last:${RESET}  ${C_SUBTEXT}%s${RESET}\n" "$last_commit"
+    if [ "$changed_files" != "—" ]; then
+      printf "    ${DIM}${C_TEXT}files:${RESET} ${C_OVERLAY}%s${RESET}\n" "$changed_files"
+    fi
+    printf "    ${DIM}${C_TEXT}cost:${RESET}  ${C_PEACH}%s${RESET}\n" "$cost_str"
+
+    # Message inbox indicator
+    local inbox_file="$PROJECT_STATE_DIR/messages/ceo-${n}.jsonl"
+    if [ -f "$inbox_file" ] && [ -s "$inbox_file" ]; then
+      local msg_count blocker_count
+      msg_count=$(wc -l < "$inbox_file" 2>/dev/null | tr -d ' ')
+      blocker_count=$(grep -c '"type":"blocker"' "$inbox_file" 2>/dev/null || echo 0)
+      local inbox_str="${C_BLUE}📨 ${msg_count} message$([ "$msg_count" -ne 1 ] && echo 's')${RESET}"
+      if [ "$blocker_count" -gt 0 ]; then
+        inbox_str+="  ${C_RED}(${blocker_count} blocker$([ "$blocker_count" -ne 1 ] && echo 's'))${RESET}"
+      fi
+      printf "    ${inbox_str}\n"
+    fi
+    echo ""
+  done < <(get_ceo_targets)
+
+  # Recent commits section
+  echo -e "${C_OVERLAY}${divider}${RESET}"
+  echo -e "  ${BOLD}${C_TEXT}RECENT COMMITS${RESET}"
+
+  # Gather commits from all worktrees, sort by time, show top 5
+  local all_commits=""
+  while IFS=' ' read -r n _display target; do
+    local dead
+    dead=$(tmux display-message -t "$SESSION:$target" -p "#{pane_dead}" 2>/dev/null)
+    [ "$dead" = "1" ] && continue
+    local wt_path=""
+    if [ -f "$WORKTREES_DIR/.registry" ]; then
+      local rl; rl=$(grep "^ceo-${n}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+      local rts="${rl#*:}"
+      if [[ "$rts" =~ ^[0-9]+$ ]]; then
+        local rc="$WORKTREES_DIR/ceo-${n}-${rts}"
+        [ -d "$rc" ] && wt_path="$rc"
+      fi
+    fi
+    if [ -n "$wt_path" ]; then
+      while IFS= read -r line; do
+        [ -n "$line" ] && all_commits+="$n|$line"$'\n'
+      done < <(git -C "$wt_path" log main..HEAD --pretty=format:"%ct|%s" --max-count=3 2>/dev/null)
+    fi
+  done < <(get_ceo_targets)
+
+  if [ -n "$all_commits" ]; then
+    # Sort by timestamp (field 2 after split on |), show top 5
+    echo "$all_commits" | sort -t'|' -k2 -rn | head -5 | while IFS='|' read -r ceo_n ts msg; do
+      local commit_time
+      commit_time=$(date -r "$ts" '+%H:%M' 2>/dev/null || date '+%H:%M')
+      local ansi_color
+      ansi_color=$(get_ceo_ansi "$ceo_n")
+      printf "  ${C_OVERLAY}%s${RESET}  ${ansi_color}CEO-%s${RESET}  ${C_TEXT}%s${RESET}\n" "$commit_time" "$ceo_n" "$msg"
+    done
+  else
+    echo -e "  ${C_OVERLAY}(no commits yet)${RESET}"
+  fi
+
+  # ── File overlap detection — recomputed every 5th cycle (~25s) to reduce git diff load
+  if [ "$render_cycle" -ge 4 ] || [ -z "$overlap_output" ]; then
+    local -A file_ceos
+    local overlap_found=0
+
+    while IFS=' ' read -r fn _display ftarget; do
+      local fwt_path=""
+      if [ -f "$WORKTREES_DIR/.registry" ]; then
+        local freg
+        freg=$(grep "^ceo-${fn}:" "$WORKTREES_DIR/.registry" 2>/dev/null | tail -1)
+        local fts="${freg#*:}"
+        if [[ "$fts" =~ ^[0-9]+$ ]]; then
+          local fcandidate="$WORKTREES_DIR/ceo-${fn}-${fts}"
+          [ -d "$fcandidate" ] && fwt_path="$fcandidate"
+        fi
+      fi
+      [ -z "$fwt_path" ] && continue
+
+      local ffiles
+      ffiles=$(git -C "$fwt_path" diff --name-only main...HEAD 2>/dev/null)
+      while IFS= read -r ff; do
+        [ -z "$ff" ] && continue
+        if [ -n "${file_ceos[$ff]:-}" ]; then
+          file_ceos[$ff]="${file_ceos[$ff]},$fn"
+          overlap_found=1
+        else
+          file_ceos[$ff]="$fn"
+        fi
+      done <<< "$ffiles"
+    done < <(get_ceo_targets)
+
+    if [ "$overlap_found" -eq 1 ]; then
+      local _computed
+      _computed=$'\n'"  ${C_RED}${BOLD}⚠ FILE CONFLICTS${RESET}"
+      for ff in "${!file_ceos[@]}"; do
+        [[ "${file_ceos[$ff]}" != *","* ]] && continue
+        _computed+=$'\n'"    ${C_RED}$ff${RESET} ${C_OVERLAY}← CEO-$(echo "${file_ceos[$ff]}" | sed 's/,/, CEO-/g')${RESET}"
+      done
+      overlap_output="$_computed"
+    else
+      overlap_output=""
+    fi
+  fi
+
+  [ -n "$overlap_output" ] && echo -e "$overlap_output"
+
+  # ── Dependency warnings from .meta files
+  local dep_warnings=""
+  for meta_file in "$WORKTREES_DIR"/ceo-*.meta; do
+    [ -f "$meta_file" ] || continue
+    local dep_n
+    dep_n=$(basename "$meta_file" .meta | sed 's/ceo-//')
+    local depends_on
+    depends_on=$(grep "^depends_on=" "$meta_file" 2>/dev/null | head -1 | cut -d= -f2)
+    [ -z "$depends_on" ] && continue
+    for dep in $(echo "$depends_on" | tr ',' ' '); do
+      dep=$(echo "$dep" | tr -d ' ' | sed 's/CEO-//')
+      [ -z "$dep" ] && continue
+      if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^CEO-${dep}$"; then
+        dep_warnings+="  ${C_PEACH}⏳${RESET} CEO-${dep_n} waiting on CEO-${dep} (still active)\n"
+      fi
+    done
+  done
+  [ -n "$dep_warnings" ] && echo -e "\n${dep_warnings}"
+
+  echo -e "${C_OVERLAY}${divider}${RESET}"
+  echo -e "  ${DIM}${C_OVERLAY}Ctrl+B 1-N → CEO   {{project_name}} task N \"label\"   {{project_name}} done N   {{project_name}} kill${RESET}"
+}
+
+# ── Feature F7 — macOS idle notification state ────────────────
+declare -A prev_ceo_status
+
+# ── Snapshot dedup state ──────────────────────────────────────
+_hq_last_fingerprint=""
+
+# ── Main loop ─────────────────────────────────────────────────
+render_cycle=0
+overlap_output=""
+
+while true; do
+  clear
+  render_hq
+
+  ((render_cycle++))
+
+  # Save snapshot every 5 cycles (~25s)
+  if [ "$render_cycle" -ge 5 ]; then
+    save_snapshot_hq
+    render_cycle=0
+  fi
+
+  sleep 5
+done
