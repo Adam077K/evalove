@@ -127,7 +127,7 @@ function TodaySlot({
   const name = isEva ? "Eva" : "Adam";
   const ring = isEva ? "border-eva/45" : "border-adam/45";
   const soft = isEva ? "bg-eva-soft" : "bg-adam-soft";
-  const inkCls = isEva ? "text-eva" : "text-adam";
+  const inkCls = isEva ? "text-eva-deep" : "text-adam-deep";
 
   if (!photoSrcUrl) {
     return (

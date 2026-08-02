@@ -111,7 +111,7 @@ function Plate({
   const author = memberById(photo.authorMemberId);
   const isEva = author.slug === "eva";
   const tray = isEva ? "bg-eva-soft" : "bg-adam-soft";
-  const inkCls = isEva ? "text-eva" : "text-adam";
+  const inkCls = isEva ? "text-eva-deep" : "text-adam-deep";
 
   return (
     <figure
@@ -165,7 +165,7 @@ function PreparedPlace({ member }: { member: Member }) {
   const isEva = member.slug === "eva";
   const tray = isEva ? "bg-eva-soft" : "bg-adam-soft";
   const ring = isEva ? "border-eva/45" : "border-adam/45";
-  const inkCls = isEva ? "text-eva" : "text-adam";
+  const inkCls = isEva ? "text-eva-deep" : "text-adam-deep";
   const dot = isEva ? "bg-eva" : "bg-adam";
 
   return (

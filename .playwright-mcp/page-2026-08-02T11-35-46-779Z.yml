@@ -1,0 +1,54 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - paragraph [ref=e7]
+          - heading "Eva & Adam" [level=1] [ref=e8]
+        - link "The pocket — private, opens with a passphrase" [ref=e9] [cursor=pointer]:
+          - /url: /pocket
+      - region "Where Eva and Adam are in their days" [ref=e14]
+      - 'link "Today: Adam has posted · a place is ready for Eva" [ref=e32] [cursor=pointer]':
+        - /url: /today
+        - generic [ref=e33]:
+          - heading "Today" [level=2] [ref=e34]
+          - generic [ref=e35]: Open
+        - generic [ref=e39]:
+          - img "A place ready for Eva's photograph" [ref=e40]:
+            - generic [ref=e43]: Eva
+          - figure "Adam 6:20 am" [ref=e44]:
+            - img "Adam's photograph from today" [ref=e45]
+            - generic [ref=e46]:
+              - generic [ref=e47]: Adam
+              - generic [ref=e48]: 6:20 am
+        - paragraph [ref=e49]: Adam has posted · a place is ready for Eva
+      - region "Left for later" [ref=e51]:
+        - button "Adam left a note for Eva sealed · left at 8:12 am his time Open" [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e58]:
+              - heading "Adam left a note for Eva" [level=2] [ref=e59]
+              - paragraph [ref=e60]: sealed · left at 8:12 am his time
+            - generic [ref=e61]: Open
+      - generic [ref=e67]:
+        - link "The book — two days, kept" [ref=e68] [cursor=pointer]:
+          - /url: /book
+          - generic [ref=e71]:
+            - generic [ref=e75]: The book
+            - generic [ref=e76]: two days, kept
+        - link "Ask Adam an echo that keeps their story" [ref=e77] [cursor=pointer]:
+          - /url: /partner
+          - generic [ref=e81]:
+            - generic [ref=e82]: Ask Adam
+            - generic [ref=e83]: an echo that keeps their story
+  - navigation "Main" [ref=e84]:
+    - generic [ref=e85]:
+      - link "Home" [ref=e86] [cursor=pointer]:
+        - /url: /home
+      - link "The book" [ref=e93] [cursor=pointer]:
+        - /url: /book
+      - link "Send something small" [ref=e98] [cursor=pointer]:
+        - /url: /send
+      - link "Dates" [ref=e100] [cursor=pointer]:
+        - /url: /dates
+      - link "Adam" [ref=e106] [cursor=pointer]:
+        - /url: /partner

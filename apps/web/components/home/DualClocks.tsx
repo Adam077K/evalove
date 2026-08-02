@@ -46,7 +46,7 @@ export function DualClocks() {
 function ClockCard({ member, now }: { member: Member; now: Date | null }) {
   const isEva = member.slug === "eva";
   const auraClass = isEva ? "bg-eva/25" : "bg-adam/25";
-  const nameClass = isEva ? "text-eva" : "text-adam";
+  const nameClass = isEva ? "text-eva-deep" : "text-adam-deep";
   const dotClass = isEva ? "bg-eva" : "bg-adam";
 
   if (now === null) {

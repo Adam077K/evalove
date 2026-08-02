@@ -62,7 +62,7 @@ export function SealedCard() {
   const from = memberById(item.fromMemberId);
   const fromIsAdam = from.slug === "adam";
   const their = fromIsAdam ? "his" : "her";
-  const inkClass = fromIsAdam ? "text-adam" : "text-eva";
+  const inkClass = fromIsAdam ? "text-adam-deep" : "text-eva-deep";
   const when = `${localTime(item.leftAt, from.homeTimezone)} ${their} time`;
 
   return (

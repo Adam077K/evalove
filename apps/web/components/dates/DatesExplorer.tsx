@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Clock, MonitorOff, Sparkles } from "lucide-react";
 import { currentWindow } from "@/lib/shared-day";
@@ -23,12 +23,22 @@ const WINDOW_IDS = ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9"];
 export function DatesExplorer() {
   const [nowWindow, setNowWindow] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const w = currentWindow(new Date());
     setNowWindow(w);
     setSelected((s) => s ?? w);
   }, []);
+
+  /* Bring the selected window into view — centred, no page jump. */
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [selected]);
 
   const active = selected ?? "w1";
   const entries = Object.values(SUGGESTIONS).filter((s) =>
@@ -54,6 +64,7 @@ export function DatesExplorer() {
           return (
             <button
               key={id}
+              ref={isActive ? activeRef : undefined}
               role="tab"
               aria-selected={isActive}
               onClick={() => setSelected(id)}

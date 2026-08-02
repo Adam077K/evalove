@@ -55,7 +55,7 @@ function SessionCard({
   const Icon = KIND_ICON[session.kind];
   const writer = nextWriter(session, turns);
   const isEva = writer?.slug === "eva";
-  const writerCls = isEva ? "text-eva" : "text-adam";
+  const writerCls = isEva ? "text-eva-deep" : "text-adam-deep";
   const writerSoft = isEva ? "bg-eva-soft" : "bg-adam-soft";
   const last = turns[turns.length - 1];
 

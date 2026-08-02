@@ -83,7 +83,7 @@ export function PartnerChat() {
 
   const partnerGrad = partnerIsAdam ? "var(--grad-adam)" : "var(--grad-eva)";
   const partnerSoft = partnerIsAdam ? "bg-adam-soft" : "bg-eva-soft";
-  const partnerInk = partnerIsAdam ? "text-adam" : "text-eva";
+  const partnerInk = partnerIsAdam ? "text-adam-deep" : "text-eva-deep";
   const viewerGrad = partnerIsAdam ? "var(--grad-eva)" : "var(--grad-adam)";
   const dot = partnerIsAdam ? "bg-adam" : "bg-eva";
 
