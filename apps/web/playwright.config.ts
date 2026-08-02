@@ -30,7 +30,7 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
     // Entrance animations translate cards for ~400ms. Measuring geometry
     // mid-cascade measures the animation, not the layout.
-    reducedMotion: "reduce",
+    contextOptions: { reducedMotion: "reduce" },
     // Every app route is behind the door. See `e2e/test-session.ts`.
     storageState: { cookies: [mintSessionCookie()], origins: [] },
   },

@@ -51,7 +51,7 @@ const b64url = (input: Buffer | string) =>
  * and both are asserted by the server verifying the cookie: if this drifts,
  * every test redirects to `/login` and says so loudly.
  */
-export function mintSessionCookie(): { name: string; value: string; domain: string; path: string } {
+export function mintSessionCookie() {
   const iat = Math.floor(Date.now() / 1000);
   const header = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload = b64url(
@@ -71,5 +71,13 @@ export function mintSessionCookie(): { name: string; value: string; domain: stri
     value: `${header}.${payload}.${signature}`,
     domain: "127.0.0.1",
     path: "/",
+    expires: iat + 15_552_000,
+    httpOnly: true,
+    // The real cookie is `Secure`. Not here: the suite talks to `next dev`
+    // over plain http on loopback, and `Secure` is a rule about which
+    // requests a browser will attach the cookie to, not something the
+    // server verifies. Setting it would only stop the cookie being sent.
+    secure: false,
+    sameSite: "Lax" as const,
   };
 }
