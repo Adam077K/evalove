@@ -356,6 +356,7 @@ export function readJpegSegments(bytes: Uint8Array): JpegSegment[] {
     }
     const marker = bytes[at + 1];
     // Padding fill bytes, and the standalone markers that carry no length.
+    if (marker === undefined) break;
     if (marker === 0xff) {
       at++;
       continue;
@@ -364,7 +365,14 @@ export function readJpegSegments(bytes: Uint8Array): JpegSegment[] {
       at += 2;
       continue;
     }
-    const length = (bytes[at + 2] << 8) | bytes[at + 3];
+    // Running off the end mid-header means the file is truncated. Stop and
+    // report the segments we did read: callers here are a metadata reader and
+    // a strip guard, and both want "what is provably in this file" rather than
+    // an exception. The guard treats a short read as evidence, not as absence.
+    const lengthHigh = bytes[at + 2];
+    const lengthLow = bytes[at + 3];
+    if (lengthHigh === undefined || lengthLow === undefined) break;
+    const length = (lengthHigh << 8) | lengthLow;
     if (length < 2 || at + 2 + length > bytes.length) break;
     segments.push({
       marker,
@@ -424,7 +432,7 @@ function readAscii(block: ExifBlock, entry: IfdEntry): string {
   let out = "";
   for (let i = at; i < end; i++) {
     const c = block.bytes[i];
-    if (c === 0) break;
+    if (c === undefined || c === 0) break;
     out += String.fromCharCode(c);
   }
   return out;
@@ -495,8 +503,13 @@ export function exifTimestampToIso(
 }
 
 function decimalDegrees(parts: number[], ref: string): number | undefined {
-  if (parts.length < 3) return undefined;
   const [degrees, minutes, seconds] = parts;
+  // A GPS coordinate that is not exactly three rationals is not a coordinate.
+  // Returning `undefined` rather than guessing means `hasGps` stays false, and
+  // the strip test's "there was something to strip" precondition stays honest.
+  if (degrees === undefined || minutes === undefined || seconds === undefined) {
+    return undefined;
+  }
   const magnitude = degrees + minutes / 60 + seconds / 3600;
   if (!Number.isFinite(magnitude)) return undefined;
   const negative = ref === "S" || ref === "W";
