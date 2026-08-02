@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>T0 Device Probe — Eva &amp; Adam</title>
+<meta name="theme-color" content="#14112b">
+<meta name="color-scheme" content="dark">
+
+<!-- iOS install levers. These, not the manifest, are what Safari honours for Add to Home Screen. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="T0 Probe">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACPUlEQVR42u3dwY2DMBCGUVqIRBcpzq2mmdxpgFsc5h/7Sd95szBPLATMHufrLd122AWCQ3AIDsEhOASH4BAcgkNwSHAIDsEhOASH4BAcgkNwCA4JDsEhOASH4BAcgkNwCA7BIcEhOASH4BAcgkNwCA7BITgEhwSH4BAcgkNwCA7BIThu+n5GoyCAAw444IADDjjggAMOOOCAAw444IADDjjg+Fd9/cExqjYcji1wrPp3DY6Rs5lu2U/e7/m/YV8fcCQeF+Hoh2O3a2w4ok+k4GiAY8/v6OBocPEFRyiOnb/jh6PNFzZwBOFwjxCO+TgKfzIcT+yvZyYX7gOOOWPL/yA4ut55z/QBR8qcAn3A4aPhmP3RtRsOR8FuanQiDEcojoRthyMRR8jmw5F4vZCz+XDAAUcTHFF7AA444IADDjjggAOOhXA0XQkBhyOHIwcccMABBxxwwAEHHO6twAEHHJ7ngMOTYHB4hhQOT597+ty6FTiseLPizVpZa2W3PTG0yh4O7+eA47fJebMPHN4Jtj2O09sE4Wjho2QKcDTwUTUFONJ9FE4BjmgftVOAI9dH+RTgSCQSMgU4sohETQGOIB9pU4CjXknmCOBY5FkQOLruYv/LHo4Fg0NwCA7BAQcccMABBxxwwAEHHIJDcEhwCA7BITgEh+AQHIJDcAgOCQ7BITgEh+AQHIJDcAgOwSHBITgEh+AQHIJDcAgOwSE4BIcEh+AQHIJDcAgOwSE4BIfgkOAQHIJDcAgOwaH0LoQdzFAbkDkKAAAAAElFTkSuQmCC">
+<link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACbklEQVR42u3c243CMBRF0bSARBcUR6s0wz8tIGSSc66XtP8nspeYPGwf99tD+rnDEAggASSABJAEkAASQAJIAkgACSABJAEkgASQAJIAEkACSAAJIAkgASSABJAEkAASQAJIAkgACSABJAEkgASQABJAEkACSAAJIAkgASSABJAEkAASQAJIAkgFgN6vZ2lMAAQQQAABBBBAAAkggAACCCCAAAJIAAEEEEAAAQQQQH8aCoAAWjYCAO0IaKv/qunrgboGesObM4DKfnEBGgho5+dEgCpv9QCaAMgrK4DqHzMBqgTk1TlAo15xAVQDyPc7gOI+UFQbAugkPTl/AqBrRvDMSQUIoAXXU2EIoOg1PfmGACq4DIC6x+7ya0j+EQJo5TVs+EkHoIF38QBVAooaDYDKAKWNBkBljz9pAwJQE6DMAQEIoIKrAggggAACqBdQ7JgAdDGg9r1EAAFU8NMIEEAAAQQQQO6BPIUBBJD3QAABBBBAAAHkazxA1gMBZEUiQNZEA2RXhl0Z9oXZFwaQnakA2Rtvb/xwQE7nAChiLp0PtDsgJ5QBtGBenZEI0JoJdkorQM6JBmiiIYDKXoHQA9AQQ5dPEEDFhhImCKBKQzkTBFAfo6gJAqjMUNoEAVTDKHOCACpglDxBADV99ABoI0AV6wkBKh76GQEkgAACCCCAAAIIIAEkgAACCCCAAFI9IAEkgCSABJAAEkASQAJIAAkgASQBJIAEkACSABJAAkgASQAJIAEkgCSABJAAEkASQAJIAAkgASQBJIAEkACSABJAAkgASQAJIAEkgCSABJAAEkACSAJIAAkgASR91wcLRs07cJxWoQAAAABJRU5ErkJggg==">
+
+<style>
+  :root{
+    --bg:#14112b; --panel:#1e1a3d; --panel2:#272250; --line:#3b3470;
+    --ink:#f2f0ff; --dim:#a9a3d6; --gold:#f5d06f;
+    --yes:#31c48d; --no:#f26d6d; --wait:#6b6595; --warn:#f2a93b;
+  }
+  *{box-sizing:border-box; -webkit-text-size-adjust:100%;}
+  html,body{margin:0; background:var(--bg); color:var(--ink);
+    font:400 18px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;}
+  body{
+    padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 14px)
+            calc(env(safe-area-inset-bottom) + 48px) calc(env(safe-area-inset-left) + 14px);
+    max-width:760px; margin:0 auto;
+  }
+  h1{font-size:26px; line-height:1.2; margin:0 0 4px;}
+  h2{font-size:22px; margin:0 0 2px;}
+  .sub{color:var(--dim); font-size:15px; margin:0 0 18px;}
+  section{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+          padding:16px; margin:0 0 18px;}
+  .qhead{display:flex; align-items:flex-start; gap:10px; margin-bottom:10px;}
+  .qnum{flex:0 0 auto; background:var(--gold); color:#14112b; font-weight:800;
+        border-radius:9px; padding:3px 10px; font-size:16px;}
+  .why{color:var(--dim); font-size:15px; margin:0 0 14px;}
+  .verdict{display:block; text-align:center; font-size:30px; font-weight:800;
+           letter-spacing:.4px; padding:14px 10px; border-radius:12px; margin:14px 0;
+           background:var(--wait); color:#fff;}
+  .verdict.yes{background:var(--yes); color:#08281c;}
+  .verdict.no{background:var(--no); color:#2b0b0b;}
+  .verdict.warn{background:var(--warn); color:#2b1c00;}
+  button{font:600 18px/1 -apple-system,system-ui,sans-serif; color:#14112b;
+    background:var(--gold); border:0; border-radius:11px; padding:15px 16px;
+    margin:0 8px 8px 0; min-height:52px; -webkit-appearance:none; cursor:pointer;}
+  button.ghost{background:var(--panel2); color:var(--ink); border:1px solid var(--line);}
+  button:disabled{opacity:.4;}
+  select{font:600 17px system-ui; padding:12px; border-radius:10px; background:var(--panel2);
+    color:var(--ink); border:1px solid var(--line); min-height:50px;}
+  label.file{display:block; background:var(--panel2); border:1px dashed var(--line);
+    border-radius:12px; padding:16px; margin:0 0 12px; font-weight:600;}
+  label.file span.hint{display:block; font-weight:400; color:var(--dim); font-size:15px; margin-top:4px;}
+  label.file input{display:block; margin-top:12px; font-size:16px; color:var(--dim); max-width:100%;}
+  table{width:100%; border-collapse:collapse; font-size:15px; margin-top:10px;}
+  th,td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{color:var(--dim); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.5px;}
+  td.k{color:var(--dim); width:44%;}
+  code,.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:14px; word-break:break-all;}
+  .log{background:#0d0b1e; border:1px solid var(--line); border-radius:10px; padding:10px;
+       max-height:220px; overflow:auto; font-family:ui-monospace,Menlo,monospace; font-size:13px;
+       line-height:1.45; white-space:pre-wrap; color:var(--dim);}
+  .banner{border-radius:12px; padding:14px; margin:0 0 18px; font-weight:700; font-size:17px;}
+  .banner.bad{background:#4a1414; border:1px solid var(--no); color:#ffdede;}
+  .banner.ok{background:#123227; border:1px solid var(--yes); color:#c9f5e3;}
+  ol.steps{margin:0 0 8px; padding-left:22px;}
+  ol.steps li{margin-bottom:8px;}
+  .radios label{display:block; background:var(--panel2); border:1px solid var(--line);
+    border-radius:10px; padding:14px; margin-bottom:8px; font-weight:600;}
+  .radios input{transform:scale(1.4); margin-right:12px;}
+  textarea{width:100%; min-height:300px; background:#0d0b1e; color:var(--ink);
+    border:1px solid var(--line); border-radius:10px; padding:10px;
+    font-family:ui-monospace,Menlo,monospace; font-size:13px;}
+  .pill{display:inline-block; padding:3px 9px; border-radius:999px; font-size:13px;
+    font-weight:700; background:var(--panel2); border:1px solid var(--line); color:var(--dim);}
+  .pill.y{background:var(--yes); color:#08281c; border-color:transparent;}
+  .pill.n{background:var(--no); color:#2b0b0b; border-color:transparent;}
+  hr{border:0; border-top:1px solid var(--line); margin:16px 0;}
+  .small{font-size:15px; color:var(--dim);}
+  audio{width:100%; margin:10px 0;}
+</style>
+</head>
+<body>
+
+<h1>T0 — Device capability probe</h1>
+<p class="sub">Eva &amp; Adam · four questions · no product code. Nothing here is guessed — every
+line is what this phone actually did.</p>
+
+<div id="installBanner" class="banner bad">Checking install state…</div>
+
+<!-- ─────────────────────────── ENVIRONMENT ─────────────────────────── -->
+<section id="envSection">
+  <h2>Environment</h2>
+  <p class="why">Captured automatically. Included in the report so the four answers are attributable
+  to a specific device and OS.</p>
+  <table id="envTable"></table>
+</section>
+
+<!-- ─────────────────────────── Q1 AUDIO ─────────────────────────── -->
+<section>
+  <div class="qhead"><span class="qnum">Q1</span><h2>Does audio survive backgrounding?</h2></div>
+  <p class="why">If yes, the book can read itself aloud — the first genuine answer to
+  <b>W3, Eva's commute</b>: hands busy, headphones in, no screen. This answer gates a whole product
+  category, which is why it runs in Wave 1.</p>
+
+  <div id="q1Verdict" class="verdict">NOT RUN</div>
+
+  <p class="small"><b>Put headphones in or turn the volume up.</b> The probe plays a tick every
+  2 seconds and a triple-beep every 30 seconds, so you can hear whether it is still running.</p>
+
+  <div>
+    <span class="small">Audio session type:</span><br>
+    <select id="audioSessionSel">
+      <option value="playback">playback — what the product would use</option>
+      <option value="auto">auto — the browser default</option>
+      <option value="ambient">ambient</option>
+    </select>
+  </div>
+
+  <p style="margin-top:14px">
+    <button id="btnAudioStart">▶︎ Start audio</button>
+    <button id="btnAudioStop" class="ghost">■ Stop</button>
+  </p>
+  <audio id="probeAudio" controls playsinline preload="auto"></audio>
+
+  <hr>
+  <p class="small"><b>Label the next background test, then background the phone:</b></p>
+  <p>
+    <button id="btnArmLock" class="ghost">Next test: LOCK SCREEN</button>
+    <button id="btnArmSwitch" class="ghost">Next test: APP SWITCH</button>
+  </p>
+  <p id="armed" class="small">Armed as: <b>unlabelled</b></p>
+  <ol class="steps small">
+    <li>Tap one of the two buttons above to label what you are about to do.</li>
+    <li>Lock the screen (side button) <i>or</i> swipe up to the Home Screen and open another app.</li>
+    <li>Listen. Wait for at least one triple-beep (~30 s).</li>
+    <li>While it is locked: <b>do the lock-screen control test below.</b></li>
+    <li>Come back to this app. A row appears automatically.</li>
+  </ol>
+
+  <p class="small"><b>Lock-screen control test (do this while the screen is locked):</b> look at the
+  lock screen. Is there a Now Playing card saying <i>“The book reads itself aloud”</i>? Press its
+  pause, then play, then the ⏭ next-track button. If you have headphones with buttons, use those
+  too. Every control that reaches the page is recorded below.</p>
+
+  <table id="q1Table">
+    <tr><th>Test</th><th>Hidden for</th><th>Audio advanced</th><th>Result</th></tr>
+  </table>
+
+  <p class="small" style="margin-top:12px">Lock-screen / headphone controls received:
+    <span id="q1Actions" class="mono">none yet</span></p>
+
+  <p class="small">Media element event log (raw evidence):</p>
+  <div class="log" id="q1Log">—</div>
+</section>
+
+<!-- ─────────────────────────── Q2 SHARE ─────────────────────────── -->
+<section>
+  <div class="qhead"><span class="qnum">Q2</span><h2>Does <span class="mono">navigator.share({files})</span> work inside an installed PWA?</h2></div>
+  <p class="why">Outbound only. Web Share <i>Target</i> (inbound) is known unavailable on Safari —
+  that is a different question and is not being asked here.</p>
+
+  <div id="q2Verdict" class="verdict">NOT RUN</div>
+
+  <p class="small">The share sheet opening at all is the “yes”. <b>Cancelling the sheet still counts
+  as a pass</b> — it means the API worked and you declined. The page records which happened.</p>
+
+  <p>
+    <button id="btnShareJpeg">Share a JPEG</button>
+    <button id="btnSharePng">Share a PNG</button>
+    <button id="btnShareTxt" class="ghost">Share a .txt file</button>
+    <button id="btnShareTextOnly" class="ghost">Share text only (control)</button>
+  </p>
+  <table id="q2Table">
+    <tr><th>Payload</th><th>canShare()</th><th>What happened</th></tr>
+  </table>
+</section>
+
+<!-- ─────────────────────────── Q3 BADGE ─────────────────────────── -->
+<section>
+  <div class="qhead"><span class="qnum">Q3</span><h2>Does <span class="mono">setAppBadge()</span> with no argument render a dot?</h2></div>
+  <p class="why">A number is a counter, and counters are cut by founder decision D2. If it renders a
+  number, this mechanism is out of the product entirely.</p>
+
+  <div id="q3Verdict" class="verdict">NOT RUN</div>
+
+  <p class="small"><b>iOS ties badging to notification permission.</b> Step 1 shows a system
+  permission prompt — that is the OS asking, not this page. Without granting it, the badge cannot
+  appear and the question cannot be answered.</p>
+
+  <ol class="steps small">
+    <li><button id="btnNotifPerm">1 · Grant notification permission</button></li>
+    <li><button id="btnBadgeNoArg">2 · setAppBadge() — no argument</button></li>
+    <li>Swipe to the Home Screen and <b>look at the T0 Probe icon</b>. Come back and answer below.</li>
+    <li><button id="btnBadgeNum" class="ghost">4 · setAppBadge(7) — contrast check</button>
+        — proves badging works at all, and shows you what a number looks like.</li>
+    <li><button id="btnBadgeClear" class="ghost">5 · clearAppBadge()</button></li>
+  </ol>
+
+  <p class="small"><b>After step 2, what was on the Home Screen icon?</b></p>
+  <div class="radios" id="q3Radios">
+    <label><input type="radio" name="q3obs" value="dot">A plain dot — no number</label>
+    <label><input type="radio" name="q3obs" value="one">The number 1</label>
+    <label><input type="radio" name="q3obs" value="other">Some other number</label>
+    <label><input type="radio" name="q3obs" value="nothing">Nothing at all</label>
+  </div>
+  <table id="q3Table"></table>
+</section>
+
+<!-- ─────────────────────────── Q4 PICKER ─────────────────────────── -->
+<section>
+  <div class="qhead"><span class="qnum">Q4</span><h2>What does the photo picker actually hand over?</h2></div>
+  <p class="why">Architecture §5.2: whether iOS transcodes HEIC→JPEG depends on the picker path and
+  the device settings, so it must be <b>measured, not assumed</b>. The reported MIME type is not
+  trusted — the first bytes of every file are read and the real container is identified.</p>
+
+  <div id="q4Verdict" class="verdict">NOT RUN</div>
+
+  <p class="small"><b>Use a real camera-roll photo</b> — ideally one taken on this phone, outdoors,
+  with Location Services on. The first two are required; the last two isolate whether the
+  <span class="mono">accept</span> attribute is what triggers the transcode.</p>
+
+  <label class="file">A · Photos path <span class="hint">Tap, then choose <b>Photo Library</b>.
+    accept="image/*" — what a normal app would ship. REQUIRED.</span>
+    <input type="file" id="pickA" accept="image/*" multiple></label>
+
+  <label class="file">B · Files path <span class="hint">Tap, then choose <b>Choose File</b> and pick
+    an image out of the Files app. REQUIRED.</span>
+    <input type="file" id="pickB" accept="image/*" multiple></label>
+
+  <label class="file">C · Photos path, no accept attribute <span class="hint">Same photo as A.
+    Isolates whether accept is what forces the transcode.</span>
+    <input type="file" id="pickC" multiple></label>
+
+  <label class="file">D · Photos path, HEIC explicitly accepted <span class="hint">Same photo as A.
+    accept="image/heic,image/heif,image/jpeg,image/png".</span>
+    <input type="file" id="pickD" accept="image/heic,image/heif,image/jpeg,image/png" multiple></label>
+
+  <div id="q4Results"></div>
+</section>
+
+<!-- ─────────────────────────── REPORT ─────────────────────────── -->
+<section>
+  <h2>Report</h2>
+  <p class="why">Everything above, as markdown. Paste it into the session note.</p>
+  <p>
+    <button id="btnBuild">Rebuild report</button>
+    <button id="btnCopy">Copy to clipboard</button>
+    <button id="btnReset" class="ghost">Reset all results</button>
+  </p>
+  <p id="copyState" class="small"></p>
+  <textarea id="report" readonly spellcheck="false"></textarea>
+</section>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════════
+   T0 device capability probe — Eva & Adam
+   Self-contained. No network, no service worker, no product code.
+   Deliberately no alert()/confirm(): every result is written into the DOM.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+var ICON512 = "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";
+var ICON192 = "iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACbklEQVR42u3c243CMBRF0bSARBcUR6s0wz8tIGSSc66XtP8nspeYPGwf99tD+rnDEAggASSABJAEkAASQAJIAkgACSABJAEkgASQAJIAEkACSAAJIAkgASSABJAEkAASQAJIAkgACSABJAEkgASQABJAEkACSAAJIAkgASSABJAEkAASQAJIAkgFgN6vZ2lMAAQQQAABBBBAAAkggAACCCCAAAJIAAEEEEAAAQQQQH8aCoAAWjYCAO0IaKv/qunrgboGesObM4DKfnEBGgho5+dEgCpv9QCaAMgrK4DqHzMBqgTk1TlAo15xAVQDyPc7gOI+UFQbAugkPTl/AqBrRvDMSQUIoAXXU2EIoOg1PfmGACq4DIC6x+7ya0j+EQJo5TVs+EkHoIF38QBVAooaDYDKAKWNBkBljz9pAwJQE6DMAQEIoIKrAggggAACqBdQ7JgAdDGg9r1EAAFU8NMIEEAAAQQQQO6BPIUBBJD3QAABBBBAAAHkazxA1gMBZEUiQNZEA2RXhl0Z9oXZFwaQnakA2Rtvb/xwQE7nAChiLp0PtDsgJ5QBtGBenZEI0JoJdkorQM6JBmiiIYDKXoHQA9AQQ5dPEEDFhhImCKBKQzkTBFAfo6gJAqjMUNoEAVTDKHOCACpglDxBADV99ABoI0AV6wkBKh76GQEkgAACCCCAAAIIIAEkgAACCCCAAFI9IAEkgCSABJAAEkASQAJIAAkgASQBJIAEkACSABJAAkgASQAJIAEkgCSABJAAEkASQAJIAAkgASQBJIAEkACSABJAAkgASQAJIAEkgCSABJAAEkACSAJIAAkgASR91wcLRs07cJxWoQAAAABJRU5ErkJggg==";
+var STORE = "t0-probe-v2";
+
+/* ── result model ───────────────────────────────────────────────────────── */
+function blank() {
+  return {
+    meta: {},
+    loads: [],
+    q1: { cycles: [], actions: [], events: [], pending: null, sessionType: "", started: false },
+    q2: { attempts: [] },
+    q3: { permission: "default", calls: [], observed: "" },
+    q4: { rows: [] }
+  };
+}
+var R;
+try { R = JSON.parse(localStorage.getItem(STORE)) || blank(); } catch (e) { R = blank(); }
+if (!R.q1 || !R.q4) R = blank();
+
+function save() { try { localStorage.setItem(STORE, JSON.stringify(R)); } catch (e) {} }
+function $(id) { return document.getElementById(id); }
+function txt(el, s) { el.textContent = s; }
+function esc(s) { return String(s === undefined || s === null ? "" : s); }
+function nowISO() { return new Date().toISOString(); }
+function clock() { return new Date().toTimeString().slice(0, 8); }
+
+/* ── install / standalone detection ─────────────────────────────────────── */
+var isStandalone =
+  (typeof navigator.standalone === "boolean" && navigator.standalone === true) ||
+  (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+  (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches);
+
+var ua = navigator.userAgent;
+var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+var iosVer = (function () {
+  var m = ua.match(/OS (\d+)[_.](\d+)(?:[_.](\d+))?/);
+  return m ? m[1] + "." + m[2] + (m[3] ? "." + m[3] : "") : "unknown";
+})();
+
+(function banner() {
+  var b = $("installBanner");
+  if (isStandalone) {
+    b.className = "banner ok";
+    b.innerHTML = "INSTALLED — running from the Home Screen. This is the condition being tested.";
+  } else {
+    b.className = "banner bad";
+    b.innerHTML = "NOT INSTALLED — you are in a Safari tab.<br>" +
+      "<span style='font-weight:400'>Q1, Q2 and Q3 answer a different question from here and must " +
+      "not be reported. Tap the Share button in Safari → <b>Add to Home Screen</b> → open the " +
+      "<b>T0 Probe</b> icon, then start over.</span>";
+  }
+})();
+
+/* ── runtime manifest (absolute URLs, so a data: manifest resolves) ─────── */
+(function manifest() {
+  try {
+    var base = location.href.split("#")[0];
+    var m = {
+      name: "T0 Device Probe", short_name: "T0 Probe",
+      id: base, start_url: base, scope: base.replace(/[^/]*$/, ""),
+      display: "standalone", orientation: "portrait",
+      background_color: "#14112b", theme_color: "#14112b", lang: "en", dir: "ltr",
+      icons: [
+        { src: "data:image/png;base64," + ICON192, sizes: "192x192", type: "image/png" },
+        { src: "data:image/png;base64," + ICON512, sizes: "512x512", type: "image/png" },
+        { src: "data:image/png;base64," + ICON512, sizes: "512x512", type: "image/png", purpose: "maskable" }
+      ]
+    };
+    var link = document.createElement("link");
+    link.rel = "manifest";
+    link.href = "data:application/manifest+json;charset=utf-8," + encodeURIComponent(JSON.stringify(m));
+    document.head.appendChild(link);
+  } catch (e) { /* iOS installs from the apple-* meta tags regardless */ }
+})();
+
+/* ── environment table ──────────────────────────────────────────────────── */
+var p3Supported = (function () {
+  try {
+    var c = document.createElement("canvas");
+    var ctx = c.getContext("2d", { colorSpace: "display-p3" });
+    if (!ctx) return false;
+    var a = ctx.getContextAttributes ? ctx.getContextAttributes() : null;
+    return !!(a && a.colorSpace === "display-p3");
+  } catch (e) { return false; }
+})();
+
+function yesno(v) { return v ? "<span class='pill y'>yes</span>" : "<span class='pill n'>no</span>"; }
+
+function renderEnv() {
+  R.meta = {
+    capturedAt: nowISO(),
+    standalone: isStandalone,
+    displayMode: (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+      ? "standalone" : "browser",
+    navigatorStandalone: typeof navigator.standalone === "boolean" ? navigator.standalone : "absent",
+    userAgent: ua,
+    iosVersion: iosVer,
+    secureContext: !!window.isSecureContext,
+    origin: location.origin,
+    screen: screen.width + "x" + screen.height + " @" + (window.devicePixelRatio || 1) + "x",
+    timeZone: (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || "unknown",
+    hasMediaSession: "mediaSession" in navigator,
+    hasAudioSession: "audioSession" in navigator,
+    hasShare: "share" in navigator,
+    hasCanShare: "canShare" in navigator,
+    hasSetAppBadge: "setAppBadge" in navigator,
+    hasNotification: typeof Notification !== "undefined",
+    notificationPermission: typeof Notification !== "undefined" ? Notification.permission : "absent",
+    hasCreateImageBitmap: typeof createImageBitmap === "function",
+    displayP3Canvas: p3Supported,
+    hasStoragePersist: !!(navigator.storage && navigator.storage.persist)
+  };
+  var rows = [
+    ["Installed to Home Screen", yesno(isStandalone)],
+    ["navigator.standalone", "<code>" + esc(R.meta.navigatorStandalone) + "</code>"],
+    ["display-mode", "<code>" + R.meta.displayMode + "</code>"],
+    ["iOS version (from UA)", "<code>" + iosVer + "</code>"],
+    ["Secure context (https)", yesno(R.meta.secureContext)],
+    ["Origin", "<code>" + esc(location.origin) + "</code>"],
+    ["Screen", "<code>" + R.meta.screen + "</code>"],
+    ["Time zone", "<code>" + esc(R.meta.timeZone) + "</code>"],
+    ["navigator.mediaSession", yesno(R.meta.hasMediaSession)],
+    ["navigator.audioSession", yesno(R.meta.hasAudioSession)],
+    ["navigator.share", yesno(R.meta.hasShare)],
+    ["navigator.canShare", yesno(R.meta.hasCanShare)],
+    ["navigator.setAppBadge", yesno(R.meta.hasSetAppBadge)],
+    ["Notification.permission", "<code>" + esc(R.meta.notificationPermission) + "</code>"],
+    ["createImageBitmap", yesno(R.meta.hasCreateImageBitmap)],
+    ["canvas display-p3", yesno(p3Supported)],
+    ["storage.persist()", yesno(R.meta.hasStoragePersist)],
+    ["User agent", "<code>" + esc(ua) + "</code>"]
+  ];
+  $("envTable").innerHTML = rows.map(function (r) {
+    return "<tr><td class='k'>" + r[0] + "</td><td>" + r[1] + "</td></tr>";
+  }).join("");
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then(function (e) {
+      R.meta.storageQuotaMB = Math.round((e.quota || 0) / 1048576);
+      R.meta.storageUsedMB = Math.round((e.usage || 0) / 1048576);
+      save();
+    }).catch(function () {});
+  }
+  if (navigator.storage && navigator.storage.persisted) {
+    navigator.storage.persisted().then(function (v) { R.meta.storagePersisted = v; save(); })
+      .catch(function () {});
+  }
+  save();
+}
+
+/* ══════════════════════════ Q1 — AUDIO ═════════════════════════════════ */
+var audio = $("probeAudio");
+var AUDIO_SECONDS = 300;
+
+function buildProbeWav(seconds) {
+  var rate = 8000, n = rate * seconds;
+  var pcm = new Uint8Array(n);
+  for (var i = 0; i < n; i++) {
+    var t = i / rate, a = 2 * Math.sin(2 * Math.PI * 220 * t);   // quiet carrier
+    var tk = t % 2;
+    if (tk < 0.12) a += 42 * Math.sin(2 * Math.PI * 880 * t) * Math.exp(-tk / 0.04);
+    var bp = t % 30;                                             // triple beep each 30 s
+    if (bp < 0.45 && (bp % 0.15) < 0.08) a += 46 * Math.sin(2 * Math.PI * 1320 * t);
+    var v = Math.round(128 + a);
+    pcm[i] = v < 0 ? 0 : v > 255 ? 255 : v;
+  }
+  var head = new ArrayBuffer(44), dv = new DataView(head), o = 0;
+  function s(str) { for (var j = 0; j < str.length; j++) dv.setUint8(o++, str.charCodeAt(j)); }
+  function u32(v) { dv.setUint32(o, v, true); o += 4; }
+  function u16(v) { dv.setUint16(o, v, true); o += 2; }
+  s("RIFF"); u32(36 + n); s("WAVE"); s("fmt "); u32(16); u16(1); u16(1);
+  u32(rate); u32(rate); u16(1); u16(8); s("data"); u32(n);
+  return new Blob([head, pcm], { type: "audio/wav" });
+}
+
+function logEvent(kind, detail) {
+  var e = { at: nowISO(), clock: clock(), kind: kind, ct: audio ? +audio.currentTime.toFixed(2) : null,
+            hidden: document.hidden, detail: detail || "" };
+  R.q1.events.push(e);
+  if (R.q1.events.length > 250) R.q1.events.splice(0, R.q1.events.length - 250);
+  save(); renderQ1Log();
+}
+
+function renderQ1Log() {
+  var last = R.q1.events.slice(-40).map(function (e) {
+    return e.clock + "  " + (e.hidden ? "[hidden] " : "[visible] ") +
+      e.kind + "  t=" + e.ct + (e.detail ? "  " + e.detail : "");
+  }).join("\n");
+  txt($("q1Log"), last || "—");
+}
+
+["play", "playing", "pause", "ended", "waiting", "stalled", "suspend", "error", "ratechange", "seeked"]
+  .forEach(function (k) { audio.addEventListener(k, function () { logEvent(k); }); });
+
+function setupMediaSession() {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new window.MediaMetadata({
+      title: "The book reads itself aloud",
+      artist: "Eva & Adam — T0 probe",
+      album: "Page 1 of 210",
+      artwork: [{ src: "data:image/png;base64," + ICON512, sizes: "512x512", type: "image/png" }]
+    });
+  } catch (e) {}
+  var acts = ["play", "pause", "stop", "nexttrack", "previoustrack", "seekbackward", "seekforward"];
+  acts.forEach(function (a) {
+    try {
+      navigator.mediaSession.setActionHandler(a, function () {
+        R.q1.actions.push({ action: a, at: nowISO(), clock: clock() });
+        save(); renderQ1Actions(); logEvent("mediaSession:" + a);
+        if (a === "play") audio.play().catch(function () {});
+        if (a === "pause") audio.pause();
+      });
+    } catch (e) { /* unsupported action */ }
+  });
+}
+
+function renderQ1Actions() {
+  var names = R.q1.actions.map(function (a) { return a.action + " @" + a.clock; });
+  txt($("q1Actions"), names.length ? names.join(", ") : "none yet");
+}
+
+var armLabel = "unlabelled";
+function setArm(l) { armLabel = l; $("armed").innerHTML = "Armed as: <b>" + l + "</b>"; }
+$("btnArmLock").onclick = function () { setArm("LOCK SCREEN"); };
+$("btnArmSwitch").onclick = function () { setArm("APP SWITCH"); };
+
+$("btnAudioStart").onclick = function () {
+  var type = $("audioSessionSel").value;
+  try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) {}
+  R.q1.sessionType = (navigator.audioSession && navigator.audioSession.type) || (type + " (not applied — API absent)");
+  if (!audio.src) audio.src = URL.createObjectURL(buildProbeWav(AUDIO_SECONDS));
+  setupMediaSession();
+  audio.play().then(function () {
+    R.q1.started = true; save();
+    logEvent("user:start", "audioSession=" + R.q1.sessionType);
+  }).catch(function (err) {
+    logEvent("user:start-failed", err.name + ": " + err.message);
+  });
+};
+$("btnAudioStop").onclick = function () { audio.pause(); logEvent("user:stop"); };
+
+function beginHidden() {
+  R.q1.pending = {
+    label: armLabel, hiddenAtWall: Date.now(),
+    hiddenAtAudio: +audio.currentTime.toFixed(3), wasPlaying: !audio.paused
+  };
+  save(); logEvent("visibility:hidden", "label=" + armLabel);
+}
+
+function endHidden(reloaded) {
+  var p = R.q1.pending;
+  if (!p) return;
+  R.q1.pending = null;
+  var wall = (Date.now() - p.hiddenAtWall) / 1000;
+  var row;
+  if (reloaded) {
+    row = { label: p.label, wall: +wall.toFixed(1), audioDelta: null, ratio: null,
+            verdict: "PAGE RELOADED — not measurable", sessionType: R.q1.sessionType,
+            note: "iOS discarded the page while backgrounded. Re-run this cycle. The reload is itself a finding." };
+  } else {
+    var delta = +audio.currentTime - p.hiddenAtAudio;
+    var ratio = wall > 0.5 ? delta / wall : null;
+    var v;
+    if (!p.wasPlaying) v = "INVALID — audio was not playing when you backgrounded";
+    else if (ratio === null) v = "TOO SHORT — stay backgrounded at least 10 s";
+    else if (ratio >= 0.9) v = "AUDIO CONTINUED";
+    else if (ratio <= 0.1) v = "AUDIO STOPPED";
+    else v = "AUDIO STOPPED PART-WAY (" + Math.round(ratio * 100) + "% of the time)";
+    row = { label: p.label, wall: +wall.toFixed(1), audioDelta: +delta.toFixed(1),
+            ratio: ratio === null ? null : +ratio.toFixed(2), verdict: v,
+            sessionType: R.q1.sessionType, note: "" };
+  }
+  R.q1.cycles.push(row); save(); renderQ1(); logEvent("visibility:visible", row.verdict);
+}
+
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) beginHidden(); else endHidden(false);
+});
+window.addEventListener("pagehide", function () { logEvent("pagehide"); });
+window.addEventListener("pageshow", function (e) { logEvent("pageshow", "persisted=" + e.persisted); });
+
+function renderQ1() {
+  var rows = R.q1.cycles.map(function (c) {
+    var cls = /CONTINUED/.test(c.verdict) ? "y" : /STOPPED/.test(c.verdict) ? "n" : "";
+    return "<tr><td>" + esc(c.label) + "<br><span class='small'>" + esc(c.sessionType) + "</span></td>" +
+      "<td>" + c.wall + " s</td>" +
+      "<td>" + (c.audioDelta === null ? "—" : c.audioDelta + " s") + "</td>" +
+      "<td><span class='pill " + cls + "'>" + esc(c.verdict) + "</span></td></tr>";
+  }).join("");
+  $("q1Table").innerHTML =
+    "<tr><th>Test</th><th>Hidden for</th><th>Audio advanced</th><th>Result</th></tr>" + rows;
+
+  var valid = R.q1.cycles.filter(function (c) { return /CONTINUED|STOPPED/.test(c.verdict); });
+  var v = $("q1Verdict");
+  if (!valid.length) { v.className = "verdict"; txt(v, "NOT RUN"); }
+  else if (valid.every(function (c) { return /^AUDIO CONTINUED/.test(c.verdict); })) {
+    v.className = "verdict yes"; txt(v, "YES — audio survives backgrounding");
+  } else if (valid.every(function (c) { return /STOPPED/.test(c.verdict); })) {
+    v.className = "verdict no"; txt(v, "NO — audio dies when backgrounded");
+  } else {
+    v.className = "verdict warn"; txt(v, "MIXED — see the rows; one condition passed, another did not");
+  }
+  renderQ1Actions(); renderQ1Log();
+}
+
+/* ══════════════════════════ Q2 — SHARE ═════════════════════════════════ */
+var shareFiles = {};
+function b64ToU8(b64) {
+  var bin = atob(b64), u = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
+(function prepareShareFiles() {
+  try {
+    shareFiles.png = new File([b64ToU8(ICON192)], "eva-and-adam-probe.png", { type: "image/png" });
+    shareFiles.txt = new File([new Blob(["T0 device probe — share test"], { type: "text/plain" })],
+      "eva-and-adam-probe.txt", { type: "text/plain" });
+  } catch (e) {}
+  // JPEG must be prebuilt: constructing it inside the click handler would consume the
+  // transient user activation that navigator.share requires.
+  try {
+    var c = document.createElement("canvas"); c.width = 480; c.height = 480;
+    var x = c.getContext("2d");
+    x.fillStyle = "#14112b"; x.fillRect(0, 0, 480, 480);
+    x.fillStyle = "#f5d06f"; x.font = "bold 120px system-ui"; x.textAlign = "center";
+    x.fillText("T0", 240, 285);
+    c.toBlob(function (b) {
+      if (b) shareFiles.jpeg = new File([b], "eva-and-adam-probe.jpg", { type: "image/jpeg" });
+    }, "image/jpeg", 0.85);
+  } catch (e) {}
+})();
+
+function recordShare(payload, canShare, outcome, detail) {
+  R.q2.attempts.push({ payload: payload, canShare: canShare, outcome: outcome,
+                       detail: detail || "", at: nowISO() });
+  save(); renderQ2();
+}
+
+function doShare(payload, data) {
+  var can = null;
+  try { can = navigator.canShare ? navigator.canShare(data) : null; } catch (e) { can = "threw: " + e.message; }
+  if (!("share" in navigator)) { recordShare(payload, can, "UNAVAILABLE", "navigator.share is absent"); return; }
+  navigator.share(data).then(function () {
+    recordShare(payload, can, "SHEET OPENED, SHARE COMPLETED", "");
+  }).catch(function (err) {
+    var abort = err && err.name === "AbortError";
+    recordShare(payload, can, abort ? "SHEET OPENED, YOU CANCELLED" : "REJECTED",
+      (err && err.name ? err.name : "Error") + ": " + (err && err.message ? err.message : ""));
+  });
+}
+
+$("btnShareJpeg").onclick = function () {
+  if (!shareFiles.jpeg) { recordShare("JPEG file", null, "NOT PREPARED", "canvas.toBlob produced nothing"); return; }
+  doShare("JPEG file", { files: [shareFiles.jpeg], title: "Eva & Adam", text: "T0 probe" });
+};
+$("btnSharePng").onclick = function () {
+  doShare("PNG file", { files: [shareFiles.png], title: "Eva & Adam", text: "T0 probe" });
+};
+$("btnShareTxt").onclick = function () {
+  doShare(".txt file", { files: [shareFiles.txt], title: "Eva & Adam" });
+};
+$("btnShareTextOnly").onclick = function () {
+  doShare("text only (control)", { title: "Eva & Adam", text: "T0 probe — text-only control" });
+};
+
+function renderQ2() {
+  var rows = R.q2.attempts.map(function (a) {
+    var cls = /SHEET OPENED/.test(a.outcome) ? "y" : "n";
+    return "<tr><td>" + esc(a.payload) + "</td><td><code>" + esc(a.canShare) + "</code></td>" +
+      "<td><span class='pill " + cls + "'>" + esc(a.outcome) + "</span>" +
+      (a.detail ? "<br><span class='small mono'>" + esc(a.detail) + "</span>" : "") + "</td></tr>";
+  }).join("");
+  $("q2Table").innerHTML = "<tr><th>Payload</th><th>canShare()</th><th>What happened</th></tr>" + rows;
+
+  var fileTries = R.q2.attempts.filter(function (a) { return /file/i.test(a.payload); });
+  var v = $("q2Verdict");
+  if (!fileTries.length) { v.className = "verdict"; txt(v, "NOT RUN"); return; }
+  var anyOpened = fileTries.some(function (a) { return /SHEET OPENED/.test(a.outcome); });
+  var allOpened = fileTries.every(function (a) { return /SHEET OPENED/.test(a.outcome); });
+  if (allOpened) { v.className = "verdict yes"; txt(v, "YES — share({files}) works"); }
+  else if (anyOpened) { v.className = "verdict warn"; txt(v, "PARTIAL — some file types share, others do not"); }
+  else { v.className = "verdict no"; txt(v, "NO — share({files}) does not work here"); }
+}
+
+/* ══════════════════════════ Q3 — BADGE ═════════════════════════════════ */
+function recordBadge(call, outcome, detail) {
+  R.q3.calls.push({ call: call, outcome: outcome, detail: detail || "", at: nowISO() });
+  save(); renderQ3();
+}
+
+$("btnNotifPerm").onclick = function () {
+  if (typeof Notification === "undefined") { recordBadge("Notification.requestPermission()", "UNAVAILABLE", "Notification is absent"); return; }
+  try {
+    var p = Notification.requestPermission(function () {});
+    if (p && p.then) {
+      p.then(function (res) { R.q3.permission = res; recordBadge("Notification.requestPermission()", res.toUpperCase(), ""); });
+    } else {
+      setTimeout(function () { R.q3.permission = Notification.permission; recordBadge("Notification.requestPermission()", Notification.permission.toUpperCase(), "callback form"); }, 600);
+    }
+  } catch (e) { recordBadge("Notification.requestPermission()", "THREW", e.name + ": " + e.message); }
+};
+
+function badge(call, fn) {
+  if (!("setAppBadge" in navigator)) { recordBadge(call, "UNAVAILABLE", "navigator.setAppBadge is absent"); return; }
+  try {
+    var r = fn();
+    if (r && r.then) r.then(function () { recordBadge(call, "RESOLVED", ""); })
+      .catch(function (e) { recordBadge(call, "REJECTED", e.name + ": " + e.message); });
+    else recordBadge(call, "RETURNED (not a promise)", String(r));
+  } catch (e) { recordBadge(call, "THREW", e.name + ": " + e.message); }
+}
+$("btnBadgeNoArg").onclick = function () { badge("setAppBadge()  — no argument", function () { return navigator.setAppBadge(); }); };
+$("btnBadgeNum").onclick = function () { badge("setAppBadge(7)", function () { return navigator.setAppBadge(7); }); };
+$("btnBadgeClear").onclick = function () { badge("clearAppBadge()", function () { return navigator.clearAppBadge(); }); };
+
+Array.prototype.forEach.call(document.querySelectorAll("input[name=q3obs]"), function (el) {
+  el.onchange = function () { R.q3.observed = el.value; save(); renderQ3(); };
+});
+
+function renderQ3() {
+  var rows = R.q3.calls.map(function (c) {
+    return "<tr><td class='k'><code>" + esc(c.call) + "</code></td><td>" + esc(c.outcome) +
+      (c.detail ? "<br><span class='small mono'>" + esc(c.detail) + "</span>" : "") + "</td></tr>";
+  }).join("");
+  $("q3Table").innerHTML = "<tr><th>Call</th><th>Outcome</th></tr>" + rows;
+  if (R.q3.observed) {
+    var el = document.querySelector("input[name=q3obs][value='" + R.q3.observed + "']");
+    if (el) el.checked = true;
+  }
+  var v = $("q3Verdict");
+  if (!R.q3.observed) { v.className = "verdict"; txt(v, "NOT RUN"); return; }
+  if (R.q3.observed === "dot") { v.className = "verdict yes"; txt(v, "YES — renders as a dot"); }
+  else if (R.q3.observed === "nothing") { v.className = "verdict no"; txt(v, "NO — nothing rendered; mechanism unusable"); }
+  else { v.className = "verdict no"; txt(v, "NO — renders a number; mechanism is out (D2)"); }
+}
+
+/* ══════════════════════════ Q4 — PICKER ════════════════════════════════ */
+function sniffKind(u8) {
+  function ascii(a, b) { return String.fromCharCode.apply(null, Array.prototype.slice.call(u8.subarray(a, b))); }
+  if (u8[0] === 0xFF && u8[1] === 0xD8 && u8[2] === 0xFF) return "JPEG";
+  if (u8[0] === 0x89 && ascii(1, 4) === "PNG") return "PNG";
+  if (ascii(4, 8) === "ftyp") {
+    var brand = ascii(8, 12);
+    if (/^(heic|heix|hevc|hevx|mif1|msf1|heim|heis|hevm|hevs)$/.test(brand)) return "HEIC/HEIF [" + brand + "]";
+    if (/^(avif|avis)$/.test(brand)) return "AVIF [" + brand + "]";
+    return "ISO-BMFF [" + brand + "]";
+  }
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "WEBP";
+  if (ascii(0, 2) === "II" || ascii(0, 2) === "MM") return "TIFF";
+  if (ascii(0, 3) === "GIF") return "GIF";
+  return "UNRECOGNISED";
+}
+
+function findExifApp1(u8) {
+  for (var i = 0; i < u8.length - 6; i++) {
+    if (u8[i] === 0xFF && u8[i + 1] === 0xE1 &&
+        u8[i + 4] === 0x45 && u8[i + 5] === 0x78 && u8[i + 6] === 0x69) return true; // FFE1 .. "Exi"
+  }
+  return false;
+}
+
+function ext(name) { var m = /\.([A-Za-z0-9]+)$/.exec(name || ""); return m ? "." + m[1] : "(none)"; }
+
+async function inspect(pathLabel, file) {
+  var head = new Uint8Array(await file.slice(0, 32).arrayBuffer());
+  var hex = Array.prototype.map.call(head.subarray(0, 12),
+    function (b) { return ("0" + b.toString(16)).slice(-2); }).join(" ");
+  var scan = new Uint8Array(await file.slice(0, Math.min(file.size, 262144)).arrayBuffer());
+
+  var row = {
+    path: pathLabel,
+    fileName: file.name,
+    extension: ext(file.name),
+    reportedMime: file.type || "(empty string)",
+    actualContainer: sniffKind(head),
+    bytes: file.size,
+    firstBytes: hex,
+    lastModified: file.lastModified ? new Date(file.lastModified).toISOString() : "(absent)",
+    inputExifApp1: findExifApp1(scan),
+    nativeDecode: null, decodeMs: null, dimensions: null, decodeError: null,
+    reencodedJpegBytes: null, reencodedHasExif: null
+  };
+
+  var bmp = null;
+  try {
+    var t0 = performance.now();
+    bmp = await createImageBitmap(file);
+    row.decodeMs = Math.round(performance.now() - t0);
+    row.nativeDecode = true;
+    row.dimensions = bmp.width + "x" + bmp.height;
+  } catch (e) {
+    row.nativeDecode = false;
+    row.decodeError = (e && e.name ? e.name : "Error") + ": " + (e && e.message ? e.message : "");
+  }
+
+  // Bonus, free: does the canvas re-encode actually drop EXIF? (§5.3 — the highest-value
+  // assertion in the suite.) Measured here so T4 inherits the answer.
+  if (bmp) {
+    try {
+      var max = 2048, sc = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      var cv = document.createElement("canvas");
+      cv.width = Math.round(bmp.width * sc); cv.height = Math.round(bmp.height * sc);
+      var cx = cv.getContext("2d", { colorSpace: p3Supported ? "display-p3" : "srgb" });
+      cx.drawImage(bmp, 0, 0, cv.width, cv.height);
+      var out = await new Promise(function (res) { cv.toBlob(res, "image/jpeg", 0.82); });
+      if (out) {
+        row.reencodedJpegBytes = out.size;
+        row.reencodedHasExif = findExifApp1(new Uint8Array(await out.arrayBuffer()));
+      }
+    } catch (e) { row.reencodeError = String(e && e.message); }
+    try { bmp.close(); } catch (e) {}
+  }
+
+  R.q4.rows.push(row); save(); renderQ4();
+}
+
+function wire(inputId, label) {
+  $(inputId).addEventListener("change", function (ev) {
+    var files = Array.prototype.slice.call(ev.target.files || []);
+    files.forEach(function (f) { inspect(label, f).catch(function (e) {
+      R.q4.rows.push({ path: label, fileName: f.name, error: String(e && e.message) });
+      save(); renderQ4();
+    }); });
+  });
+}
+wire("pickA", "A · Photos (accept=image/*)");
+wire("pickB", "B · Files app (accept=image/*)");
+wire("pickC", "C · Photos (no accept)");
+wire("pickD", "D · Photos (HEIC accepted)");
+
+function renderQ4() {
+  $("q4Results").innerHTML = R.q4.rows.map(function (r, i) {
+    var isHeic = /HEIC|HEIF/.test(r.actualContainer || "");
+    var pill = "<span class='pill " + (isHeic ? "n" : "y") + "'>" + esc(r.actualContainer) + "</span>";
+    return "<h3 style='margin:18px 0 4px;font-size:18px'>" + esc(r.path) + "</h3><table>" +
+      "<tr><td class='k'>Real container (magic bytes)</td><td>" + pill + "</td></tr>" +
+      "<tr><td class='k'>Reported MIME (file.type)</td><td><code>" + esc(r.reportedMime) + "</code></td></tr>" +
+      "<tr><td class='k'>File name</td><td><code>" + esc(r.fileName) + "</code></td></tr>" +
+      "<tr><td class='k'>Extension</td><td><code>" + esc(r.extension) + "</code></td></tr>" +
+      "<tr><td class='k'>Size</td><td>" + (r.bytes ? (r.bytes / 1048576).toFixed(2) + " MB" : "—") + "</td></tr>" +
+      "<tr><td class='k'>First 12 bytes</td><td><code>" + esc(r.firstBytes) + "</code></td></tr>" +
+      "<tr><td class='k'>Native createImageBitmap</td><td>" +
+        (r.nativeDecode === null ? "—" : r.nativeDecode
+          ? "<span class='pill y'>decoded " + esc(r.dimensions) + " in " + r.decodeMs + " ms</span>"
+          : "<span class='pill n'>failed</span> <span class='mono small'>" + esc(r.decodeError) + "</span>") +
+        "</td></tr>" +
+      "<tr><td class='k'>Input carries EXIF/APP1</td><td>" +
+        (r.inputExifApp1 === null ? "—" : r.inputExifApp1 ? "<span class='pill'>yes</span>" : "<span class='pill'>no</span>") + "</td></tr>" +
+      "<tr><td class='k'>Canvas re-encode → JPEG</td><td>" +
+        (r.reencodedJpegBytes ? (r.reencodedJpegBytes / 1048576).toFixed(2) + " MB" : "—") + "</td></tr>" +
+      "<tr><td class='k'>Re-encoded output carries EXIF</td><td>" +
+        (r.reencodedHasExif === null ? "—" : r.reencodedHasExif
+          ? "<span class='pill n'>YES — strip is NOT automatic</span>"
+          : "<span class='pill y'>no — strip confirmed</span>") + "</td></tr>" +
+      "</table>";
+  }).join("");
+
+  var v = $("q4Verdict");
+  var have = {};
+  R.q4.rows.forEach(function (r) { if (/^A /.test(r.path)) have.A = r; if (/^B /.test(r.path)) have.B = r; });
+  if (!have.A || !have.B) {
+    v.className = "verdict";
+    txt(v, "NOT RUN — need A (Photos) and B (Files)");
+  } else {
+    var a = have.A.actualContainer, b = have.B.actualContainer;
+    var aHeic = /HEIC|HEIF/.test(a), bHeic = /HEIC|HEIF/.test(b);
+    v.className = "verdict warn";
+    txt(v, "Photos → " + a + "   ·   Files → " + b +
+      (aHeic || bHeic ? "  (HEIC arrives — decode path is load-bearing)" : "  (iOS transcodes to JPEG)"));
+  }
+}
+
+/* ══════════════════════════ REPORT ═════════════════════════════════════ */
+function md() {
+  var L = [];
+  L.push("## T0 device probe — captured " + nowISO());
+  L.push("");
+  L.push("| Environment | |");
+  L.push("|---|---|");
+  Object.keys(R.meta).forEach(function (k) { L.push("| " + k + " | `" + esc(R.meta[k]) + "` |"); });
+  L.push("");
+  L.push("### Q1 — audio survives backgrounding");
+  L.push("Verdict: **" + $("q1Verdict").textContent + "**");
+  L.push("");
+  L.push("| test | audioSession | hidden (s) | audio advanced (s) | ratio | result |");
+  L.push("|---|---|---|---|---|---|");
+  R.q1.cycles.forEach(function (c) {
+    L.push("| " + c.label + " | " + esc(c.sessionType) + " | " + c.wall + " | " +
+      (c.audioDelta === null ? "—" : c.audioDelta) + " | " + (c.ratio === null ? "—" : c.ratio) +
+      " | " + c.verdict + (c.note ? " — " + c.note : "") + " |");
+  });
+  L.push("");
+  L.push("Lock-screen / headphone controls received: `" +
+    (R.q1.actions.map(function (a) { return a.action; }).join(", ") || "none") + "`");
+  L.push("");
+  L.push("### Q2 — navigator.share({files})");
+  L.push("Verdict: **" + $("q2Verdict").textContent + "**");
+  L.push("");
+  L.push("| payload | canShare() | outcome | detail |");
+  L.push("|---|---|---|---|");
+  R.q2.attempts.forEach(function (a) {
+    L.push("| " + a.payload + " | `" + esc(a.canShare) + "` | " + a.outcome + " | `" + esc(a.detail) + "` |");
+  });
+  L.push("");
+  L.push("### Q3 — setAppBadge() with no argument");
+  L.push("Verdict: **" + $("q3Verdict").textContent + "**");
+  L.push("");
+  L.push("Observed on the Home Screen icon: **" + (R.q3.observed || "not reported") + "**");
+  L.push("");
+  L.push("| call | outcome | detail |");
+  L.push("|---|---|---|");
+  R.q3.calls.forEach(function (c) { L.push("| `" + c.call + "` | " + c.outcome + " | `" + esc(c.detail) + "` |"); });
+  L.push("");
+  L.push("### Q4 — what the picker hands over");
+  L.push("Verdict: **" + $("q4Verdict").textContent + "**");
+  L.push("");
+  L.push("| path | real container | reported MIME | ext | size | native decode | input EXIF | re-encoded EXIF |");
+  L.push("|---|---|---|---|---|---|---|---|");
+  R.q4.rows.forEach(function (r) {
+    L.push("| " + esc(r.path) + " | " + esc(r.actualContainer) + " | `" + esc(r.reportedMime) + "` | `" +
+      esc(r.extension) + "` | " + (r.bytes ? (r.bytes / 1048576).toFixed(2) + " MB" : "—") + " | " +
+      (r.nativeDecode === null ? "—" : r.nativeDecode ? "ok " + esc(r.dimensions) + " " + r.decodeMs + "ms" : "FAILED " + esc(r.decodeError)) +
+      " | " + (r.inputExifApp1 ? "yes" : "no") + " | " +
+      (r.reencodedHasExif === null ? "—" : r.reencodedHasExif ? "**YES**" : "no") + " |");
+  });
+  L.push("");
+  L.push("### Raw media event log");
+  L.push("```");
+  R.q1.events.slice(-60).forEach(function (e) {
+    L.push(e.clock + " " + (e.hidden ? "[hidden] " : "[visible] ") + e.kind + " t=" + e.ct + " " + esc(e.detail));
+  });
+  L.push("```");
+  return L.join("\n");
+}
+
+$("btnBuild").onclick = function () { $("report").value = md(); txt($("copyState"), "Report rebuilt at " + clock()); };
+$("btnCopy").onclick = function () {
+  var t = md(); $("report").value = t;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(function () { txt($("copyState"), "Copied. Paste it into the session note."); })
+      .catch(function () { txt($("copyState"), "Clipboard blocked — select the text below and copy manually."); });
+  } else {
+    $("report").focus(); $("report").select();
+    txt($("copyState"), "Select the text below and copy manually.");
+  }
+};
+$("btnReset").onclick = function () {
+  R = blank(); save();
+  try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {}
+  renderEnv(); renderQ1(); renderQ2(); renderQ3(); renderQ4();
+  $("report").value = ""; txt($("copyState"), "All results cleared.");
+};
+
+/* ══════════════════════════ BOOT ═══════════════════════════════════════ */
+(function boot() {
+  R.loads.push(nowISO());
+  if (R.loads.length > 40) R.loads.splice(0, R.loads.length - 40);
+  // A pending cycle surviving a page load means iOS discarded the page while backgrounded.
+  if (R.q1.pending) endHidden(true);
+  renderEnv(); renderQ1(); renderQ2(); renderQ3(); renderQ4();
+  save();
+})();
+</script>
+</body>
+</html>

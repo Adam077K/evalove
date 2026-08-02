@@ -1,0 +1,199 @@
+- generic [active] [ref=e1]:
+  - heading "T0 — Device capability probe" [level=1] [ref=e2]
+  - paragraph [ref=e3]: Eva & Adam · four questions · no product code. Nothing here is guessed — every line is what this phone actually did.
+  - generic [ref=e4]:
+    - text: NOT INSTALLED — you are in a Safari tab.
+    - generic [ref=e5]: Q1, Q2 and Q3 answer a different question from here and must not be reported. Tap the Share button in Safari → Add to Home Screen → open the T0 Probe icon, then start over.
+  - generic [ref=e6]:
+    - heading "Environment" [level=2] [ref=e7]
+    - paragraph [ref=e8]: Captured automatically. Included in the report so the four answers are attributable to a specific device and OS.
+    - table [ref=e9]:
+      - rowgroup [ref=e10]:
+        - row [ref=e11]:
+          - cell "Installed to Home Screen" [ref=e12]
+          - cell "no" [ref=e13]
+        - row [ref=e15]:
+          - cell "navigator.standalone" [ref=e16]
+          - cell [ref=e17]:
+            - code [ref=e18]: absent
+        - row [ref=e19]:
+          - cell "display-mode" [ref=e20]
+          - cell [ref=e21]:
+            - code [ref=e22]: browser
+        - row [ref=e23]:
+          - cell "iOS version (from UA)" [ref=e24]
+          - cell [ref=e25]:
+            - code [ref=e26]: unknown
+        - row [ref=e27]:
+          - cell "Secure context (https)" [ref=e28]
+          - cell "yes" [ref=e29]
+        - row [ref=e31]:
+          - cell "Origin" [ref=e32]
+          - cell [ref=e33]:
+            - code [ref=e34]: http://127.0.0.1:8731
+        - row [ref=e35]:
+          - cell "Screen" [ref=e36]
+          - cell [ref=e37]:
+            - code [ref=e38]: 1470x956 @2x
+        - row [ref=e39]:
+          - cell "Time zone" [ref=e40]
+          - cell [ref=e41]:
+            - code [ref=e42]: Asia/Jerusalem
+        - row [ref=e43]:
+          - cell "navigator.mediaSession" [ref=e44]
+          - cell "yes" [ref=e45]
+        - row [ref=e47]:
+          - cell "navigator.audioSession" [ref=e48]
+          - cell "no" [ref=e49]
+        - row [ref=e51]:
+          - cell "navigator.share" [ref=e52]
+          - cell "yes" [ref=e53]
+        - row [ref=e55]:
+          - cell "navigator.canShare" [ref=e56]
+          - cell "yes" [ref=e57]
+        - row [ref=e59]:
+          - cell "navigator.setAppBadge" [ref=e60]
+          - cell "yes" [ref=e61]
+        - row [ref=e63]:
+          - cell "Notification.permission" [ref=e64]
+          - cell [ref=e65]:
+            - code [ref=e66]: default
+        - row [ref=e67]:
+          - cell "createImageBitmap" [ref=e68]
+          - cell "yes" [ref=e69]
+        - row [ref=e71]:
+          - cell "canvas display-p3" [ref=e72]
+          - cell "yes" [ref=e73]
+        - row [ref=e75]:
+          - cell "storage.persist()" [ref=e76]
+          - cell "yes" [ref=e77]
+        - row [ref=e79]:
+          - cell "User agent" [ref=e80]
+          - cell [ref=e81]:
+            - code [ref=e82]: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+  - generic [ref=e83]:
+    - generic [ref=e84]:
+      - generic [ref=e85]: Q1
+      - heading "Does audio survive backgrounding?" [level=2] [ref=e86]
+    - paragraph [ref=e87]: "If yes, the book can read itself aloud — the first genuine answer to W3, Eva's commute: hands busy, headphones in, no screen. This answer gates a whole product category, which is why it runs in Wave 1."
+    - generic [ref=e88]: NOT RUN
+    - paragraph [ref=e89]: Put headphones in or turn the volume up. The probe plays a tick every 2 seconds and a triple-beep every 30 seconds, so you can hear whether it is still running.
+    - generic [ref=e90]:
+      - text: "Audio session type:"
+      - combobox [ref=e91]:
+        - option "playback — what the product would use" [selected]
+        - option "auto — the browser default"
+        - option "ambient"
+    - paragraph [ref=e92]:
+      - button "▶︎ Start audio" [ref=e93] [cursor=pointer]
+      - button "■ Stop" [ref=e94] [cursor=pointer]
+    - separator [ref=e96]
+    - paragraph [ref=e97]: "Label the next background test, then background the phone:"
+    - paragraph [ref=e98]:
+      - 'button "Next test: LOCK SCREEN" [ref=e99] [cursor=pointer]'
+      - 'button "Next test: APP SWITCH" [ref=e100] [cursor=pointer]'
+    - paragraph [ref=e101]: "Armed as: unlabelled"
+    - list [ref=e102]:
+      - listitem [ref=e103]: Tap one of the two buttons above to label what you are about to do.
+      - listitem [ref=e104]: Lock the screen (side button) or swipe up to the Home Screen and open another app.
+      - listitem [ref=e105]: Listen. Wait for at least one triple-beep (~30 s).
+      - listitem [ref=e106]: "While it is locked: do the lock-screen control test below."
+      - listitem [ref=e107]: Come back to this app. A row appears automatically.
+    - paragraph [ref=e108]: "Lock-screen control test (do this while the screen is locked): look at the lock screen. Is there a Now Playing card saying “The book reads itself aloud”? Press its pause, then play, then the ⏭ next-track button. If you have headphones with buttons, use those too. Every control that reaches the page is recorded below."
+    - table [ref=e109]:
+      - rowgroup [ref=e110]:
+        - row [ref=e111]:
+          - columnheader "Test" [ref=e112]
+          - columnheader "Hidden for" [ref=e113]
+          - columnheader "Audio advanced" [ref=e114]
+          - columnheader "Result" [ref=e115]
+    - paragraph [ref=e116]: "Lock-screen / headphone controls received: none yet"
+    - paragraph [ref=e117]: "Media element event log (raw evidence):"
+    - generic [ref=e118]: 12:55:27 [visible] pageshow t=0 persisted=false
+  - generic [ref=e119]:
+    - generic [ref=e120]:
+      - generic [ref=e121]: Q2
+      - 'heading "Does navigator.share({files}) work inside an installed PWA?" [level=2] [ref=e122]'
+    - paragraph [ref=e123]: Outbound only. Web Share Target (inbound) is known unavailable on Safari — that is a different question and is not being asked here.
+    - generic [ref=e124]: NOT RUN
+    - paragraph [ref=e125]: The share sheet opening at all is the “yes”. Cancelling the sheet still counts as a pass — it means the API worked and you declined. The page records which happened.
+    - paragraph [ref=e126]:
+      - button "Share a JPEG" [ref=e127] [cursor=pointer]
+      - button "Share a PNG" [ref=e128] [cursor=pointer]
+      - button "Share a .txt file" [ref=e129] [cursor=pointer]
+      - button "Share text only (control)" [ref=e130] [cursor=pointer]
+    - table [ref=e131]:
+      - rowgroup [ref=e132]:
+        - row [ref=e133]:
+          - columnheader "Payload" [ref=e134]
+          - columnheader "canShare()" [ref=e135]
+          - columnheader "What happened" [ref=e136]
+  - generic [ref=e137]:
+    - generic [ref=e138]:
+      - generic [ref=e139]: Q3
+      - heading "Does setAppBadge() with no argument render a dot?" [level=2] [ref=e140]
+    - paragraph [ref=e141]: A number is a counter, and counters are cut by founder decision D2. If it renders a number, this mechanism is out of the product entirely.
+    - generic [ref=e142]: NOT RUN
+    - paragraph [ref=e143]: iOS ties badging to notification permission. Step 1 shows a system permission prompt — that is the OS asking, not this page. Without granting it, the badge cannot appear and the question cannot be answered.
+    - list [ref=e144]:
+      - listitem [ref=e145]:
+        - button "1 · Grant notification permission" [ref=e146] [cursor=pointer]
+      - listitem [ref=e147]:
+        - button "2 · setAppBadge() — no argument" [ref=e148] [cursor=pointer]
+      - listitem [ref=e149]: Swipe to the Home Screen and look at the T0 Probe icon. Come back and answer below.
+      - listitem [ref=e150]:
+        - button "4 · setAppBadge(7) — contrast check" [ref=e151] [cursor=pointer]
+        - text: — proves badging works at all, and shows you what a number looks like.
+      - listitem [ref=e152]:
+        - button "5 · clearAppBadge()" [ref=e153] [cursor=pointer]
+    - paragraph [ref=e154]: After step 2, what was on the Home Screen icon?
+    - generic [ref=e155]:
+      - generic [ref=e156]:
+        - radio "A plain dot — no number" [ref=e157]
+        - text: A plain dot — no number
+      - generic [ref=e158]:
+        - radio "The number 1" [ref=e159]
+        - text: The number 1
+      - generic [ref=e160]:
+        - radio "Some other number" [ref=e161]
+        - text: Some other number
+      - generic [ref=e162]:
+        - radio "Nothing at all" [ref=e163]
+        - text: Nothing at all
+    - table [ref=e164]:
+      - rowgroup [ref=e165]:
+        - row [ref=e166]:
+          - columnheader "Call" [ref=e167]
+          - columnheader "Outcome" [ref=e168]
+  - generic [ref=e169]:
+    - generic [ref=e170]:
+      - generic [ref=e171]: Q4
+      - heading "What does the photo picker actually hand over?" [level=2] [ref=e172]
+    - paragraph [ref=e173]: "Architecture §5.2: whether iOS transcodes HEIC→JPEG depends on the picker path and the device settings, so it must be measured, not assumed. The reported MIME type is not trusted — the first bytes of every file are read and the real container is identified."
+    - generic [ref=e174]: NOT RUN — need A (Photos) and B (Files)
+    - paragraph [ref=e175]: Use a real camera-roll photo — ideally one taken on this phone, outdoors, with Location Services on. The first two are required; the last two isolate whether the accept attribute is what triggers the transcode.
+    - generic [ref=e176]:
+      - text: A · Photos path
+      - generic [ref=e177]: Tap, then choose Photo Library. accept="image/*" — what a normal app would ship. REQUIRED.
+      - button "A · Photos path Tap, then choose Photo Library. accept=\"image/*\" — what a normal app would ship. REQUIRED." [ref=e178]
+    - generic [ref=e179]:
+      - text: B · Files path
+      - generic [ref=e180]: Tap, then choose Choose File and pick an image out of the Files app. REQUIRED.
+      - button "B · Files path Tap, then choose Choose File and pick an image out of the Files app. REQUIRED." [ref=e181]
+    - generic [ref=e182]:
+      - text: C · Photos path, no accept attribute
+      - generic [ref=e183]: Same photo as A. Isolates whether accept is what forces the transcode.
+      - button "C · Photos path, no accept attribute Same photo as A. Isolates whether accept is what forces the transcode." [ref=e184]
+    - generic [ref=e185]:
+      - text: D · Photos path, HEIC explicitly accepted
+      - generic [ref=e186]: Same photo as A. accept="image/heic,image/heif,image/jpeg,image/png".
+      - button "D · Photos path, HEIC explicitly accepted Same photo as A. accept=\"image/heic,image/heif,image/jpeg,image/png\"." [ref=e187]
+  - generic [ref=e188]:
+    - heading "Report" [level=2] [ref=e189]
+    - paragraph [ref=e190]: Everything above, as markdown. Paste it into the session note.
+    - paragraph [ref=e191]:
+      - button "Rebuild report" [ref=e192] [cursor=pointer]
+      - button "Copy to clipboard" [ref=e193] [cursor=pointer]
+      - button "Reset all results" [ref=e194] [cursor=pointer]
+    - paragraph
+    - textbox [ref=e195]
