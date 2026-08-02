@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { Identity } from "@/lib/types";
+import type { MemberSlug } from "@/lib/types";
 
 /**
  * The one primary action per screen — a pill, filled with the ink
@@ -13,14 +13,14 @@ export function PillButton({
   className,
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  ink: Identity;
+  ink: MemberSlug;
 }) {
   return (
     <button
       {...rest}
       className={clsx(
         "press inline-flex min-h-11 items-center justify-center rounded-full px-6 py-2.5",
-        "type-entry-title text-paper",
+        "type-entry-title",
         ink === "eva" ? "bg-ink-eva" : "bg-ink-adam",
         className,
       )}

@@ -1,21 +1,42 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import "@fontsource-variable/literata";
+import "@fontsource-variable/literata/wght-italic.css";
+import "@fontsource-variable/fraunces/full.css";
+import "@fontsource-variable/fraunces/full-italic.css";
 import "./globals.css";
+import { NoiseLayer } from "@/components/chrome/NoiseLayer";
 
 export const metadata: Metadata = {
   title: "Eva & Adam",
-  description: "A private shared space for two.",
+  description: "A book for two people.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F6F1E9" },
+    { media: "(prefers-color-scheme: dark)", color: "#26221F" },
+  ],
 };
 
 /**
- * Root layout.
- *
+ * Mode: follow prefers-color-scheme, manual override persisted per
+ * device. Never switched on the local clock — an app that overrides
+ * a 3 a.m. daylight choice is an app with opinions.
+ * (?mode=night|day is the preview override; localStorage the real one.)
+ */
+const modeScript = `
+try {
+  var q = new URLSearchParams(location.search).get("mode");
+  var m = q || localStorage.getItem("ea-mode");
+  if (m === "night" || m === "day") document.documentElement.dataset.mode = m;
+} catch (e) {}
+`;
+
+/**
  * `dir` is FIXED to "ltr" and `lang` is FIXED to "en" — founder decision D7.
  * English only. There is deliberately no i18n framework, no locale negotiation,
  * no locale switcher and no RTL mirroring anywhere in this app. Do not add one
@@ -23,8 +44,14 @@ export const viewport: Viewport = {
  */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" dir="ltr">
-      <body>{children}</body>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: modeScript }} />
+      </head>
+      <body className="min-h-[100dvh]">
+        {children}
+        <NoiseLayer />
+      </body>
     </html>
   );
 }
