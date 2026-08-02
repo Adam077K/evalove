@@ -114,7 +114,13 @@ export function EchoChat() {
   const dot = partnerIsAdam ? "bg-adam" : "bg-eva";
 
   return (
-    <div className="flex min-h-[calc(100dvh-14rem)] flex-col">
+    // The column fills the screen less the shell's own chrome (9rem of
+    // column padding and header) and the dock's footprint, so the
+    // composer's sticky offset has something to stick against. The
+    // footprint is read, not restated: on a device with a home
+    // indicator this column now shortens by that much too, which the
+    // hard-coded 14rem it replaces did not.
+    <div className="flex min-h-[calc(100dvh-var(--dock-footprint)-9rem)] flex-col">
       <header className="flex items-center gap-4">
         {/* The partner's colour, deliberately not the partner's
             initial: a monogram in a chat header is an avatar, and an
@@ -233,11 +239,12 @@ export function EchoChat() {
         )}
       </div>
 
-      {/* The composer — parked one rem above the dock's footprint
-          (see DOCK_FOOTPRINT in components/chrome/Dock.tsx), so the
-          home indicator pushes it up rather than under the glass. */}
+      {/* The composer — parked one rem above the dock's footprint, so
+          the home indicator pushes it up rather than under the glass.
+          Reads `--dock-footprint` (declared in app/layout.tsx) rather
+          than restating the pill's height. */}
       <form
-        className="glass-strong sticky bottom-[calc(5rem+max(1rem,env(safe-area-inset-bottom)))] mt-4 flex items-center gap-2 rounded-full p-1.5 pl-5"
+        className="glass-strong sticky bottom-[calc(var(--dock-footprint)+1rem)] mt-4 flex items-center gap-2 rounded-full p-1.5 pl-5"
         onSubmit={(e) => {
           e.preventDefault();
           send();
