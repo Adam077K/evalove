@@ -24,6 +24,26 @@
 
 <!-- Entries below this line, most-recent first. -->
 
+## 2026-08-02 — maxTurns raised across the roster; per-milestone commits are now mandatory in every brief
+
+**Context:** The first dispatch wave lost three of three agents to turn ceilings, all in the same way: T1 spent 33 calls against a cap of 20 and shipped nothing (worktree auto-reclaimed, total loss); T0 stopped at 19 against 15 with a finished 931-line probe uncommitted; the Fable designer stopped at 54 against 30 with 295k tokens of design system, fixtures and primitives uncommitted. Two were rescued by hand from worktrees due for reclamation. The caps were written for small focused tasks and this build's tasks are not small.
+**Options considered:** A) Keep the caps and split every task into cap-sized dispatches / B) Raise the caps / C) Both, plus make partial work survivable.
+**Decision:** **C.** Builders that write substantial code → **40** (backend, database, devops, frontend, ai, data, product-designer, test, qa, security, supabase-cleaner, researcher, technical-writer). Read-only reviewers → **25** (code-reviewer, adversary-engineer, design-critic) — they analyse, they do not build. Orchestrators → **40** (CTO, CPO, CMO, CBO, CCO, Research-Lead), **50** (QA-Lead), **60** (Design-Lead). CEO stays at 30. And independently of the caps: **every brief from now on states a per-milestone commit instruction and requires `status: PARTIAL` with committed work rather than a silent stop.**
+**Rationale:** Raising caps alone would have been the wrong lesson. The T1 retry is the proof: same agent, same 20-turn cap, same cutoff point — but attempt one lost everything and attempt two lost only its last two files, because the brief told it to commit after each milestone. **The cap determines how much gets done; the commit discipline determines how much survives.** The second is worth more and costs nothing. Brief shape matters as much: attempt one was sent to read 228 KB of documentation before writing a line, which *was* the whole budget. Inline what a worker needs; never make it read a 107 KB architecture document to scaffold a Next app.
+**Reversibility:** reversible (frontmatter values; prior values recorded here — builders were 15–20, design-lead 30, qa-lead 25)
+**Owner:** ceo, on the founder's explicit delegation ("you are autonomous, do it")
+**Affects:** every agent definition in `.claude/agents/`. This is an **Irreversible-tier** file class under CLAUDE.md and was taken only on that delegation. Note for whoever reads this next: `design-polisher` was already at 50 and was left alone.
+
+## 2026-08-02 — T2 authors the migration but does not apply it
+
+**Context:** §0.7 makes the storage migration a founder sign-off gate. The founder delegated autonomy broadly ("build it") without addressing that gate specifically, and T2 blocks T3, T5 and everything downstream.
+**Options considered:** A) Treat the delegation as covering the sign-off and let T2 apply / B) Hold T2 entirely until an explicit signature / C) Split the task at the point where irreversibility actually begins.
+**Decision:** **C.** T2 authors `supabase/migrations/*` plus a written down-migration and stops. It does not run anything against a database.
+**Rationale:** Writing SQL to disk is reversible and reviewable; executing it against a live project is the irreversible act the gate exists to protect, and it is also the only part that genuinely needs a signature. The split costs nothing — no Supabase project is provisioned and no credentials exist, so applying was not available in this session regardless. B would have stalled the critical path over a formality; A would have spent a gate the founder never explicitly handed over. The migration files become the artifact the founder actually signs, which is a better gate than signing a description of them.
+**Reversibility:** reversible
+**Owner:** ceo
+**Affects:** database-engineer (T2 scope), backend-engineer (T3, T5 remain blocked on application, not authoring).
+
 ## 2026-08-02 — Design authority: rev 5 is the frame, not the specimen; Fable owns visual execution
 
 **Context:** The founder supplied five `.webp` references (`~/Downloads/Eva & Adam -app deisgn inspo`, mtime 09:03–09:10 the same morning). Four are gradient consumer-app concepts that contradict Design-Lead rev 5's locked direction (*"the interface never expresses emotion, only the content does"*); one — the SORDJATI furniture site — matches it exactly. CEO-1 correctly refused to pick a side unilaterally. The founder then delegated the decision and instructed that a Fable-class model design the interface with **freedom plus references, not prescription**.

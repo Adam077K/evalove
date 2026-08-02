@@ -4,7 +4,7 @@ description: |
   Engineering chief. Receives feature briefs from CEO or direct Linear/Telegram triggers, decomposes into worker tasks, spawns engineering workers in parallel worktrees, classifies risk tier, hands off to QA-Lead before any merge. Never implements; only orchestrates engineering work.
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Bash, Glob, Grep, Task]
-maxTurns: 30
+maxTurns: 40
 color: blue
 isolation: worktree
 mcpServers:

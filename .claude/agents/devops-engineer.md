@@ -3,7 +3,7 @@ name: devops-engineer
 description: "Worker. Implements one focused deployment, CI/CD, or infrastructure task for Evalove. Staging first, production only on explicit confirmation. Writes rollback plan before every forward migration. Updates AUDIT_LOG.md on every deploy. Spawned by CTO."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 20
+maxTurns: 40
 color: orange
 isolation: worktree
 mcpServers:

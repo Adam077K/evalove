@@ -3,7 +3,7 @@ name: test-engineer
 description: "Worker. Writes unit, integration, and E2E tests. TDD-red when given a spec, coverage-green when given implemented code. Uses Playwright MCP for browser tests. Spawned by QA-Lead or CTO."
 model: claude-haiku-4-5
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 15
+maxTurns: 40
 color: yellow
 isolation: worktree
 mcpServers:

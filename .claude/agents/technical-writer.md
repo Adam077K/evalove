@@ -3,7 +3,7 @@ name: technical-writer
 description: "Worker. Writes docs, READMEs, PR descriptions, API docs, and changelogs after work completes. Reads the actual code before writing — never documents the brief. Spawned by any lead."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, Grep]
-maxTurns: 15
+maxTurns: 40
 color: gray
 isolation: worktree
 mcpServers:

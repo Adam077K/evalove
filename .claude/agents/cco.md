@@ -3,7 +3,7 @@ name: cco
 description: "C-suite. Customer chief. Owns support, onboarding, retention, churn analysis, NPS, success playbooks, and customer voice. Quantifies every signal before routing. Updates USER-INSIGHTS.md after every session — that update is mandatory, not optional."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Bash, Glob, Grep, Task]
-maxTurns: 25
+maxTurns: 40
 color: amber
 isolation: worktree
 mcpServers:

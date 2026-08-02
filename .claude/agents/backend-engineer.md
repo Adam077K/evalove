@@ -3,7 +3,7 @@ name: backend-engineer
 description: "Worker. Implements one focused API/server-logic task in an isolated worktree. TypeScript strict, Zod validation on all inputs, returns structured JSON. Spawned by CTO."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 20
+maxTurns: 40
 color: blue
 isolation: worktree
 mcpServers:

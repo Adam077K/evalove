@@ -3,7 +3,7 @@ name: product-designer
 description: "Worker. Implements specific product screens with pixel-level fidelity. Spawned by design-lead with a screen spec. Uses Pencil/Stitch for design generation and Playwright for visual verification. Distinct from frontend-engineer (code correctness) — focuses on visual accuracy to spec."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 20
+maxTurns: 40
 color: pink
 isolation: worktree
 mcpServers:

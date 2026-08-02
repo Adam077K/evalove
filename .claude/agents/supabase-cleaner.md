@@ -3,7 +3,7 @@ name: supabase-cleaner
 description: "Worker. Audits the Evalove Supabase project against post-rethink schema. Never runs destructive SQL — emits reviewed SQL plan files for Adam to apply manually. Spawned by CEO or CTO."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, Grep, Bash]
-maxTurns: 20
+maxTurns: 40
 color: teal
 isolation: worktree
 mcpServers:

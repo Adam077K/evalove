@@ -3,7 +3,7 @@ name: qa-engineer
 description: "Worker. Authors and extends the test suite for code under active review. Spawned by QA-Lead on Lite+ tiers. Writes new unit/integration tests for the diff — distinct from QA-Lead which issues verdicts."
 model: claude-haiku-4-5
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 15
+maxTurns: 40
 color: yellow
 isolation: worktree
 mcpServers:

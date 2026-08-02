@@ -3,7 +3,7 @@ name: data-engineer
 description: "Worker. Executes SQL queries, designs metric definitions, and implements event tracking for Evalove. All queries run via Supabase MCP — never inline LLM estimation. Spawned by CBO for metric work. Returns verified numbers with sanity checks."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 20
+maxTurns: 40
 color: teal
 isolation: worktree
 mcpServers:

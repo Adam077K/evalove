@@ -3,7 +3,7 @@ name: cpo
 description: "C-suite. Product chief. Owns PRDs, user stories, roadmap, RICE prioritization, acceptance criteria, and spec compliance after CTO ships. Spawned by CEO for feature specs, roadmap decisions, or post-ship DoD verification. Not for copy (CMO), financials (CBO), or code (CTO)."
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Bash, Glob, Grep, Task]
-maxTurns: 25
+maxTurns: 40
 color: green
 isolation: worktree
 mcpServers:

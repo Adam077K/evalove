@@ -3,7 +3,7 @@ name: database-engineer
 description: "Worker. Writes Supabase migrations, RLS policies, indexes, and schema changes in an isolated worktree. NEVER drops columns without explicit double confirmation. Spawned by CTO."
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 20
+maxTurns: 40
 color: teal
 isolation: worktree
 mcpServers:

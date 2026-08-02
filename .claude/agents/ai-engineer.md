@@ -3,7 +3,7 @@ name: ai-engineer
 description: "Worker. Implements LLM integration, prompts, evals, RAG pipelines, and AI agent logic in an isolated worktree. Every LLM feature ships with eval + cost logging. Spawned by CTO."
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-maxTurns: 20
+maxTurns: 40
 color: purple
 isolation: worktree
 mcpServers:
