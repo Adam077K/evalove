@@ -78,6 +78,47 @@ the strongest signal available in this project and I am building it.
 This section is the one the brief demands most explicitly, so it is specific
 about files and named surfaces rather than about principles.
 
+### 2.0 First, the diagnosis — because it sets the burden of proof
+
+**The founder said "there is no functionality." He is describing what he can
+see. R4 got into the running app and found that most of it is there and
+invisible.** Those are different defects with very different fixes, and getting
+this wrong in either direction is expensive.
+
+R4 stood up a local instance, logged in and walked all seven surfaces live, then
+cross-checked the walkthrough against the repo's own previously-committed
+renders of the same build [R4, Part 1, "How I unblocked Task 1"]. What it found
+underneath the wash:
+
+- Today renders a genuine three-state day model straight out of
+  `lib/shared-day/`, with real, specific captions — *"Deli guy drew a cat on my
+  coffee"*, *"Carmel market tomatoes, obscene"*.
+- Dates highlights the live time-window chip with a `NOW` badge that correctly
+  matched the real hour, and writes a good empty state when nothing fits it:
+  *"A thin window — some windows are for sleeping, not planning."*
+- Send renders a real dropped-connection failure with a retry — the durable
+  outbox is not just built, it is visible.
+- Echo's own copy states the AI boundary better than any spec does: *"It will
+  quote Adam word for word. It will never guess what Adam would say."*
+- The sealed-note flip was observed working — a real spring transition
+  (stiffness 300, damping 30, deliberately stiffer than the `motion` library's
+  own 100/10 default), with real note text.
+
+R4's verdict, which I accept: *"a well-engineered idea wearing a costume that
+has nothing to do with it… the rebuild is a colour-and-surface pass on an
+information architecture that mostly doesn't need to change, not a rebuild from
+zero."*
+
+**So this document is an excavation, not a demolition, and the burden of proof
+on every cut below is higher than it would be on a blank slate.** "It looked
+bad" is not a reason to delete working, differentiated machinery. Each cut below
+therefore separates the *engine* from the *rendering*, and I only take the
+rendering. Nothing here removes a line of `lib/shared-day/`, the photo pipeline,
+or the outbox.
+
+The one place I hold the line hardest is §2.2, and I have narrowed it after
+re-reading R4 — I am cutting a taxonomy, not the model that produces it.
+
 ### 2.1 Cut: five of the seven current surfaces
 
 The app currently ships `home` · `book` · `today` · `dates` · `send` · `echo` ·
@@ -91,15 +132,28 @@ the tabs and Home has nothing to be. Its one genuinely good element — the
 computed line *"Eva's just off work, Adam's fading"*, which R4 confirmed is
 live, not fixture text — moves to the top of Today as a single line.
 
-**`send` — cut, merged into Today.** The build currently distinguishes a heavy
-daily photo ritual from a light "something small" quick-send, headed *"LIGHTER
-THAN THE DAILY PHOTO"* [R4, Part 1]. Two ways to send is one too many, and the
-existence of a "heavy" tier is what turns leaving something into a performance.
-One act, no tiers.
+**`send` — the surface is cut, the machinery is promoted.** The build currently
+distinguishes a heavy daily photo ritual from a light "something small"
+quick-send, headed *"LIGHTER THAN THE DAILY PHOTO"* [R4, Part 1]. Two ways to
+send is one too many, and the existence of a "heavy" tier is what turns leaving
+something into a performance. One act, no tiers. **To be unambiguous: the
+durable outbox and its dropped-connection retry state — which R4 confirmed
+renders live, and which the brief lists as an asset [§1] — are not cut. They
+stop serving a secondary surface and start serving the only send path in the
+product**, which is a promotion. Same for the EXIF/GPS stripping.
 
-**`dates` — cut as a destination.** See §2.3.
+**`dates` — cut as a destination, and two pieces of it are kept by name.**
+See §2.3 for the library argument. The two pieces: the **live window
+computation** with its `NOW` badge, which R4 verified against the real hour,
+moves to the single clock line at the top of Today; and the **thin-window empty
+state** — *"A thin window — some windows are for sleeping, not planning. Another
+window has more"* — survives verbatim wherever the one-suggestion gesture lives.
+That sentence is the product speaking in the couple's own window language
+[USER-INSIGHTS.md: *"Use these words. Never W1–W9 in any UI"*] and admitting
+it has nothing useful to say, which is rarer and harder than it looks.
 
-**`echo` — cut as a destination, narrowed as a feature.** See §2.4.
+**`echo` — cut as a destination, narrowed as a feature, copy kept.** See §2.4.
+Its boundary sentence is the best-written line in the app and it stays.
 
 **`pocket` — kept, but never a tab.** A dock item labelled "private" is a
 signpost pointing at the private thing. §4.2 of the brief requires that private
@@ -107,28 +161,44 @@ content never appears in an ordinary view; a permanent navigation entry is an
 ordinary view. Reaching it stays deliberate and re-authenticated, which is what
 it already does [R4, Part 1] — it just stops advertising itself.
 
-### 2.2 Cut: the completed pair, the half pair, and the single plate
+### 2.2 Cut the taxonomy, keep the pair
 
-This is the most specific cut in the document and the one I would defend
-hardest.
+This is the most specific cut in the document, the one I would defend hardest,
+and the one I have narrowed after re-reading R4's live walkthrough.
 
 The current Today surface groups the day into three named states: *"THE HALF
 PAIR — THE DAY IS STILL OPEN"*, *"THE COMPLETED PAIR"*, and *"THE SINGLE PLATE —
 A DAY THAT CLOSED HALF-FINISHED"* [R4, Part 1, observed live]. R4 called this
-structure *"a direct, visible expression of `lib/shared-day/`… worth keeping
-outright in the rebuild."*
+*"a direct, visible expression of `lib/shared-day/`… worth keeping outright in
+the rebuild,"* and half of that is right.
 
-It is beautifully engineered and it is a scoring mechanic. "A day that closed
-half-finished" is a verdict on a day one of them did not post. "The completed
-pair" is its opposite, which is what makes it a verdict. This is a direct
-violation of the founder's own immovable — *"nothing that makes a missed day
-feel like failure"* [REIMAGINE-BRIEF §4.3] — and it survived because it is
-written in good prose rather than rendered as a number. P4 named the general
-form of this exactly: *"You have removed the counter and kept the ledger"*
-[P4, "The archive is a streak with the counter filed off"].
+**What is genuinely good and stays:** two photographs from the same shared day,
+one from each of them, sitting together as one object. That pairing is only
+possible because something knows both people's local dates at any instant and
+provably cannot file a photo on a day that is already complete
+[REIMAGINE-BRIEF §1]. It is the single most differentiated thing the product
+does and no other app can do it. Nothing here touches the engine, and the pair
+survives as the archive's most valuable object type.
 
-Nothing in this product may ever classify a day by how many people contributed
-to it.
+**What goes is the taxonomy laid over it.** *"A day that closed half-finished"*
+is a verdict on a day one of them did not post. *"The completed pair"* is its
+opposite, which is what makes it a verdict rather than a description. *"The day
+is still open"* implies a day can close incomplete. Three headers, one implied
+scale. This is a direct violation of the founder's own immovable — *"nothing
+that makes a missed day feel like failure"* [REIMAGINE-BRIEF §4.3] — and it
+survived two design passes because it is written in good prose instead of
+rendered as a number. P4 named the general form exactly: *"You have removed the
+counter and kept the ledger"* [P4, "The archive is a streak with the counter
+filed off"].
+
+**The rule, stated so it is testable:** a day with two photographs may be shown
+as a pair, because a pair is a thing that exists. A day with one photograph is
+a day with one photograph — it gets no header, no category, and no name. The
+product may render what happened; it may never classify a day by how many people
+contributed to it.
+
+That distinction costs one deletion of three section headings and keeps every
+line of the day model. It is the smallest possible cut that removes the verdict.
 
 ### 2.3 Cut: the 98 date ideas as a browsable surface
 
@@ -559,6 +629,35 @@ copy lands in.*
 Supabase, who can restore it, what Eva does at 3am in New York if it returns
 503 [P4, FATAL 3, withdrawal condition 3].
 
+**7. No single service outage may make the archive unreachable to both of
+them.** R4 found the concrete version of this while trying to log in: the login
+route's rate limiter reads `auth_attempts` from Postgres *before* it looks at
+the password, and **fails closed** — *"a network error there is treated the same
+as 'actively under attack'"* [R4, "How I unblocked Task 1"]. Correct password,
+Supabase unreachable, 503. Locked out of your own photographs.
+
+Against an attacker that is the right behaviour and I am not asking to weaken
+it. The problem is that it is currently the *only* path to the archive, which
+means one vendor's bad afternoon locks both of them out of the object this
+entire product exists to protect. Note also the shape of the risk: the cost
+model already ranks Supabase's 7-day free-project pause as the top risk,
+*"an availability failure, not a cost one, shaped precisely wrong for a couple's
+app — goes quiet exactly when life gets hard"* [DECISIONS.md, cost model v2].
+Fail-closed auth turns that from a pause into a lockout.
+
+**The product requirement, stated as an outcome so CTO owns the mechanism:**
+reaching what is already theirs must not depend on a third party being up. The
+cheapest answer is the one already in item 5 — if a complete, open-format copy
+lands automatically in storage Eva controls, an outage is an inconvenience
+rather than a loss, and neither of them has to wait for anyone. Whether the rate
+limiter should also degrade to a local counter rather than a hard 503 is CTO's
+call, not mine.
+
+Read items 1–7 together and the picture is the one R2 promoted above every
+other finding: **three independent single points of failure currently sit on the
+same object** — one password in one person's manager, no export, and an auth
+path that fails closed. Couple/Pair had fewer.
+
 P3 supplies the reason this is worth doing early rather than eventually, and it
 is not risk management — it is a product argument: *"if I trusted the exit was
 real and always available, I think I'd put more in, not less. The fear that
@@ -631,6 +730,19 @@ visited twice, called it a stamp, and declared the problem solved. If the stamp
 is not genuinely felt — if *"left while Eva was asleep · 5:12 his morning"*
 reads as metadata rather than as a fact about their life — then I have renamed a
 clock and shipped it on every screen instead of one.
+
+**10. This document gets executed as a demolition.** The most likely way the
+next build fails is not that the vision is wrong — it is that a cut list this
+long gets handed to an engineer who deletes the working parts along with the
+wash. The defect R4 actually found is that the machinery is invisible, not
+absent [§2.0]. If the rebuild loses the three-state day model's *engine* while
+removing its taxonomy, or throws out the outbox with the Send surface, or
+rewrites the thin-window empty state, then the third attempt will have destroyed
+the only genuinely differentiated work in the repo in order to fix a gradient.
+**Mitigation, and I would put it in the CTO brief verbatim: every cut in §2 is a
+deletion of rendering. If a change touches `lib/shared-day/`, the photo
+pipeline, or the outbox, it is out of scope for this vision and needs a separate
+argument.**
 
 ---
 

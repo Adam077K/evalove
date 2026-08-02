@@ -461,3 +461,21 @@ should be rewritten rather than shipped against.
    account of what the other one feels, including the hours that argue with each
    other. That is the cheapest fix available and the most expensive thing to
    leave undone.
+5. **A vendor outage does not lock them out of their own archive.** Today, a
+   correct password returns 503 if Supabase is unreachable, because the login
+   route's rate limiter reads the database before it reads the password and
+   fails closed [R4, "How I unblocked Task 1"]. Every day above assumes the
+   archive is reachable; on the day it is not, day 201 stops being a quiet
+   afternoon and becomes the Couple/Pair ending in miniature [VISION §6.7].
+
+---
+
+## A note on how to build against this
+
+The journey above is not a description of a new app. R4 logged into the running
+one and found most of this machinery already there and invisible under the
+aurora wash [R4, Part 1]. The three-state day model, the live `NOW` window, the
+outbox retry, the sealed-note spring — all observed working. What changes in
+this journey is what gets shown, what gets named, and how many places there are
+to go. **If building against this document deletes an engine rather than a
+rendering, it has been misread** [VISION §2.0, §7.10].
