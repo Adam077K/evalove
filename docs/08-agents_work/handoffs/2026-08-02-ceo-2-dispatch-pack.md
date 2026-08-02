@@ -153,15 +153,38 @@ on a real iPhone, so you know what wrong looks like.
 (`mcp__playwright__*` — drive real sites, capture the motion). Use them. The
 `refero-design` skill is NOT installed; the MCP works without it.
 
-## Deliverables
+## Deliverables — the entire interface. Every surface, every state.
+
+**You own all of the UI and all of the UX. Not a system plus samples — the whole
+thing.** No API, no database, no auth logic, no service worker, no jobs. Those are
+Opus, and they wire to what you build.
 
 1. **A design system, as code.** Tailwind v4 CSS-first tokens. Colour, type scale,
    spacing, motion curves, radius discipline, the two-ink identity system or whatever
    replaces it. Light and dark both — night is half this product, Eva is in it with
    the lights off.
-2. **Three signature surfaces, built, not mocked:** the cover · the book with its
-   page-turn · the daily spread including the half-pair state. Real React, real
-   Tailwind, real photographs. These three are the product.
+
+2. **Every screen in the product**, built as real React components against the types
+   in `lib/types.ts`, with realistic fixture data:
+
+   | Surface | Includes |
+   |---|---|
+   | Login + "who's this?" | first-run, wrong password, rate-limited |
+   | The cover | the clock, the other person's sky, the suggestion slip, the anchor |
+   | The book | title page · opening gathering · dated leaves · today · colophon |
+   | The turn | the page-turn itself, and the riffle |
+   | The daily spread | complete pair · **half-pair** · single plate when a day closes half-finished |
+   | Dates | the slip · a date in progress · the finished artifact page · the paired question's held-open space |
+   | Browse | the contents page and the shelves, in the couple's own language |
+   | Seeding | the opening gathering, and the **half-seeded** state |
+   | The outbox | persistent per-item batch upload state. Never a toast |
+   | The pocket | entrance, unlock, the quiet grid |
+   | PWA | install-first onboarding, offline indicator, "N of M saved" |
+
+   And per AC-37, **every one of them has a designed empty, loading, error and asleep
+   state.** No placeholder, no lorem, no "no results". That criterion is now yours
+   end to end, and it is the largest single thing in this brief.
+
 3. **The page-turn feel spike** — design §12, one throwaway static HTML file, three
    leaves, real camera-roll photographs. It answers one question you cannot answer
    from a number: *does the boundary resist like a binding, or rubber-band like a
@@ -170,15 +193,42 @@ on a real iPhone, so you know what wrong looks like.
    `overscroll-behavior` can suppress the give entirely, and a dead stop reads as a
    bug. Adam runs this on a real iPhone; you build it and tell him exactly what to
    look for.
+
 4. **A written direction doc** at `docs/04-features/LDR-APP-DESIGN-DIRECTION-v6.md`
    recording what you kept, what you changed, and why. Rev 5 stays on disk.
 
-Do not build: the activities list, the vault grid, the dates list, any API, any
-schema. Those are Opus tasks built against your system.
+## The seam — what is yours and what is Opus's
+
+```
+YOURS                                   OPUS'S
+components/**            all of it      app/api/**              route handlers
+app/globals.css          tokens         lib/data/**             every query
+screen composition       presentational lib/session/**          auth
+fixtures/**              your test data lib/photo/** lib/outbox/** pipeline internals
+                                        lib/shared-day/**       the day model
+                                        supabase/**  scripts/**  sw.ts
+```
+
+**`lib/types.ts` is the contract.** It is created by T1 and append-only. Build every
+component against those types with your own fixtures; Opus swaps fixtures for real
+data and changes nothing else. If you need a type that doesn't exist, say so in your
+return rather than inventing a parallel one.
+
+This is why you are not blocked on anything: the database, the APIs and the auth can
+all land after you, and none of them changes a line of what you write.
+
+**One boundary that is not negotiable.** You design the pocket; Opus *enforces* it.
+The rules that keep private content out of thumbnails, caches and previews are
+structural — a separate table, a separate storage prefix, a service-worker path rule,
+and no thumbnail derivative ever generated. Design the surface as if those hold, and
+do not design anything that depends on breaking them (no vault item in a grid
+preview, no peek, no count on the closed pocket).
 
 ## Skills — read these, in this order
 
-Core, all six:
+Core, all eight. This is above the usual 3-5 cap for a lead, deliberately — your
+scope is the entire interface, not one surface.
+
   1. .claude/skills/frontend-design/SKILL.md          — distinctive, non-templated visual identity
   2. ~/.claude/skills/ui-typography/SKILL.md          — this design is typography-led: oldstyle
                                                         figures, curly quotes, en vs em dashes, never `--`
@@ -187,12 +237,17 @@ Core, all six:
   4. ~/.claude/skills/12-principles-of-animation/SKILL.md — the page-turn must move like matter
   5. .claude/skills/design-taste-frontend/SKILL.md    — overrides default LLM visual bias; CSS
                                                         hardware acceleration
-  6. .claude/skills/web-design-guidelines/SKILL.md    — catches the craft misses
+  6. .claude/skills/react-ui-patterns/SKILL.md        — loading, error and async states. AC-37 makes
+                                                        four states on every screen your problem
+  7. .claude/skills/tailwind-patterns/SKILL.md        — v4 CSS-first tokens, how the ink system ships
+  8. .claude/skills/web-design-guidelines/SKILL.md    — catches the craft misses
 
 Situational:
-  7. .claude/skills/wcag-audit-patterns/SKILL.md      — REQUIRED if you change the palette
-  8. .claude/skills/vercel-react-view-transitions/SKILL.md — if you revisit the turn mechanism
-  9. .claude/skills/tailwind-patterns/SKILL.md        — v4 CSS-first tokens, how the ink system ships
+  9.  .claude/skills/wcag-audit-patterns/SKILL.md     — REQUIRED if you change the palette
+  10. .claude/skills/radix-ui-design-system/SKILL.md  — the unlock dialog and any modal. shadcn is
+                                                        Radix underneath and it is already installed
+  11. .claude/skills/vercel-react-view-transitions/SKILL.md — if you revisit the turn mechanism
+  12. .claude/skills/core-components/SKILL.md         — design-token and component-library patterns
 
 Deliberately NOT required, and you should know why: `high-end-visual-design`,
 `minimalist-ui`, `redesign-existing-projects`. Each teaches a specific look —
@@ -219,24 +274,31 @@ Workers get 2–3, leads get 3–5, per CLAUDE.md. Every path below exists on di
 
 | Agent | Model | Task | Skills |
 |---|---|---|---|
-| **design-lead** | **fable** | design system + 3 signature surfaces + spike | see brief above (6 core + 3 situational) |
+| **design-lead** | **fable** | **the entire interface** — design system, every screen, every state, the spike | see brief above (8 core + 4 situational) |
 | devops-engineer | opus | **T1** scaffold | `vercel-deployment` · `worktree-isolation-pattern` · `full-output-enforcement` |
 | devops-engineer | opus | **T1b** CI + banned-vocab grep | `github-actions-templates` · `worktree-isolation-pattern` |
 | database-engineer | opus | **T2** migrations *(gated)* | `postgresql` · `supabase-rls-conventions` · `database-design` |
-| backend-engineer | opus | **T3** auth | `auth-implementation-patterns` · `nextjs-supabase-auth` · `worktree-isolation-pattern` |
-| frontend-engineer | opus | **T4** photo pipeline + batch | `react-patterns` · `sharp-edges` · `worktree-isolation-pattern` |
+| backend-engineer | opus | **T3** auth logic *(login screen is Fable's)* | `auth-implementation-patterns` · `nextjs-supabase-auth` · `worktree-isolation-pattern` |
+| frontend-engineer | opus | **T4** photo pipeline internals — decode, EXIF strip, canvas, outbox *(the batch UI is Fable's)* | `react-patterns` · `sharp-edges` · `worktree-isolation-pattern` |
 | backend-engineer | opus | **T5** photo API | `nextjs-app-router-patterns` · `api-design-principles` · `error-handling-patterns` |
 | backend-engineer | opus | **T6** shared-day *(test-first)* | `testing-patterns` · `sharp-edges` · `worktree-isolation-pattern` |
-| frontend-engineer | opus | **T7** activity library | `nextjs-app-router-patterns` · `tailwind-patterns` |
-| frontend-engineer | opus | **T8** PWA + service worker | `vercel-react-best-practices` · `nextjs-app-router-patterns` |
-| security-engineer | opus | **T13** the vault | `security-audit` · `supabase-rls-conventions` · `web-security-testing` |
+| frontend-engineer | opus | **T7** library build step + `activity_state` API *(browse UI is Fable's)* | `nextjs-app-router-patterns` · `sharp-edges` |
+| frontend-engineer | opus | **T8** manifest, Serwist, the `/v/*` path rule *(install UX is Fable's)* | `vercel-react-best-practices` · `nextjs-app-router-patterns` |
+| security-engineer | opus | **T13** vault enforcement *(the pocket's look is Fable's)* | `security-audit` · `supabase-rls-conventions` · `web-security-testing` |
 | backend-engineer | opus | **T14a** dates engine | `api-design-principles` · `error-handling-patterns` · `worktree-isolation-pattern` |
-| frontend-engineer | opus | **T14b/T16** dates UI | `react-ui-patterns` · `tailwind-patterns` |
+| frontend-engineer | opus | **T9 · T10 · T14b · T16** — **wiring.** Feed Fable's components real data | `nextjs-app-router-patterns` · `vercel-react-best-practices` · `react-patterns` |
 | devops-engineer | opus | **T11** backup + liveness | `github-actions-templates` · `vercel-deployment` · `secrets-management` |
 | test-engineer | opus | **T0** device probe · **T12** E2E | `e2e-testing-patterns` · `playwright-skill` · `testing-patterns` |
 | qa-lead | opus | the gate | `qa-gate-protocol` · `code-review-excellence` · `production-code-audit` |
 | code-reviewer | opus | every diff | `code-review-excellence` · `sharp-edges` |
 | ceo (me) | opus | orchestration | `design-orchestration` · `writing-plans` · `dispatching-parallel-agents` |
+
+**What the re-cut changed.** Architecture §10.0 assigned one owning *directory* per
+task, which put UI and logic in the same hands — `app/(app)/book/**` to T9,
+`app/(app)/vault/**` to T13 (a security engineer designing a grid), `/dates` UI to
+T14b. That seam is now horizontal instead of vertical: **Fable owns every pixel,
+Opus owns everything behind them.** T9, T10, T14b and T16 stop being build tasks and
+become wiring tasks, which is why they collapse into one row.
 
 Two manifest entries are traps and are used nowhere: `ui-visual-validator` (a generic
 community stub — "Working on ui visual validator tasks") and `design-orchestration`

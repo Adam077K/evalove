@@ -57,12 +57,13 @@
 ## 2026-08-02 — Model assignment: Fable designs, Opus engineers
 
 **Context:** Founder instruction — a Fable-class model owns the interface and user experience "because we want the best output," with Opus on the backend and the rest of the build.
-**Options considered:** A) One model tier throughout / B) Fable on design surfaces, Opus on engineering.
-**Decision:** **B.** Fable owns the design system and the three signature surfaces (the cover, the book/page-turn, the daily spread) design-through-code. Opus owns backend, database, devops, security, QA and the non-signature front-end surfaces built against Fable's system. Sonnet is not used on this build.
-**Rationale:** The signature interactions are the product — a page-turn that reads as a scroll view wearing paper fails the whole object thesis, and that is a judgement call, not an implementation one. Everything downstream of the design system is correctness work with a written spec and hard acceptance criteria, which is where Opus is strongest and where taste adds nothing. The split also keeps the expensive model on the ~3 surfaces that carry the product rather than on 19 tasks.
+**Options considered:** A) One model tier throughout / B) Fable on the three signature surfaces only, Opus on everything else / C) **Fable on the entire interface, Opus on everything behind it.**
+**Decision:** **C**, on the founder's correction — *"Fable in to design all the UI UX for all, no backend with Fable. Opus for the backend and wiring."* Fable owns the design system and **every screen and every state**: login, the cover, the whole book, the turn and the riffle, the daily spread in all three of its states, dates, browse, seeding, the outbox, the pocket, install onboarding, and the empty/loading/error/asleep state of each. Opus owns API routes, `lib/data/*`, `lib/session/*`, the photo-pipeline internals, the shared-day module, migrations, the service worker, jobs — and the wiring that feeds Fable's components real data. Sonnet is not used on this build.
+**Rationale:** B put a security engineer in charge of designing the vault grid and a backend engineer in charge of the dates UI, purely because architecture §10.0 assigns ownership by *directory* — one task per path, UI and logic together. That vertical seam is wrong for this product, where the interface is the deliverable and the rest is plumbing to a written spec. The horizontal seam is also what makes the design track genuinely unblocked: Fable builds against `lib/types.ts` with its own fixtures, so the database, the APIs and the auth can all land afterwards without changing a line of it. AC-37 (four designed states on every screen) becomes one agent's coherent problem instead of six agents' inconsistent one.
+**Consequence:** architecture §10.0's directory-ownership contract is re-cut. T9, T10, T14b and T16 stop being build tasks and become wiring tasks. T13 splits: Fable designs the pocket, security-engineer enforces the boundary (separate table, storage prefix, SW path rule, no thumbnail derivative ever).
 **Reversibility:** reversible
 **Owner:** ceo
-**Affects:** every dispatch brief; recorded in `docs/08-agents_work/handoffs/2026-08-02-ceo-2-dispatch-pack.md`.
+**Affects:** every dispatch brief; the full seam and skill matrix are in `docs/08-agents_work/handoffs/2026-08-02-ceo-2-dispatch-pack.md`.
 
 ## 2026-08-02 — Shared-day assignment: the poster's own local date (CEO ruling, closed)
 
