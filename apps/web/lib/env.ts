@@ -268,6 +268,25 @@ const envSchema = z.object({
   /** Opens the vault. A different secret, independently generated. */
   VAULT_PASSPHRASE_HASH: scryptHashVar("VAULT_PASSPHRASE_HASH"),
 
+  /**
+   * The margin's API key. OPTIONAL, and the only optional variable here.
+   *
+   * Every other variable in this file is required because the app cannot serve
+   * a page without it. This one gates a single feature: with no key the margin
+   * is unreachable and the book, the day and the pocket all work exactly as
+   * before. Making it required would mean a missing AI credential takes the
+   * whole product down, which is the wrong failure for the least essential
+   * thing in it.
+   *
+   * `lib/ai/transport.ts` throws `MissingApiKeyError` at the point of use, so
+   * the absence is reported as a specific, fixable condition rather than as an
+   * outage.
+   */
+  ANTHROPIC_API_KEY: z.preprocess(
+    blankToUndefined,
+    z.string().optional(),
+  ),
+
   /** HS256 signing key for `jose`. Rotating this invalidates every session. */
   SESSION_SECRET: requiredString("SESSION_SECRET").superRefine((value, ctx) => {
     const raw = String(value);
@@ -405,6 +424,7 @@ function loadEnv(source: NodeJS.ProcessEnv): Env {
     APP_PASSWORD_HASH: source.APP_PASSWORD_HASH,
     VAULT_PASSPHRASE_HASH: source.VAULT_PASSPHRASE_HASH,
     SESSION_SECRET: source.SESSION_SECRET,
+    ANTHROPIC_API_KEY: source.ANTHROPIC_API_KEY,
   });
 
   const problems = [
