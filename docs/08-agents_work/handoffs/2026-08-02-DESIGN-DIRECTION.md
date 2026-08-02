@@ -228,7 +228,7 @@ Founder-chosen:
 
 | Surface | What it answers |
 |---|---|
-| **Today** | What's waiting for you right now — what she left while you slept. |
+| **Today** | What's waiting for you right now — what the other one left while you slept. |
 | **The Gap** | The two-clock spine. Seven hours, two calendar dates, built on `lib/shared-day/`. This is the one thing no other product has. |
 | **Saturday** | Their single shared day off, one day a week. This is where the 98 researched date ideas finally have a reason to exist. |
 
