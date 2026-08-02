@@ -1,0 +1,74 @@
+# =============================================================================
+# Eva & Adam — Supabase LOCAL stack configuration
+#
+# This file configures `supabase start` on a laptop. It configures NOTHING about
+# any hosted project: the CLI only reads it for the local Docker stack and for
+# `db push`'s idea of which migrations exist. There are no credentials here and
+# there is no project ref here, so this file cannot, by itself, reach anything.
+#
+#   !! NOT VERIFIED. `supabase start` has never been run against this file. !!
+#   The machine this was authored on has no container runtime — see
+#   ./migrations/README.md, "The verification that did not happen".
+#
+# Written by hand rather than produced by `supabase init`, because `supabase
+# init` could not be run either. It is a conservative subset: every key below is
+# one the CLI has accepted for a long time, and the optional sections that churn
+# between CLI releases (analytics, edge runtime, realtime tuning, auth
+# providers) are deliberately absent so that a version mismatch cannot turn into
+# a parse error on the founder's first attempt.
+# =============================================================================
+
+project_id = "eva-adam"
+
+[api]
+enabled = true
+port = 54321
+# The default. `storage` is deliberately NOT exposed through PostgREST: nothing
+# in Phase 1 talks to storage over the REST API, and a schema that is not
+# exposed is one that cannot be enumerated by a leaked key.
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Match this to whatever the hosted project will run. If `supabase start` says
+# it cannot find an image for this version, the local CLI is older than the
+# value here; lower it to 15 and record the change in the README rather than
+# leaving the two environments on different majors silently.
+major_version = 17
+
+[db.seed]
+# `supabase db reset` runs the file below after every migration has applied.
+# It is a DEVELOPMENT seed and it defends itself — see ./seed.sql, which refuses
+# to run against a database holding anything it did not write.
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+# Local mail catcher. Phase 1 sends no mail; it is left on because turning it
+# off is a config key that has been renamed between CLI versions and an
+# unrecognised key is a hard error, whereas an unused container is 30MB.
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+# Ceiling for a single object. The `media` bucket sets its own, lower limit in
+# migration 11; this is the stack-wide backstop.
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+# Phase 1 has no Supabase Auth users. Every request reaches PostgreSQL through
+# the Next.js server holding the service role, and migration 10 denies everyone
+# else. These settings exist so the container starts, not because anything
+# signs in.
+enable_signup = false
