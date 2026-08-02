@@ -10,8 +10,8 @@
  * WHAT THIS IS AND IS NOT. It is a cheap, universal "is there a valid session"
  * check that runs before a page is rendered, so a signed-out request never
  * reaches a component that would query the database. It is NOT the only check:
- * a matcher is a list, lists acquire holes, and `requireSession()` in
- * `lib/session/` is what still holds if a route is added outside this one.
+ * a matcher is a list, lists acquire holes, and the `require*` functions in
+ * `lib/session/` are what still hold if a route is added outside this one.
  * Middleware is the fast path, not the guarantee.
  *
  * THE ALLOWLIST IS THE SECURITY BOUNDARY. Everything not on it requires a
