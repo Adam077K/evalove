@@ -17,10 +17,11 @@
  *
  *   1. No secret ever sits behind `NEXT_PUBLIC_`. That prefix means "inlined
  *      into the JavaScript bundle the browser downloads" — it is publication,
- *      not configuration. Exactly one variable is allowed to carry it, and the
- *      allowlist below is checked against the real environment at boot, so a
- *      stray `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` in a Vercel dashboard
- *      cannot quietly ship.
+ *      not configuration. Exactly one variable WE name is allowed to carry it,
+ *      plus the `NEXT_PUBLIC_VERCEL_*` namespace the host injects and we do not
+ *      control. The allowlist below is checked against the real environment at
+ *      boot, so a stray `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` in a Vercel
+ *      dashboard still cannot quietly ship.
  *
  *   2. The app password and the vault passphrase are INDEPENDENT credentials.
  *      See the `assertIndependentCredentials` block at the bottom.
@@ -326,6 +327,36 @@ const PUBLIC_ALLOWLIST: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Prefixes owned by the host, not by this app.
+ *
+ * The allowlist above answers "which of OUR variables may be public". It
+ * silently assumed we name every variable in the environment, and we do not:
+ * Vercel injects its own at build time — `NEXT_PUBLIC_VERCEL_URL`,
+ * `NEXT_PUBLIC_VERCEL_PROJECT_ID`, `NEXT_PUBLIC_VERCEL_GIT_REPO_SLUG` and
+ * others — whenever "Automatically expose System Environment Variables" is on.
+ * That produced six boot failures for values that are a hostname, a project id
+ * and a git branch name. Not secrets, and not ours to rename.
+ *
+ * Matching the namespace rather than listing the six names is the point.
+ * `VERCEL_` is reserved by the platform — its dashboard refuses to create a
+ * custom variable under that prefix — so nothing we own can land here, and a
+ * seventh system variable in some future release will not break a build at
+ * 1am. A list of six strings would.
+ *
+ * WIDEN THIS NO FURTHER. Adding `NEXT_PUBLIC_` itself, or any prefix whose
+ * namespace this project can write into, deletes the guard: the whole value of
+ * the check is that a human-chosen name must be justified one at a time. Only
+ * a prefix that (a) a third party controls and (b) that party documents as
+ * non-secret metadata belongs in this array.
+ */
+const PLATFORM_PUBLIC_PREFIXES: readonly string[] = ["NEXT_PUBLIC_VERCEL_"];
+
+/** True when the hosting platform, not this app, owns the variable's name. */
+function isPlatformOwned(key: string): boolean {
+  return PLATFORM_PUBLIC_PREFIXES.some((prefix) => key.startsWith(prefix));
+}
+
+/**
  * Catch a secret that has been given a `NEXT_PUBLIC_` prefix.
  *
  * The realistic failure is not someone writing `NEXT_PUBLIC_` in this repo —
@@ -337,6 +368,7 @@ function collectPublicPrefixProblems(source: NodeJS.ProcessEnv): string[] {
   return Object.keys(source)
     .filter((key) => key.startsWith("NEXT_PUBLIC_"))
     .filter((key) => !PUBLIC_ALLOWLIST.has(key))
+    .filter((key) => !isPlatformOwned(key))
     .sort()
     .map(
       (key) =>
