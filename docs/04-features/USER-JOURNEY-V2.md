@@ -291,10 +291,18 @@ contributed to.
 This day earns its place because the research says it is the loudest real event
 in their year and the product currently has nothing to say about it.
 
-Israel's clocks went back on Sunday 25 October. New York's do not go back until
-Sunday 1 November. **For these seven days the gap is six hours, not seven**
-[REIMAGINE-BRIEF §2 — ~26 such days a year; the arithmetic of which weeks is
-mine, from the two countries' published DST rules]. This is exactly the
+Israel's clocks went back on Sunday 25 October — the last Sunday of the month,
+by Israeli law. New York's do not go back until Sunday 1 November, the first
+Sunday of theirs. **For these seven days the gap is six hours, not seven.**
+
+Worth doing the arithmetic once, because it independently confirms the brief's
+number: the other mismatch runs from the US spring-forward on Sunday 8 March
+2026 to Israel's on Friday 27 March — nineteen days. Nineteen plus seven is
+twenty-six, which is exactly the figure in the brief [REIMAGINE-BRIEF §2:
+*"seven for ~339 days a year, six for ~26"*]. The dates are mine, derived from
+each country's published DST rule; the count they produce is the founder's.
+
+This is exactly the
 situation R1b found people naming, unprompted, in dedicated threads with their
 own upvote counts:
 
