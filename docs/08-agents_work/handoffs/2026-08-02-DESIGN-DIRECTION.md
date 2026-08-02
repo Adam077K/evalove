@@ -302,19 +302,65 @@ Text stays at WCAG AA whatever happens.
 
 ---
 
-## 7. The three surfaces to build
+## 7. The surfaces to build — revised 2026-08-02
 
-Founder-chosen:
+**Superseded.** This section originally listed three founder-chosen surfaces:
+Today, The Gap, Saturday. After the research and persona board, CPO argued for
+two reversals and the founder accepted both. See `PRODUCT-VISION-V2.md` §3.
 
-| Surface | What it answers |
+### Build two places, not three
+
+| Surface | What it is |
 |---|---|
-| **Today** | What's waiting for you right now — what the other one left while you slept. |
-| **The Gap** | The two-clock spine. Seven hours, two calendar dates, built on `lib/shared-day/`. This is the one thing no other product has. |
-| **Saturday** | Their single shared day off, one day a week. This is where the 98 researched date ideas finally have a reason to exist. |
+| **Today** | Not a tab — **it is what the app is when you open it.** The last thing the other one left, already there, owing no reply. |
+| **The Book** | Everything either of them has ever left. An object that gets better with age and comes back on the day it matches. **Pocket is a locked drawer inside it**, not a third place. |
 
-Do not touch `apps/web/lib/shared-day/` behaviour. 109 tests, four DST
-transitions, and it is the app's only real differentiator. 251 tests pass today;
-keep them passing.
+### The Gap is a stamp, not a room
+
+A clock is correct on day one and on day four hundred, and correctness gives
+nobody a reason to return. It was also built on the one ache two independent
+research passes searched for and could not find — the date-crossing came back
+LOW confidence in R1 and LOW-MEDIUM in R1b after nine dedicated threads.
+
+So the two-timezone engine works on **every item, everywhere**:
+
+> *left while Eva was asleep · 5:12 his morning · 22:12 her night*
+
+`lib/shared-day/` does more visible work this way, not less — on every screen
+rather than one screen nobody revisits.
+
+**And it gets the thing that is actually evidenced: DST asymmetry.** For the ~26
+days a year the offset is 6 hours instead of 7, the clock line reads differently
+and says so plainly. No banner, no countdown, no push — the register is a fact,
+not an event. R1b found this as a real, named, recurring dread (*"the difference
+in our timezones increasing from 7 to 8 hours is painful"*, 61 upvotes), and P3
+at three years in says it never dulls.
+
+### Saturday: the day is protected, the surface is cut
+
+The premise was that their one shared day needs help. R1b looked and found the
+opposite — the corroborated pain is having **no** shared day, while couples who
+have one build their week around it without complaint. Even P5, arguing its own
+surface as hard as it could, concluded most of those hours should have the app
+saying nothing at all.
+
+The activity library stays as **on-demand rescue, never a weekly default**.
+Reached for once or twice a month it lasts past a year; used weekly, the ~20–24
+both-alert items exhaust in ~4.5 months — almost exactly the category's observed
+churn point.
+
+### This is an excavation, not a demolition
+
+R4 walked all seven surfaces of the running app. Underneath the gradient there
+is real, specific machinery: Today's three-state day model out of
+`lib/shared-day`, a live NOW-badged time-window chip with a written empty state,
+a genuine dropped-connection retry, and a working spring-based sealed-note open.
+None of it survives first glance because the first glance is the aurora.
+
+**The defect is a colour and surface pass over working machinery.** Delete
+`AuroraBackdrop`, rewrite the tokens, and the good work starts showing. Do not
+touch `lib/shared-day/` behaviour — 109 tests, four DST transitions. 251 tests
+pass today; keep them passing.
 
 ---
 
