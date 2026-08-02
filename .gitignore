@@ -24,3 +24,6 @@ all_skills_stored/
 # IDE / tool caches (keep config, ignore caches)
 .claude/memory/*.local.md
 .planning/state.local.json
+
+# Browser automation artifacts (agent research runs)
+.playwright-mcp/
