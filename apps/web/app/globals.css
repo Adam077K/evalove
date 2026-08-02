@@ -51,6 +51,10 @@
   --us-soft: #ece6fe;
   --us-tint: rgba(122, 90, 248, 0.13);
 
+  /* semantic — errors are their own colour, never Eva's rose */
+  --danger: #d43d47;
+  --danger-soft: #fde5e6;
+
   /* gradients — the only place colour is allowed to move */
   --grad-eva: linear-gradient(135deg, #ff82ae 0%, #e8447f 100%);
   --grad-adam: linear-gradient(135deg, #ffb35c 0%, #e0720d 100%);
@@ -110,6 +114,9 @@
   --us-soft: rgba(167, 139, 255, 0.17);
   --us-tint: rgba(167, 139, 255, 0.15);
 
+  --danger: #ff7d84;
+  --danger-soft: rgba(255, 125, 132, 0.16);
+
   --grad-eva: linear-gradient(135deg, #ff8fb7 0%, #e8447f 100%);
   --grad-adam: linear-gradient(135deg, #ffb877 0%, #e0720d 100%);
   --grad-us: linear-gradient(135deg, #ab8fff 0%, #6d4bf0 100%);
@@ -154,6 +161,8 @@
     --us-deep: #c4b1ff;
     --us-soft: rgba(167, 139, 255, 0.17);
     --us-tint: rgba(167, 139, 255, 0.15);
+    --danger: #ff7d84;
+    --danger-soft: rgba(255, 125, 132, 0.16);
     --grad-eva: linear-gradient(135deg, #ff8fb7 0%, #e8447f 100%);
     --grad-adam: linear-gradient(135deg, #ffb877 0%, #e0720d 100%);
     --grad-us: linear-gradient(135deg, #ab8fff 0%, #6d4bf0 100%);
@@ -193,6 +202,8 @@
   --color-us: var(--us);
   --color-us-deep: var(--us-deep);
   --color-us-soft: var(--us-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
 
   --font-sans: "Outfit Variable", "Outfit", ui-sans-serif, system-ui,
     sans-serif;

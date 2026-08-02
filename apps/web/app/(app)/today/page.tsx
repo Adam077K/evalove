@@ -5,7 +5,7 @@ import { SHARED_DAYS } from "@/lib/fixtures/book";
 import { PHOTOS } from "@/lib/fixtures/photos";
 
 export const metadata: Metadata = {
-  title: "The daily spread — Eva & Adam",
+  title: "Today — Eva & Adam",
 };
 
 /**
@@ -21,23 +21,35 @@ function dayOf(date: string): SharedDay {
 
 export default function TodayPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 md:py-16">
-      <header className="mb-12 flex items-baseline justify-between gap-4">
-        <h1 className="type-heading">The daily spread</h1>
-        <nav aria-label="Mode" className="type-caption text-ink-soft">
-          <a className="underline underline-offset-2" href="?mode=day">
+    <div>
+      <header className="mb-10 flex items-baseline justify-between gap-4">
+        <h1 className="type-hero text-ink">Today</h1>
+        <nav aria-label="Mode" className="flex gap-1.5">
+          <a
+            className="type-label glass press rounded-full px-3.5 py-1.5 text-mute"
+            href="?mode=day"
+          >
             day
           </a>
-          {" · "}
-          <a className="underline underline-offset-2" href="?mode=night">
+          <a
+            className="type-label glass press rounded-full px-3.5 py-1.5 text-mute"
+            href="?mode=night"
+          >
             night
           </a>
         </nav>
       </header>
 
-      <div className="space-y-20">
+      <div className="space-y-16">
+        <section aria-labelledby="state-half">
+          <h2 id="state-half" className="type-micro mb-4 text-mute">
+            The half pair — the day is still open
+          </h2>
+          <Spread day={dayOf("2026-08-02")} adamPhoto={PHOTOS["d0802-adam"]} live />
+        </section>
+
         <section aria-labelledby="state-pair">
-          <h2 id="state-pair" className="type-eyebrow mb-5 text-ink-soft">
+          <h2 id="state-pair" className="type-micro mb-4 text-mute">
             The completed pair
           </h2>
           <Spread
@@ -47,20 +59,13 @@ export default function TodayPage() {
           />
         </section>
 
-        <section aria-labelledby="state-half">
-          <h2 id="state-half" className="type-eyebrow mb-5 text-ink-soft">
-            The half pair — the day is still open
-          </h2>
-          <Spread day={dayOf("2026-08-02")} adamPhoto={PHOTOS["d0802-adam"]} live />
-        </section>
-
         <section aria-labelledby="state-plate">
-          <h2 id="state-plate" className="type-eyebrow mb-5 text-ink-soft">
+          <h2 id="state-plate" className="type-micro mb-4 text-mute">
             The single plate — a day that closed half-finished
           </h2>
           <Spread day={dayOf("2026-07-31")} evaPhoto={PHOTOS["d0731-eva"]} />
         </section>
       </div>
-    </main>
+    </div>
   );
 }

@@ -2,15 +2,16 @@ import { clsx } from "clsx";
 import type { MemberSlug } from "@/lib/types";
 
 /**
- * The one primary action per screen — a pill, filled with the ink
- * of whoever is holding the phone. Eva sees a rose-oxblood button;
- * Adam sees a marine one. Paper-coloured label; both pairings clear
- * WCAG AA in both modes (5.64:1 / 7.99:1 day, 6.08:1 / 7.23:1 night).
+ * The one primary action per screen — a pill filled with the
+ * gradient of whoever is holding the phone. Eva presses rose,
+ * Adam presses amber; the fill glows softly because primary
+ * actions in this product are warm, not procedural.
  */
 export function PillButton({
   ink,
   children,
   className,
+  style,
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   ink: MemberSlug;
@@ -19,19 +20,28 @@ export function PillButton({
     <button
       {...rest}
       className={clsx(
-        "press inline-flex min-h-11 items-center justify-center rounded-full px-6 py-2.5",
-        "type-entry-title",
-        ink === "eva" ? "bg-ink-eva" : "bg-ink-adam",
+        "press relative inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-7 py-3",
+        "type-card text-on-accent",
+        ink === "eva" ? "shadow-glow-eva" : "shadow-glow-adam",
         className,
       )}
-      style={{ color: "var(--paper)" }}
+      style={{
+        background: ink === "eva" ? "var(--grad-eva)" : "var(--grad-adam)",
+        boxShadow: undefined,
+        ...style,
+      }}
     >
-      {children}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-full"
+        style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)" }}
+      />
+      <span className="relative inline-flex items-center gap-2">{children}</span>
     </button>
   );
 }
 
-/** The quiet alternative — text only, no fill, soft ink. */
+/** The quiet alternative — text only, no fill. */
 export function TextButton({
   children,
   className,
@@ -41,8 +51,8 @@ export function TextButton({
     <button
       {...rest}
       className={clsx(
-        "press inline-flex min-h-11 items-center justify-center px-4 py-2",
-        "type-body text-ink-soft",
+        "press inline-flex min-h-11 items-center justify-center rounded-full px-4 py-2",
+        "type-label text-mute",
         className,
       )}
     >
