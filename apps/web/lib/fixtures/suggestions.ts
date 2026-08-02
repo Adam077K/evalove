@@ -12,7 +12,7 @@ export const SUGGESTIONS: Record<string, ActivityIndexEntry> = {
   "t2-read-aloud-bedtime-book": {
     id: "t2-read-aloud-bedtime-book",
     title: "Reading aloud until she sleeps",
-    description: "Adam reads the shared novel over the call while Eva drifts.",
+    description: "Eva drifts off while Adam reads the shared novel over the call.",
     durationMin: 30,
     costTier: "free",
     costConditional: false,
@@ -122,7 +122,7 @@ export const HOW_IT_WORKS: Record<string, string[]> = {
     "No fixing anything. Just the telling.",
   ],
   "t7-lunch-break-discreet-anticipation": [
-    "Adam writes one line now, while Eva sleeps.",
+    "Eva is asleep — Adam writes one line now.",
     "It waits, and lands with her lunch.",
     "Short enough to read at a desk without explaining her face.",
   ],

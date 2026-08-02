@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, BookOpen, Plus } from "lucide-react";
 import { DualClocks } from "@/components/home/DualClocks";
 import { HomeHeader } from "@/components/home/HomeHeader";
-import { PartnerTile } from "@/components/home/PartnerTile";
+import { EchoTile } from "@/components/home/EchoTile";
 import { SealedCard } from "@/components/home/SealedCard";
 import { TonightCard } from "@/components/home/TonightCard";
 import { SHARED_DAYS } from "@/lib/fixtures/book";
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
  * Order is the day's own order: where the two of them are right now
  * (the clocks), what today's ritual is waiting on, what one left the
  * other, one idea that fits this window, and the two doorways —
- * the book and the partner conversation.
+ * the book and Echo.
  *
  * Sections rise in with a 70ms cascade (`--i`).
  */
@@ -58,7 +58,7 @@ export default function HomePage() {
 
       <div className="stagger-child grid grid-cols-2 gap-3" style={stagger(5)}>
         <BookTile />
-        <PartnerTile />
+        <EchoTile />
       </div>
     </div>
   );
@@ -81,12 +81,18 @@ function TodayCard() {
     ? todays.find((p) => p.authorMemberId === EVA.id)
     : undefined;
 
+  /**
+   * Eva before Adam, in both half-posted states. The clauses are
+   * ordered, not the names inside them: whichever way the day went,
+   * Eva's half of the sentence comes first, and it happens to track
+   * the slots left-to-right on the card underneath.
+   */
   const status = !day
     ? "A new day — no photographs yet"
     : day.bothPosted
       ? "Both sides are in"
       : day.adamPosted
-        ? "Adam has posted · a place is ready for Eva"
+        ? "A place is ready for Eva · Adam has posted"
         : day.evaPosted
           ? "Eva has posted · a place is ready for Adam"
           : "A new day — no photographs yet";

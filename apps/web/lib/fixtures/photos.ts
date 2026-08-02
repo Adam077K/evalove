@@ -161,7 +161,7 @@ export const PHOTOS = {
     w: 1200,
     h: 900,
   }),
-  /* today — Adam has posted; Eva's side is still coming */
+  /* today — Eva's side is still coming; Adam has posted */
   "d0802-adam": mkPhoto({
     kind: "daily",
     author: ADAM,

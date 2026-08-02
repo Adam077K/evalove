@@ -2,30 +2,55 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, AudioLines } from "lucide-react";
 import { partnerOf } from "@/lib/fixtures/members";
 import { partnerPresence, type PresenceGuess } from "@/lib/shared-day";
 import { useViewer } from "@/lib/viewer";
 
 /**
- * The echo — a conversation with an AI that carries the other one's
- * story. Bubbles: the viewer speaks in their own colour, the echo
- * answers in the partner's. The header carries the partner's live
- * presence, because the whole point of this surface is the hours
- * when they're asleep.
+ * Echo — a conversation with the record the two of them have kept,
+ * not with the other one. Hard line 1 of `AI-PARTNER-SPEC.md`: this
+ * must never be mistakable for the real person, so nothing on this
+ * surface is addressed to Eva or Adam and nothing is spoken as them.
+ * You ask *about* the partner; an echo answers, and what an echo
+ * returns is what was actually said.
  *
- * Until the model lands, the echo holds the question and says so —
- * a designed limitation, not a fake answer.
+ * That distinction runs through every string here. Quoting the
+ * record is the whole feature. Predicting the person is Framing B,
+ * which the spec rejects outright — so no copy on this surface may
+ * suggest the thing knows what the other one *would* say.
+ *
+ * Bubbles: the viewer speaks in their own colour, the echo answers in
+ * the partner's — the colour is a citation, not a voice. The header
+ * carries the partner's live presence, because the hours when they're
+ * asleep are the hours this surface is for.
+ *
+ * Until the model lands the echo holds the question and says so — a
+ * designed limitation, not a fake answer.
  */
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
 
-const PRESENCE_COPY: Record<PresenceGuess, string> = {
-  asleep: "asleep right now — the echo is awake",
-  working: "at work — the echo is here",
-  awake: "awake now",
-  unknown: "no clock to read",
-};
+/**
+ * Presence, said in full. The clock belongs to the real person; the
+ * reassurance is about the record, never about a stand-in for them.
+ */
+function presenceLine(
+  name: string,
+  their: string,
+  guess: PresenceGuess,
+): string {
+  switch (guess) {
+    case "asleep":
+      return `${name} is asleep right now — ${their} words are still here`;
+    case "working":
+      return `${name} is at work — ${their} words are still here`;
+    case "awake":
+      return `${name} is awake now`;
+    case "unknown":
+      return "no clock to read";
+  }
+}
 
 interface Bubble {
   id: number;
@@ -33,10 +58,11 @@ interface Bubble {
   body: string;
 }
 
-export function PartnerChat() {
+export function EchoChat() {
   const { member } = useViewer();
   const partner = partnerOf(member);
   const partnerIsAdam = partner.slug === "adam";
+  const their = partnerIsAdam ? "his" : "her";
 
   const [presence, setPresence] = useState<PresenceGuess | null>(null);
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
@@ -69,16 +95,16 @@ export function PartnerChat() {
         {
           id: nextId.current++,
           from: "echo",
-          body: `The echo is still learning ${partner.displayName}'s whole story — soon it will answer with it. For now it holds the question, so nothing asked here is lost.`,
+          body: `Echo isn't wired to the record yet — the book, the captions, the dates are all still on the other side of that. Until they're joined up it holds the question rather than inventing an answer, so nothing asked here is lost.`,
         },
       ]);
     }, 1100);
   };
 
   const prompts = [
-    `What is ${partner.displayName}'s window right now?`,
-    "Plan something for Saturday",
+    `What window is ${partner.displayName} in right now?`,
     `What did ${partner.displayName} post this week?`,
+    "Find us something for Saturday",
   ];
 
   const partnerGrad = partnerIsAdam ? "var(--grad-adam)" : "var(--grad-eva)";
@@ -90,20 +116,18 @@ export function PartnerChat() {
   return (
     <div className="flex min-h-[calc(100dvh-14rem)] flex-col">
       <header className="flex items-center gap-4">
+        {/* The partner's colour, deliberately not the partner's
+            initial: a monogram in a chat header is an avatar, and an
+            avatar is the impersonation this surface may not make. */}
         <span
           aria-hidden="true"
           className="flex h-13 w-13 shrink-0 items-center justify-center rounded-full text-on-accent shadow-e2"
           style={{ background: partnerGrad }}
         >
-          <span
-            className="font-semibold"
-            style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem" }}
-          >
-            {partner.displayName.charAt(0)}
-          </span>
+          <AudioLines size={22} strokeWidth={1.9} />
         </span>
         <div>
-          <h1 className="type-title text-ink">Ask {partner.displayName}</h1>
+          <h1 className="type-title text-ink">Echo</h1>
           <p className="type-caption mt-0.5 flex items-center gap-1.5 text-mute">
             <span className="relative flex h-2 w-2" aria-hidden="true">
               <span
@@ -112,7 +136,9 @@ export function PartnerChat() {
               />
               <span className={`relative inline-flex h-2 w-2 rounded-full ${dot}`} />
             </span>
-            {presence === null ? "reading the clock…" : PRESENCE_COPY[presence]}
+            {presence === null
+              ? "reading the clock…"
+              : presenceLine(partner.displayName, their, presence)}
           </p>
         </div>
       </header>
@@ -130,12 +156,14 @@ export function PartnerChat() {
               }}
             />
             <h2 className="type-title mt-6 text-ink">
-              An echo with {partner.displayName}&rsquo;s story
+              Everything {partner.displayName} has already said
             </h2>
             <p className="type-body measure mt-2 text-mute">
-              It knows the book, the windows, the dates — everything the two
-              of them have kept here. Ask it anything, especially at the hours
-              when {partner.displayName} is asleep.
+              Echo reads back what the two of them have kept here — the book,
+              the captions, the dates, the windows. It will quote{" "}
+              {partner.displayName} word for word. It will never guess what{" "}
+              {partner.displayName} would say. Ask it at four in the morning;
+              it stays up.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {prompts.map((p) => (
@@ -183,7 +211,7 @@ export function PartnerChat() {
                   exit={{ opacity: 0 }}
                   transition={SPRING}
                   className="flex justify-start"
-                  aria-label={`${partner.displayName}'s echo is writing`}
+                  aria-label="Echo is looking through the record"
                 >
                   <span className="card flex items-center gap-1.5 rounded-[1.375rem] rounded-bl-md px-4 py-3.5">
                     {[0, 1, 2].map((i) => (
@@ -218,8 +246,8 @@ export function PartnerChat() {
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={`Ask ${partner.displayName} anything`}
-          aria-label={`Ask ${partner.displayName} anything`}
+          placeholder={`Ask about ${partner.displayName}`}
+          aria-label={`Ask Echo about ${partner.displayName}`}
           className="type-body min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-mute"
         />
         <button

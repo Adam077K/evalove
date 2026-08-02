@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { AudioLines } from "lucide-react";
 import { partnerOf } from "@/lib/fixtures/members";
 import { useViewer } from "@/lib/viewer";
 
 /**
- * The doorway to the partner conversation — titled with the OTHER
- * person's name, carried in their colour. On Eva's phone this tile
- * is Adam's: amber, his echo, his memory of their story.
+ * The doorway to Echo, carried in the OTHER person's colour — on
+ * Eva's phone this tile is amber, because what's behind it is the
+ * record of Adam.
+ *
+ * It is titled "Echo" and not "Ask Adam". A button that says "Ask
+ * Adam" says you are asking Adam; you are not, and hard line 1 of
+ * `docs/04-features/AI-PARTNER-SPEC.md` says this surface may never
+ * be mistakable for him. The caption names what is actually behind
+ * the door: words he already said, kept.
  */
-export function PartnerTile() {
+export function EchoTile() {
   const { member } = useViewer();
   const partner = partnerOf(member);
   const grad =
@@ -20,7 +26,7 @@ export function PartnerTile() {
 
   return (
     <Link
-      href="/partner"
+      href="/echo"
       className={`press relative flex min-h-36 flex-col justify-between overflow-hidden rounded-[1.75rem] p-5 text-on-accent ${glow}`}
       style={{ background: grad }}
     >
@@ -36,12 +42,12 @@ export function PartnerTile() {
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
         }}
       >
-        <MessageCircle size={18} strokeWidth={1.9} />
+        <AudioLines size={18} strokeWidth={1.9} />
       </span>
       <span className="relative">
-        <span className="type-card block">Ask {partner.displayName}</span>
+        <span className="type-card block">Echo</span>
         <span className="type-caption block opacity-85">
-          an echo that keeps their story
+          {partner.displayName}&rsquo;s own words, kept
         </span>
       </span>
     </Link>
