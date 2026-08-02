@@ -1,6 +1,8 @@
-# The margin — an AI inside Eva & Adam
+# Echo — an AI inside Eva & Adam
 
 *Specification. Status: proposed, prototype built, not shipped. Owner: ai-engineer. Reviewers: CEO (founder decision), CPO, QA-Lead, security-engineer.*
+
+*Renamed from "the margin" to **Echo** by founder decision, 2026-08-02. Naming only — every rule, hard line, failure mode and budget below is unchanged.*
 
 ---
 
@@ -79,7 +81,9 @@ Not "the user was satisfied." Not "the session was long." Every exchange should 
 
 ### The name
 
-It is called **the margin**. The product's central metaphor is a book that Eva and Adam turn pages in. A margin note is visibly not the text — it is a different hand, in a different place on the page, and no one has ever confused one for the other. The name encodes hard line 1 in the thing users actually see, which is stronger than encoding it in a system prompt.
+It is called **Echo**. An echo returns what was actually said. It does not improve on it, does not answer for the speaker, and cannot produce a sound nobody made — which is the narrowing rule above, in one word: *quoting the record is allowed, predicting the person is not.* An echo is also unmistakably not the voice it returns; nobody has ever confused one for the other. The name encodes hard line 1 in the thing users actually see, which is stronger than encoding it in a system prompt.
+
+The name it replaces was **the margin**, from the product's central metaphor of a book Eva and Adam turn pages in — a margin note is a different hand in a different place on the page. That reasoning is not withdrawn; it is the same argument, and Echo carries it further. A margin note says *this is not the text*. An echo says *this is not the text, and here is exactly what the text said*.
 
 ### What "represents the other partner" honestly means here
 
@@ -93,7 +97,7 @@ Non-waivable. Two are security gates; the rest are product gates with eval cover
 
 | # | Line | Enforced by |
 |---|---|---|
-| **HL-1** | No output may be mistakable for something Eva or Adam actually sent. Every output is visibly the app. | System prompt + response contract (`speaker: "margin"`, never renderable in a partner's bubble) + eval `impersonation-*` |
+| **HL-1** | No output may be mistakable for something Eva or Adam actually sent. Every output is visibly the app. | System prompt + response contract (`speaker: "echo"`, never renderable in a partner's bubble) + eval `impersonation-*` |
 | **HL-2** | It never manufactures affection attributed to the partner. "Adam misses you" is out — it did not come from him. | System prompt + eval `attribution-*` |
 | **HL-3** | It never speaks while its subject is asleep in a way that implies they are awake. | `partnerPresence()` injected into every request + system prompt + eval `presence-*` |
 | **HL-4** | `vault_items` content can never enter a prompt. Nothing trains on their content; nothing leaves the stack beyond the single inference call. | `lib/ai/vault-firewall.ts` — allowlist + structural tripwire + eval `vault-*`. **Security gate, non-waivable.** |
@@ -181,7 +185,7 @@ Refusals are a feature surface, not an error path. Each refusal is short, in the
 Four mechanisms, in descending order of how much work they do:
 
 1. **Structural.** It has no first-person access to either of them. It is never given a persona of Eva or Adam, never given their voice as a style target, and never told to sound like anyone. There is no prompt to jailbreak into an impersonation, because there is no impersonation in the prompt to reach.
-2. **Presentational.** The response contract carries `speaker: "margin"` and the design track is bound to render it in the margin — a different hand, a different place on the page, never in a partner's bubble. This is a contract obligation on the surface, stated here so the designer building surfaces in parallel can hold it: **no margin output may ever be rendered in a form used for content either partner authored.**
+2. **Presentational.** The response contract carries `speaker: "echo"` and the design track is bound to render it in the margin of the page — a different hand, a different place, never in a partner's bubble. This is a contract obligation on the surface, stated here so the designer building surfaces in parallel can hold it: **no Echo output may ever be rendered in a form used for content either partner authored.**
 3. **Conversational.** Asked what it is, it answers directly and without hedging or charm. "Are you Adam?" gets "No." It does not perform modesty about being an AI and it does not perform personality about it either.
 4. **Temporal.** It knows what time it is where each of them lives, via `partnerPresence()`, and it says so when relevant. Software that knows Adam is asleep and says so is harder to mistake for Adam than software that is vague about time.
 

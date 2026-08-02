@@ -1,5 +1,6 @@
 import type { IsoDate, IsoDateTime, Member, Photo, PhotoKind } from "@/lib/types";
 import { localDate, localTime } from "@/lib/time";
+import { photoDisplayPath, photoThumbPath } from "@/lib/schema";
 import { ADAM, EVA } from "./members";
 
 /**
@@ -39,8 +40,11 @@ function mkPhoto(opts: {
   sharedDay?: IsoDate;
 }): Photo {
   const id = uuid();
-  const display = `photos/display/${id}.jpg`;
-  const thumb = `photos/thumb/${id}.jpg`;
+  // `p/{id}/display.jpg` and `p/{id}/thumb.jpg`, from the shared constant.
+  // Migration 11's prefix guard rejects anything else in the media bucket, and
+  // the p//v split is what lets the service worker exclude vault bytes by path.
+  const display = photoDisplayPath(id);
+  const thumb = photoThumbPath(id);
   const w = opts.w ?? 1200;
   const h = opts.h ?? 1600;
   PHOTO_URL_REGISTRY.set(display, pic(opts.seed, w, h));

@@ -22,7 +22,7 @@
  *      `assertVaultFree` recognises the shape and throws. A type cast cannot
  *      get past a runtime shape check.
  *
- *   3. TEXT TRIPWIRE. Every assembled prompt is scanned for the storage prefix
+ *   3. TEXT TRIPWIRE. Every assembled prompt is scanned for the storage path
  *      vault bytes live under, and for the table name, immediately before the
  *      call. This is the last line: it catches a leak that arrived through a
  *      free-text field nobody thought of.
@@ -31,7 +31,25 @@
  * carries on — a partial send is still a send, and a silent redaction teaches
  * the next developer that passing vault data here is survivable. The only
  * correct behaviour on a boundary violation is to not make the call.
+ *
+ * EVERY SCHEMA FACT IN THIS FILE IS IMPORTED, NOT RESTATED. This file once
+ * carried its own `"vault/"` literal while the schema wrote `v/{id}/...`, so
+ * layer 3 and half of layer 2 could not fire on a real vault item and nothing
+ * said so — the boundary held only because the shape check happened to be
+ * independent of the path check. A silently inert defence-in-depth layer is
+ * worse than an absent one: it reads as covered. Constants now come from
+ * `lib/schema.ts` and a drift test compares that file to the migrations.
  */
+
+import {
+  ALL_RELATIONS,
+  RELATIONS,
+  VAULT_OBJECT_PATH_ANYWHERE,
+  VAULT_PATH_PREFIX,
+  isVaultStoragePath,
+} from "@/lib/schema";
+
+import type { RelationName } from "@/lib/schema";
 
 /**
  * Thrown when vault content reaches, or is about to reach, a prompt.
@@ -46,7 +64,7 @@ export class VaultBoundaryError extends Error {
   constructor(reason: string) {
     super(
       `Vault boundary violation: ${reason}. Nothing was sent. ` +
-        `The margin has no access to the pocket by construction — see HL-4 in ` +
+        `Echo has no access to the pocket by construction — see HL-4 in ` +
         `docs/04-features/AI-PARTNER-SPEC.md. If a feature genuinely needs this, ` +
         `it needs a founder decision and a new spec, not a change here.`,
     );
@@ -54,16 +72,16 @@ export class VaultBoundaryError extends Error {
 }
 
 /**
- * The storage prefix vault bytes live under.
+ * The storage prefix vault bytes live under: `v/`, from `lib/schema.ts`.
  *
- * Matches `storagePathDisplay` on a `VaultItem` (`vault/display/...`) and the
- * Supabase bucket path. Kept as a prefix rather than a full pattern so that a
- * future path layout under the same root is still caught.
+ * Re-exported under the firewall's own name so the error messages below can
+ * say what they matched, and imported rather than written out so it cannot
+ * drift from the migration again.
  */
-const VAULT_STORAGE_PREFIX = "vault/";
+const VAULT_STORAGE_PREFIX = VAULT_PATH_PREFIX;
 
 /** The table name, so a query string or a column reference is caught too. */
-const VAULT_TABLE = "vault_items";
+const VAULT_TABLE = RELATIONS.vaultItems;
 
 /**
  * Field names that exist on `VaultItem` and are meaningful to the check.
@@ -90,10 +108,7 @@ export function isVaultShaped(value: unknown): boolean {
   const record = value as Record<string, unknown>;
 
   const display = record["storagePathDisplay"];
-  if (
-    typeof display === "string" &&
-    display.trimStart().startsWith(VAULT_STORAGE_PREFIX)
-  ) {
+  if (typeof display === "string" && isVaultStoragePath(display)) {
     return true;
   }
 
@@ -139,7 +154,7 @@ export function assertVaultFree(records: readonly unknown[]): void {
 export function assertPromptVaultFree(text: string): void {
   const haystack = text.toLowerCase();
 
-  if (haystack.includes(VAULT_STORAGE_PREFIX)) {
+  if (VAULT_OBJECT_PATH_ANYWHERE.test(text)) {
     throw new VaultBoundaryError(
       `the assembled prompt contains a '${VAULT_STORAGE_PREFIX}' storage path`,
     );
@@ -152,21 +167,29 @@ export function assertPromptVaultFree(text: string): void {
 }
 
 /**
- * Tables the margin's grounding may ever be read from.
+ * Relations Echo's grounding may ever be read from.
  *
  * An allowlist rather than a denylist, because a denylist is only correct
  * until the next migration adds a table nobody remembered to deny. Exported so
- * the data layer and its test read the same list, and so adding a table is a
- * visible diff in a file that says why.
+ * the data layer and its test read the same list, and so adding a relation is
+ * a visible diff in a file that says why.
+ *
+ * Every entry is a `RELATIONS` member rather than a string literal. The
+ * original list contained `"shared_days"`, which is not a relation — the view
+ * is `v_shared_days` (migration 09). That entry was two faults at once: a
+ * legitimate read from the view would have been refused, and a dead string sat
+ * on a security allowlist looking like coverage. `RelationName` makes the
+ * misspelling a type error, and the drift test makes an entry that no longer
+ * exists in the schema a test failure.
  */
-export const GROUNDING_TABLE_ALLOWLIST: readonly string[] = [
-  "members",
-  "photos",
-  "book_entries",
-  "dates",
-  "date_turns",
-  "shared_days",
-  "activity_state",
+export const GROUNDING_TABLE_ALLOWLIST: readonly RelationName[] = [
+  RELATIONS.members,
+  RELATIONS.photos,
+  RELATIONS.bookEntries,
+  RELATIONS.dates,
+  RELATIONS.dateTurns,
+  RELATIONS.sharedDays,
+  RELATIONS.activityState,
 ];
 
 /**
@@ -177,10 +200,27 @@ export const GROUNDING_TABLE_ALLOWLIST: readonly string[] = [
  * one".
  */
 export function assertGroundingTable(table: string): void {
-  if (!GROUNDING_TABLE_ALLOWLIST.includes(table)) {
+  if (!(GROUNDING_TABLE_ALLOWLIST as readonly string[]).includes(table)) {
     throw new VaultBoundaryError(
       `'${table}' is not on the grounding allowlist ` +
         `(${GROUNDING_TABLE_ALLOWLIST.join(", ")})`,
+    );
+  }
+}
+
+/**
+ * The allowlist, checked against the schema at module scope.
+ *
+ * Not a test — a load-time assertion, because an allowlist naming a relation
+ * that does not exist is the failure this file just had, and it should not be
+ * possible to import the firewall in that state. Costs one array scan of
+ * thirteen strings, once.
+ */
+for (const table of GROUNDING_TABLE_ALLOWLIST) {
+  if (!ALL_RELATIONS.includes(table)) {
+    throw new VaultBoundaryError(
+      `'${table}' is on the grounding allowlist but is not a relation in ` +
+        `lib/schema.ts — the allowlist and the schema have drifted`,
     );
   }
 }

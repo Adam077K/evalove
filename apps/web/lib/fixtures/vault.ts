@@ -1,3 +1,5 @@
+import { vaultDisplayPath } from "@/lib/schema";
+
 import type { VaultItem } from "@/lib/types";
 import { ADAM, EVA } from "./members";
 
@@ -22,7 +24,13 @@ const mk = (
   sharedDay,
   sharedDayTz: authorId === EVA.id ? EVA.homeTimezone : ADAM.homeTimezone,
   caption,
-  storagePathDisplay: `vault/display/v${n}.jpg`,
+  // `v/{id}/display.jpg`, built from the shared constant. These fixtures used
+  // to say `vault/display/v1.jpg`, a path no migration would accept and one
+  // the vault firewall's own prefix check was written against — the two wrong
+  // halves agreed with each other and with nothing else.
+  storagePathDisplay: vaultDisplayPath(
+    `4a9e77c2-5d10-4f6b-8c21-${String(n).padStart(12, "0")}`,
+  ),
   width: 1200,
   height: 1600,
   bytes: 214_000 + n * 13_337,
