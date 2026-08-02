@@ -39,6 +39,12 @@ export function Spread({ day, evaPhoto, adamPhoto, live = false, dropIn }: Sprea
 
   const head = runningHeadDate(day.date);
 
+  /* One posted and the day has closed: the photograph is kept, the
+     corners go. Corners-empty is a live state only — nothing in the
+     finished book is ever waiting for anyone. */
+  const only = evaPhoto && adamPhoto ? undefined : (evaPhoto ?? adamPhoto);
+  if (only && !live) return <SinglePlate photo={only} head={head} />;
+
   return (
     <section
       aria-label={head}
@@ -112,7 +118,18 @@ function Leaf({
  * hour in its author's own city.
  * ------------------------------------------------------------------ */
 
-function Plate({ photo, ink, drop }: { photo: Photo; ink: string; drop: boolean }) {
+function Plate({
+  photo,
+  ink,
+  drop,
+  mounted = true,
+}: {
+  photo: Photo;
+  ink: string;
+  drop: boolean;
+  /** False on a single plate: the photograph is bound in, not mounted. */
+  mounted?: boolean;
+}) {
   const author = memberById(photo.authorMemberId);
 
   return (
@@ -130,7 +147,7 @@ function Plate({ photo, ink, drop }: { photo: Photo; ink: string; drop: boolean 
             drop ? "[animation:photo-drop_var(--dur-drop)_var(--ease-page)_both]" : ""
           }`}
         />
-        <Corners />
+        {mounted ? <Corners /> : null}
       </div>
       <figcaption className="mt-3 min-h-[2.4rem]">
         {photo.caption ? (
@@ -139,6 +156,34 @@ function Plate({ photo, ink, drop }: { photo: Photo; ink: string; drop: boolean 
         <p className="type-caption text-ink-soft">{postedAtLocal(photo)}</p>
       </figcaption>
     </figure>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * The single plate — a day that closed half-finished.
+ *
+ * The photograph is kept and re-laid as one plate centred on one
+ * leaf, generous margins, caption and hour beneath, corners removed.
+ * A single plate is a legitimate complete book page, not half of a
+ * broken spread.
+ * ------------------------------------------------------------------ */
+
+function SinglePlate({ photo, head }: { photo: Photo; head: string }) {
+  const author = memberById(photo.authorMemberId);
+  const ink = author.slug === "eva" ? "text-ink-eva" : "text-ink-adam";
+
+  return (
+    <section aria-label={head} className="mx-auto max-w-[26rem]">
+      <article className="paper-page relative px-8 pt-8 pb-14 sm:px-10 sm:pt-10 sm:pb-16">
+        <Plate photo={photo} ink={ink} drop={false} mounted={false} />
+        <footer
+          aria-hidden="true"
+          className="type-eyebrow pointer-events-none absolute inset-x-0 bottom-4 text-center text-ink-soft sm:bottom-5"
+        >
+          {head}
+        </footer>
+      </article>
+    </section>
   );
 }
 

@@ -53,6 +53,13 @@ export default function TodayPage() {
           </h2>
           <Spread day={dayOf("2026-08-02")} adamPhoto={PHOTOS["d0802-adam"]} live />
         </section>
+
+        <section aria-labelledby="state-plate">
+          <h2 id="state-plate" className="type-eyebrow mb-5 text-ink-soft">
+            The single plate — a day that closed half-finished
+          </h2>
+          <Spread day={dayOf("2026-07-31")} evaPhoto={PHOTOS["d0731-eva"]} />
+        </section>
       </div>
     </main>
   );
