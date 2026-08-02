@@ -26,6 +26,22 @@ function scryptHash(password: string): string {
 }
 
 /**
+ * The plaintext behind `APP_PASSWORD_HASH` below.
+ *
+ * Exported so a test that needs the door to actually open can ask for it
+ * rather than re-deriving a hash of its own. A test that sets
+ * `process.env.APP_PASSWORD_HASH` at its own top level is already too late:
+ * ESM hoists every `import` above every statement, so the route under test —
+ * and `lib/env.ts` with it — has been evaluated before that line runs. Reading
+ * the password from here sidesteps the ordering problem entirely instead of
+ * fighting it with `vi.hoisted`.
+ */
+export const TEST_APP_PASSWORD = "a-test-app-password";
+
+/** The plaintext behind `VAULT_PASSPHRASE_HASH`. For T13, when the pocket is wired. */
+export const TEST_VAULT_PASSPHRASE = "an-independent-test-vault-passphrase";
+
+/**
  * Two DIFFERENT passwords with two DIFFERENT salts.
  *
  * `lib/env.ts` refuses to boot when the app password and the vault passphrase
@@ -35,8 +51,8 @@ function scryptHash(password: string): string {
 const defaults: Readonly<Record<string, string>> = {
   NEXT_PUBLIC_SUPABASE_URL: "https://example-project.supabase.co",
   SUPABASE_SERVICE_ROLE_KEY: randomBytes(48).toString("hex"),
-  APP_PASSWORD_HASH: scryptHash("a-test-app-password"),
-  VAULT_PASSPHRASE_HASH: scryptHash("an-independent-test-vault-passphrase"),
+  APP_PASSWORD_HASH: scryptHash(TEST_APP_PASSWORD),
+  VAULT_PASSPHRASE_HASH: scryptHash(TEST_VAULT_PASSPHRASE),
   SESSION_SECRET: randomBytes(32).toString("base64"),
 };
 
