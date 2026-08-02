@@ -24,6 +24,46 @@
 
 <!-- Entries below this line, most-recent first. -->
 
+## 2026-08-02 — Design authority: rev 5 is the frame, not the specimen; Fable owns visual execution
+
+**Context:** The founder supplied five `.webp` references (`~/Downloads/Eva & Adam -app deisgn inspo`, mtime 09:03–09:10 the same morning). Four are gradient consumer-app concepts that contradict Design-Lead rev 5's locked direction (*"the interface never expresses emotion, only the content does"*); one — the SORDJATI furniture site — matches it exactly. CEO-1 correctly refused to pick a side unilaterally. The founder then delegated the decision and instructed that a Fable-class model design the interface with **freedom plus references, not prescription**.
+**Options considered:** A) Reopen rev 5 and re-pitch against the references / B) Rev 5 stands verbatim, references mined for ideas only / C) Split rev 5 into *product law* (non-negotiable) and *taste* (open), hand both plus all references to the designer with explicit authority to re-pitch anything in the second category.
+**Decision:** **C.** Fourteen constraints are law and cannot be re-argued (founder decisions D1–D12, the security gate AC-24→AC-32, no counters, no calendar, silence on a missed day, Eva-before-Adam, no Eden imagery, English only, page-turn as primary navigation, private items never in the ordinary flow). Everything else in rev 5 — palette hexes, Fraunces/Literata, the dial, the computed sky, ribbon navigation, corner mounts, the fore-edge-as-streak — is **taste, explicitly reopenable with a stated reason.**
+**Rationale:** Both A and B answer a question the founder didn't ask. The references cannot be *obeyed* — four of them violate founder-locked product decisions (a progress bar is a counter; a calendar grid is banned by D3), so "reopen against these" would license breaking D2/D3. But rev 5 is also not sacred: it was written **without ever seeing its own references** — §11 records that refero MCP and Playwright were unavailable to Design-Lead, so the Apple Books / Paper / Day One / Family capture specs were specified and never executed. A direction argued from recall should not outrank a stronger direction argued from evidence. Splitting law from taste is the only cut that keeps the founder's locked decisions intact while giving the strong model something real to do. Corollary: `high-end-visual-design`, `minimalist-ui` and `redesign-existing-projects` are deliberately **not** in the designer's required reading — each prescribes a specific look (premium-agency defaults; bento grids and muted pastels), and rev 5 §16 already rejects that exact cluster by name. They remain available on request.
+**Reversibility:** reversible (no code exists; the law list is upstream of it and unchanged)
+**Owner:** ceo
+**Affects:** design-lead / the Fable designer (owns visual execution), frontend-engineer (builds against whatever system lands), cpo (rev 5 taste changes do not reopen the PRD), qa-lead (the law list is the design gate).
+
+## 2026-08-02 — Five architecture open questions closed so §0.7 is a clean signature
+
+**Context:** The handoff and architecture §0.7 both called the storage-migration sign-off "the only remaining blocker of any kind." True of blockers, misleading in effect: architecture §11 carried five unanswered CPO questions, and **Q3 states in CTO's own words that it is "cheaper to decide before T2 ships."** T2 is Irreversible tier. Signing §0.7 with Q3 open risks a second irreversible migration days after the first.
+**Options considered:** A) Sign §0.7 now, absorb any follow-up migration / B) Route all five to CPO and wait / C) CEO rules on all five directly, since four are already answered elsewhere in the corpus and only one is a genuine product choice.
+**Decision:** **C.** (§11-Q2) The tally filters on `purged_at`, not `deleted_at` — **confirmed as specced**; D3 says the count never decrements, and `deleted_at` would let ordinary tidying erase a day they both showed up for. (§11-Q3) **No daily prompt in Phase 1** — `v_shared_days` stays a view, T2 unchanged. (§11-Q4) Reveal-on-post gating — **yes**, already specced in PRD §5 and asserted by AC-10, including the day-ended fallback; not actually open. (§11-Q5) The day-count is **not displayed as a number** anywhere except the colophon, spelled in words, per design §9; the fore-edge is the streak. (design §14-Q1) An open date **is already a page in the book**, sitting near today and settling into date position when it finishes.
+**Rationale:** Q3 was the only real decision and it decides itself: Phase 1 already ships the paired question (date #3), which is a prompt-shaped daily thing, and PRD §3A.4 warns explicitly against creating a second daily obligation. C27 "one question a day" is Phase 2 in the RICE table. Adding a prompt surface now would duplicate a mechanic and convert a view into a table on an irreversible migration. Q4 and Q5 were not open at all — both are answered in documents CTO's §11 predates or didn't cross-check, which is why routing them to CPO would have cost a round trip to be told what the corpus already says. Design §14-Q1 is adopted because any "record surface" for open dates is a list of things awaiting you, and PRD §3A.4's hardest rule is that open dates must never accumulate into a task list.
+**Reversibility:** reversible except Q3, which is hard-to-reverse once T2 runs (view→table is a migration)
+**Owner:** ceo
+**Affects:** database-engineer (T2 ships as specced, no schema change), backend-engineer (T5, T10, T14a), the Fable designer (§14-Q1 removes a surface from scope), cpo (PRD §11 divergence list can be closed).
+
+## 2026-08-02 — The anchor/slip split is adopted; PRD §3A.4 "one slot, two producers" is superseded
+
+**Context:** PRD §3A.4 specifies that "left for you" and a date turn awaiting you **share one slot, two producers**. Design-Lead §5.3 split them — anchor = today's page, slip = the date turn — and flagged it *"for CPO to accept or reject."* Design §14 then listed the same item under **Closed: "the anchor/slip split (adopted)."* The document both defers the decision and takes it; CPO never ruled; the PRD still says one slot. It changes T10 and T14b.
+**Options considered:** A) Honour the PRD — one slot, priority date turn → unseen photo → empty frame / B) Adopt Design-Lead's split.
+**Decision:** **B.** The anchor is today's page and its one tap goes to the photo picker. The slip carries either the suggestion or the date turn awaiting you.
+**Rationale:** Design-Lead had a platform fact CPO did not: **Safari supports neither Web Share Target nor manifest `shortcuts`**, so there is no OS-level path from the camera roll into the book — every photograph enters by opening the app and reaching the picker. That makes one-tap-to-picker the single most load-bearing affordance in the product, and time-sharing its slot with a date turn breaks it on the one platform where it already costs the most. PRD §3A.4 was written before that constraint surfaced; it is superseded on evidence, not on preference. The internal contradiction in the design doc is resolved in favour of §5.3's reasoning over §14's bookkeeping.
+**Reversibility:** reversible (a slot-priority rule, no schema)
+**Owner:** ceo
+**Affects:** cpo (update PRD §3A.4), backend-engineer T10/T14a, frontend-engineer T14b, the Fable designer (both slots are in scope and their jobs are now disjoint).
+
+## 2026-08-02 — Model assignment: Fable designs, Opus engineers
+
+**Context:** Founder instruction — a Fable-class model owns the interface and user experience "because we want the best output," with Opus on the backend and the rest of the build.
+**Options considered:** A) One model tier throughout / B) Fable on design surfaces, Opus on engineering.
+**Decision:** **B.** Fable owns the design system and the three signature surfaces (the cover, the book/page-turn, the daily spread) design-through-code. Opus owns backend, database, devops, security, QA and the non-signature front-end surfaces built against Fable's system. Sonnet is not used on this build.
+**Rationale:** The signature interactions are the product — a page-turn that reads as a scroll view wearing paper fails the whole object thesis, and that is a judgement call, not an implementation one. Everything downstream of the design system is correctness work with a written spec and hard acceptance criteria, which is where Opus is strongest and where taste adds nothing. The split also keeps the expensive model on the ~3 surfaces that carry the product rather than on 19 tasks.
+**Reversibility:** reversible
+**Owner:** ceo
+**Affects:** every dispatch brief; recorded in `docs/08-agents_work/handoffs/2026-08-02-ceo-2-dispatch-pack.md`.
+
 ## 2026-08-02 — Shared-day assignment: the poster's own local date (CEO ruling, closed)
 
 **Context:** CPO and CTO independently designed the same concept and then swapped models twice, each deferring to the other. Three rounds, no convergence. CTO later *measured* the divergence: the two models disagree on **44.1% of Adam's posts and 15.2% of Eva's, every day of the year** — structural, not a DST edge case. Had both survived into one codebase, ~1/3 of posts would be silently mislabelled with no error raised.
