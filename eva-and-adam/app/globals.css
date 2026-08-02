@@ -1,0 +1,406 @@
+/* ============================================================
+   Eva & Adam — the design system, as code.
+   Tailwind v4, CSS-first. Direction: LDR-APP-DESIGN-DIRECTION-v6.md
+
+   The object is a well-made book. The interface never expresses
+   emotion; only the content does. Warmth comes from materials
+   (paper, ink), physics (weight, resistance), and their own
+   language — never from decoration.
+
+   Two people own two inks. Everything either of them writes is
+   set in the colour of whoever wrote it. That is the signature
+   of the whole system.
+   ============================================================ */
+
+@import "tailwindcss";
+
+/* ------------------------------------------------------------
+   1 · Ink and paper — both modes.
+   Night is half this product: W1 is their biggest window and
+   Eva is in it with the lights off. The rule: dim the light on
+   the book, never invert the book. The page stays a page; the
+   room around it goes dark.
+
+   Contrast, recomputed 2026-08-02 (WCAG 2.1):
+     ink/paper        day 14.54:1  night 12.62:1   AAA
+     ink-soft/paper   day  6.18:1  night  6.64:1   AA + headroom
+     ink-eva/paper    day  5.64:1  night  6.08:1   AA
+     ink-adam/paper   day  7.99:1  night  7.23:1   AAA / AA
+     ink-book/paper   day  5.06:1  night  6.40:1   AA
+     paper on eva fill  5.64:1 / 6.08:1            AA (buttons)
+     paper on adam fill 7.99:1 / 7.23:1            AAA/AA (buttons)
+   ink-soft was moved off the AA floor deliberately (rev 5 had
+   5.31:1). State is still never expressed by lowering text
+   contrast — carry state on non-text elements (ribbons, rings).
+   ------------------------------------------------------------ */
+
+:root {
+  --paper: #f6f1e9; /* the page — warm uncoated stock */
+  --paper-edge: #e8dfd1; /* fore-edge lines, rules, frames (decorative only) */
+  --surround: #ede6db; /* the room around the book */
+  --ink: #231f1c; /* text — near-black, brown bias, never #000 */
+  --ink-soft: #615850; /* captions, timestamps, metadata */
+  --ink-eva: #8e4a63; /* rose-oxblood — Eva's ink */
+  --ink-adam: #2c4b6e; /* deep marine — Adam's ink */
+  --ink-book: #5e6b4f; /* muted green — the book's own ribbon, nothing else */
+
+  --shadow-page: 0 1px 2px rgba(58, 44, 32, 0.05),
+    0 12px 32px -12px rgba(58, 44, 32, 0.18);
+  --shadow-lifted: 0 2px 3px rgba(58, 44, 32, 0.08),
+    0 18px 40px -14px rgba(58, 44, 32, 0.28);
+  --gutter-shade: rgba(0, 0, 0, 0.14);
+
+  --noise-opacity: 0.025;
+  --photo-dim: none; /* photos stay bright in day */
+
+  /* Motion — two easings, the whole vocabulary. */
+  --ease-page: cubic-bezier(0.32, 0.72, 0, 1); /* anything that moves like matter */
+  --ease-ui: cubic-bezier(0.2, 0, 0, 1); /* fades and small state changes */
+  --dur-ui: 180ms;
+  --dur-slip: 240ms;
+  --dur-drop: 280ms;
+  --dur-flap: 320ms;
+  --dur-sheet: 400ms;
+}
+
+/* Night — the same book, unlit. */
+[data-mode="night"] {
+  --paper: #26221f;
+  --paper-edge: #3a342e;
+  --surround: #151311;
+  --ink: #ede5d8; /* warm off-white — never #fff, it halates at 2 a.m. */
+  --ink-soft: #b0a79a;
+  --ink-eva: #d48ca5;
+  --ink-adam: #8fb3d9;
+  --ink-book: #9caa88;
+
+  --shadow-page: 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 12px 32px -12px rgba(0, 0, 0, 0.55);
+  --shadow-lifted: 0 2px 3px rgba(0, 0, 0, 0.35),
+    0 18px 40px -14px rgba(0, 0, 0, 0.65);
+  --gutter-shade: rgba(0, 0, 0, 0.5);
+
+  --noise-opacity: 0.035;
+  /* Dim, on by default at night; released on press-and-hold. */
+  --photo-dim: brightness(0.82) saturate(0.95);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode]) {
+    --paper: #26221f;
+    --paper-edge: #3a342e;
+    --surround: #151311;
+    --ink: #ede5d8;
+    --ink-soft: #b0a79a;
+    --ink-eva: #d48ca5;
+    --ink-adam: #8fb3d9;
+    --ink-book: #9caa88;
+    --shadow-page: 0 1px 2px rgba(0, 0, 0, 0.3),
+      0 12px 32px -12px rgba(0, 0, 0, 0.55);
+    --shadow-lifted: 0 2px 3px rgba(0, 0, 0, 0.35),
+      0 18px 40px -14px rgba(0, 0, 0, 0.65);
+    --gutter-shade: rgba(0, 0, 0, 0.5);
+    --noise-opacity: 0.035;
+    --photo-dim: brightness(0.82) saturate(0.95);
+  }
+}
+
+/* ------------------------------------------------------------
+   2 · Tokens exposed to Tailwind utilities.
+   bg-paper, text-ink, text-ink-eva, border-paper-edge, etc.
+   ------------------------------------------------------------ */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-edge: var(--paper-edge);
+  --color-surround: var(--surround);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-eva: var(--ink-eva);
+  --color-ink-adam: var(--ink-adam);
+  --color-ink-book: var(--ink-book);
+
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, serif;
+  --font-text: "Literata Variable", "Literata", Georgia, serif;
+
+  --ease-page: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-ui: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Radius discipline: paper is not rounded. Pages 2px, photos 1px.
+     Radius is for controls only — pill for the one primary action,
+     8px for the rest. There is no rounded-xl in this product. */
+  --radius-page: 2px;
+  --radius-photo: 1px;
+  --radius-control: 8px;
+}
+
+/* ------------------------------------------------------------
+   3 · Base
+   ------------------------------------------------------------ */
+html {
+  font-family: var(--font-text);
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--surround);
+  color: var(--ink);
+  transition: background-color 400ms var(--ease-ui),
+    color 400ms var(--ease-ui);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--ink-book) 30%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink-adam);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ------------------------------------------------------------
+   4 · The type scale — two families, both serif, no sans anywhere.
+   Fraunces for display (WONK 1 at large sizes only — it gets
+   noisy below 20px). Literata for everything read.
+   ------------------------------------------------------------ */
+@utility type-display {
+  font-family: var(--font-display);
+  font-size: 2.5rem; /* 40 */
+  line-height: 2.75rem; /* 44 */
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 120, "SOFT" 50, "WONK" 1;
+}
+
+@utility type-heading {
+  font-family: var(--font-display);
+  font-size: 1.5rem; /* 24 */
+  line-height: 1.875rem; /* 30 */
+  font-weight: 500;
+  font-variation-settings: "opsz" 60, "SOFT" 50, "WONK" 1;
+}
+
+@utility type-entry-title {
+  font-family: var(--font-display);
+  font-size: 1.0625rem; /* 17 */
+  line-height: 1.5rem; /* 24 */
+  font-weight: 500;
+  font-variation-settings: "opsz" 30, "SOFT" 50, "WONK" 0;
+}
+
+@utility type-eyebrow {
+  font-family: var(--font-text);
+  font-size: 0.6875rem; /* 11 */
+  line-height: 1rem; /* 16 */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+@utility type-body {
+  font-family: var(--font-text);
+  font-size: 1.0625rem; /* 17 */
+  line-height: 1.5625rem; /* 25 */
+  font-weight: 400;
+}
+
+@utility type-caption {
+  font-family: var(--font-text);
+  font-size: 0.8125rem; /* 13 */
+  line-height: 1.1875rem; /* 19 */
+  font-weight: 400;
+  font-variant-numeric: oldstyle-nums;
+}
+
+/* Tabular lining figures ONLY in the dial, where digits must not jitter. */
+@utility type-numeral {
+  font-family: var(--font-text);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Line length: 60–66 characters on any text column. */
+@utility measure {
+  max-width: 34rem;
+}
+
+/* ------------------------------------------------------------
+   5 · Paper — the material utilities.
+   ------------------------------------------------------------ */
+@utility paper-page {
+  background: var(--paper);
+  border-radius: var(--radius-page);
+  box-shadow: var(--shadow-page);
+}
+
+@utility photo-mounted {
+  border-radius: var(--radius-photo);
+  filter: var(--photo-dim);
+}
+
+/* Press-and-hold releases the night dim. */
+@utility photo-mounted-bright {
+  filter: none;
+}
+
+/* The gutter — the book's valley. Never moves. */
+@utility gutter-left {
+  background: linear-gradient(to right, var(--gutter-shade), transparent 28px);
+}
+@utility gutter-right {
+  background: linear-gradient(to left, var(--gutter-shade), transparent 28px);
+}
+
+/* ------------------------------------------------------------
+   6 · Controls
+   ------------------------------------------------------------ */
+@utility press {
+  transition: transform 90ms var(--ease-ui);
+  &:active {
+    transform: scale(0.97);
+    transition-duration: 90ms;
+  }
+  &:not(:active) {
+    transition-duration: 180ms;
+  }
+}
+
+/* ------------------------------------------------------------
+   7 · Motion — keyframes that carry the object.
+   Only transform and opacity animate, ever.
+   ------------------------------------------------------------ */
+
+/* The slip being replaced: old out down, new in from above. */
+@keyframes slip-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes slip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* A photograph dropping into its corners. */
+@keyframes photo-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* The pocket flap lifting. */
+@keyframes flap-lift {
+  from {
+    transform: rotateX(0deg);
+  }
+  to {
+    transform: rotateX(-38deg);
+  }
+}
+
+/* The turn — scroll-driven. The lift (0–2%) is the paper
+   unsticking; rotation runs 2–100%. If you build one detail
+   from this file, build the lift. */
+@keyframes leaf-turn {
+  0% {
+    transform: translateZ(0) rotateY(0deg) scale(1);
+  }
+  2% {
+    transform: translateZ(1px) rotateY(0deg) scale(1.004);
+  }
+  100% {
+    transform: translateZ(1px) rotateY(-180deg) scale(1.004);
+  }
+}
+@keyframes leaf-cast-shadow {
+  0%,
+  2% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes leaf-gutter-deepen {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the scroller and its snap stay — the gesture
+   and the spatial model survive — but the leaf crossfades
+   instead of rotating, on the same timeline. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes leaf-turn {
+    0%,
+    49% {
+      opacity: 1;
+      transform: none;
+    }
+    51%,
+    100% {
+      opacity: 0;
+      transform: none;
+    }
+  }
+  @keyframes slip-in {
+    from {
+      opacity: 0;
+      transform: none;
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes photo-drop {
+    from {
+      opacity: 0;
+      transform: none;
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* ------------------------------------------------------------
+   8 · The one noise layer. Fixed, never inside a scroller.
+   ------------------------------------------------------------ */
+.noise-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: var(--noise-opacity);
+  mix-blend-mode: multiply;
+}
+[data-mode="night"] .noise-layer {
+  mix-blend-mode: overlay;
+}
