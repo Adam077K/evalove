@@ -1,7 +1,13 @@
 /**
- * Eva & Adam — the session seam. FIVE FUNCTIONS, AND NOTHING ELSE.
+ * Eva & Adam — the session seam.
  *
- *     getSession() · requireSession() · getIdentity() · createSession() · destroySession()
+ *     getSession() · requireSession() · requireSessionOrRedirect()
+ *     getIdentity() · createSession() · destroySession()
+ *     UnauthenticatedError
+ *
+ * THE RULE IS NOT "FIVE SYMBOLS". The rule is that nothing outside this module
+ * parses the session cookie, and every symbol above upholds it: none of them
+ * hands out a token, a cookie name, or anything a caller could read one with.
  *
  * NO OTHER MODULE IN THE APP MAY READ THE SESSION COOKIE. Not a route handler,
  * not a Server Component, not a helper that "just needs to check". There is
@@ -11,7 +17,7 @@
  * that wandered off.
  *
  * WHY THE CONSTRAINT IS WORTH THE INCONVENIENCE. Phase 2 replaces this password
- * with real per-person accounts on Supabase Auth. When that happens, these five
+ * with real per-person accounts on Supabase Auth. When that happens, these
  * functions get reimplemented against Supabase's session and NOT ONE CALL SITE
  * CHANGES. Every component that has learned to ask `getIdentity()` keeps
  * asking. If instead twenty files each parsed `cookies().get('ea_session')`,
@@ -48,7 +54,7 @@ import type { Identity, Session } from "@/lib/types";
  *
  * Null covers every unusable state — no cookie, bad signature, expired, wrong
  * `SESSION_VERSION`. Callers that can render something for a signed-out person
- * use this; callers that cannot use `requireSession()` below.
+ * use this; callers that cannot use one of the two `require*` functions below.
  */
 export async function getSession(): Promise<Session | null> {
   const jar = await cookies();
@@ -56,27 +62,87 @@ export async function getSession(): Promise<Session | null> {
 }
 
 /* ------------------------------------------------------------------ *
- * 2. requireSession
+ * 2. requireSession — FOR ROUTE HANDLERS
  * ------------------------------------------------------------------ */
 
 /**
- * The current session, or a redirect to the door. Never returns null.
+ * There is no session.
  *
- * `redirect()` throws, so control does not come back — which is the property
- * that makes this safe to call at the top of a Server Component and then use
- * the result below without a null check. The middleware already turns most
- * signed-out requests away; this is the check that still holds if a route is
- * ever added outside the matcher, and belt-and-braces is the correct posture
- * for the only door in the app.
+ * A named class rather than a bare `Error` so a route handler can tell "not
+ * signed in" — an ordinary, expected outcome with a 401 attached — apart from
+ * a database being down, which is not. A `catch` that cannot make that
+ * distinction ends up answering 401 to an outage, and then nobody investigates
+ * it because 401 looks like a user error.
+ *
+ * Carries nothing. Why there is no session is not the client's business, and a
+ * field saying "expired" versus "bad signature" is an oracle.
+ */
+export class UnauthenticatedError extends Error {
+  override readonly name = "UnauthenticatedError";
+
+  constructor() {
+    super("No session.");
+  }
+}
+
+/**
+ * The current session, or `UnauthenticatedError`. FOR ROUTE HANDLERS.
+ *
+ * READ THE DISTINCTION BELOW BEFORE COLLAPSING THESE TWO FUNCTIONS BACK INTO
+ * ONE. They are not duplicates. They differ in the only thing that matters
+ * here — what a signed-out caller is handed — and the two callers want
+ * genuinely different answers:
+ *
+ *   - A ROUTE HANDLER's caller is a `fetch`. It must get a 401 with a JSON
+ *     body it can act on. Answering with a 307 to an HTML login page gives a
+ *     client that asked for JSON a page it cannot parse, and the error it
+ *     eventually reports is about JSON syntax, three layers away from the
+ *     actual cause: nobody is signed in.
+ *   - A PAGE's caller is a browser following a navigation. It must get the
+ *     login screen. Throwing there produces an error page, which is a worse
+ *     answer to "you need to sign in" than the sign-in screen is.
+ *
+ * This one throws, which makes it the honest primitive: it reports the fact
+ * and lets the caller choose the response. `requireSessionOrRedirect()` below
+ * is the page-shaped wrapper around it.
  */
 export async function requireSession(): Promise<Session> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) throw new UnauthenticatedError();
   return session;
 }
 
 /* ------------------------------------------------------------------ *
- * 3. getIdentity
+ * 3. requireSessionOrRedirect — FOR PAGES AND LAYOUTS
+ * ------------------------------------------------------------------ */
+
+/**
+ * The current session, or a redirect to the door. FOR SERVER COMPONENTS.
+ *
+ * Never returns null: `redirect()` throws Next's own control-flow signal, so
+ * execution does not come back, which is the property that makes this safe to
+ * call at the top of a Server Component and use the result below without a
+ * null check.
+ *
+ * DO NOT CALL THIS FROM A ROUTE HANDLER. Next will honour the redirect there
+ * too and answer 307 with HTML, and the `fetch` on the other end will fail
+ * somewhere that looks nothing like the cause. Use `requireSession()`.
+ *
+ * The redirect signal is deliberately not caught and rethrown here — it is
+ * Next's, it is not an error, and interfering with it is how a redirect turns
+ * into a 500.
+ */
+export async function requireSessionOrRedirect(): Promise<Session> {
+  try {
+    return await requireSession();
+  } catch (thrown) {
+    if (thrown instanceof UnauthenticatedError) redirect("/login");
+    throw thrown;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 4. getIdentity
  * ------------------------------------------------------------------ */
 
 /**
@@ -106,7 +172,7 @@ export async function getIdentity(): Promise<Identity | null> {
 }
 
 /* ------------------------------------------------------------------ *
- * 4. createSession
+ * 5. createSession
  * ------------------------------------------------------------------ */
 
 /**
@@ -135,7 +201,7 @@ export async function createSession(
 }
 
 /* ------------------------------------------------------------------ *
- * 5. destroySession
+ * 6. destroySession
  * ------------------------------------------------------------------ */
 
 /**

@@ -33,9 +33,9 @@ describe("verifySecret", () => {
     await expect(verifySecret("the sky between two citie", HASH)).resolves.toBe(
       false,
     );
-    await expect(verifySecret("the sky between two citiesX", HASH)).resolves.toBe(
-      false,
-    );
+    await expect(
+      verifySecret("the sky between two citiesX", HASH),
+    ).resolves.toBe(false);
   });
 
   it("refuses the empty string", async () => {
@@ -43,17 +43,28 @@ describe("verifySecret", () => {
   });
 
   it("refuses a secret differing only in case", async () => {
-    await expect(verifySecret("The Sky Between Two Cities", HASH)).resolves.toBe(
-      false,
-    );
+    await expect(
+      verifySecret("The Sky Between Two Cities", HASH),
+    ).resolves.toBe(false);
   });
 
   it("does not care which way an accent was typed", async () => {
-    // é as one code point, and as e + combining acute. Same visible password,
-    // different bytes — a phone keyboard can produce either, and refusing one
-    // of them is a login that works on one device and not the other.
-    const composed = "café au lait";
-    const decomposed = "café au lait";
+    // U+00E9, versus e followed by U+0301 combining acute. The same visible
+    // password, different bytes — a phone keyboard can produce either, and
+    // refusing one of them is a login that works on one device and not on the
+    // other.
+    //
+    // Built from code points rather than written as glyphs on purpose. Two
+    // source lines that look identical in every editor and differ in their
+    // bytes is exactly the confusion this test is about: an editor, a
+    // formatter or a copy-paste that normalised the file would silently
+    // delete the assertion while leaving it on screen, and the test would
+    // still pass. Nothing here can be normalised, because there is nothing
+    // here to normalise.
+    const E_ACUTE = String.fromCharCode(0x00e9);
+    const COMBINING_ACUTE = String.fromCharCode(0x0301);
+    const composed = `caf${E_ACUTE} au lait`;
+    const decomposed = `cafe${COMBINING_ACUTE} au lait`;
     expect(composed).not.toBe(decomposed);
 
     const hash = parseScryptHash(
