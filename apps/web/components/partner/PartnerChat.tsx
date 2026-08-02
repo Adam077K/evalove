@@ -205,9 +205,11 @@ export function PartnerChat() {
         )}
       </div>
 
-      {/* The composer. */}
+      {/* The composer — parked one rem above the dock's footprint
+          (see DOCK_FOOTPRINT in components/chrome/Dock.tsx), so the
+          home indicator pushes it up rather than under the glass. */}
       <form
-        className="glass-strong sticky bottom-24 mt-4 flex items-center gap-2 rounded-full p-1.5 pl-5"
+        className="glass-strong sticky bottom-[calc(5rem+max(1rem,env(safe-area-inset-bottom)))] mt-4 flex items-center gap-2 rounded-full p-1.5 pl-5"
         onSubmit={(e) => {
           e.preventDefault();
           send();
