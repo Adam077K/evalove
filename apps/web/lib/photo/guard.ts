@@ -81,7 +81,11 @@ function startsWith(
 function asciiAt(bytes: Uint8Array, at: number, length: number): string {
   let out = "";
   const end = Math.min(at + length, bytes.length);
-  for (let i = at; i < end; i++) out += String.fromCharCode(bytes[i]);
+  for (let i = at; i < end; i++) {
+    const byte = bytes[i];
+    if (byte === undefined) break;
+    out += String.fromCharCode(byte);
+  }
   return out;
 }
 
@@ -216,10 +220,24 @@ export function readJpegDimensions(
       segment.marker !== 0xcc; // DAC
     if (!isStartOfFrame) continue;
     const at = segment.bodyStart; // precision(1) height(2) width(2)
-    if (at + 5 > bytes.length) return null;
+    const heightHigh = bytes[at + 1];
+    const heightLow = bytes[at + 2];
+    const widthHigh = bytes[at + 3];
+    const widthLow = bytes[at + 4];
+    if (
+      heightHigh === undefined ||
+      heightLow === undefined ||
+      widthHigh === undefined ||
+      widthLow === undefined
+    ) {
+      // A truncated SOF. `null` sends the caller back to the size the encoder
+      // reported, which is the only other number available and is at least
+      // internally consistent.
+      return null;
+    }
     return {
-      height: (bytes[at + 1] << 8) | bytes[at + 2],
-      width: (bytes[at + 3] << 8) | bytes[at + 4],
+      height: (heightHigh << 8) | heightLow,
+      width: (widthHigh << 8) | widthLow,
     };
   }
   return null;

@@ -52,16 +52,36 @@ interface HuffmanCode {
   length: number;
 }
 
+/**
+ * Build the canonical code table from a BITS/HUFFVAL pair.
+ *
+ * Both lookups are bounds-checked rather than asserted non-null. A BITS array
+ * that promises more codes than HUFFVAL supplies is a genuinely broken table,
+ * and the symptom of letting it through would be a JPEG that decodes to
+ * garbage in some viewers and not others — the worst possible way to find out.
+ */
 function buildHuffmanTable(
-  bits: number[],
-  values: number[],
+  bits: readonly number[],
+  values: readonly number[],
 ): Map<number, HuffmanCode> {
   const table = new Map<number, HuffmanCode>();
   let code = 0;
   let k = 0;
   for (let length = 1; length <= 16; length++) {
-    for (let i = 0; i < bits[length - 1]; i++) {
-      table.set(values[k], { code, length });
+    const countAtLength = bits[length - 1];
+    if (countAtLength === undefined) {
+      throw new RangeError(
+        `Huffman BITS has ${bits.length} entries; 16 are required.`,
+      );
+    }
+    for (let i = 0; i < countAtLength; i++) {
+      const symbol = values[k];
+      if (symbol === undefined) {
+        throw new RangeError(
+          `Huffman BITS promises ${k + 1} symbols but HUFFVAL supplies ${values.length}.`,
+        );
+      }
+      table.set(symbol, { code, length });
       code++;
       k++;
     }
@@ -111,15 +131,42 @@ class BitWriter {
   }
 }
 
-function marker(out: number[], code: number): void {
-  out.push(0xff, code);
+/**
+ * Append without spreading.
+ *
+ * `out.push(...bytes)` passes every element as an argument, and the entropy
+ * data for a 1600 px variant runs to tens of thousands of them — past the
+ * argument limit, where it stops being a slow line and becomes a stack
+ * overflow that only appears on large photographs.
+ */
+function append(out: number[], bytes: ArrayLike<number>): void {
+  for (let i = 0; i < bytes.length; i++) out.push(bytes[i] as number);
 }
 
-function segment(out: number[], code: number, body: number[]): void {
-  marker(out, code);
+function segment(out: number[], code: number, body: ArrayLike<number>): void {
+  out.push(0xff, code);
   const length = body.length + 2;
   out.push((length >> 8) & 0xff, length & 0xff);
-  out.push(...body);
+  append(out, body);
+}
+
+/**
+ * Read one sample, restating the bounds invariant instead of asserting it away.
+ *
+ * `encodeBaselineJpeg` already checks that the buffer holds `width * height`
+ * bytes, so this never throws in practice. It is here because the alternative
+ * spellings both hide a real bug: `!` would let an out-of-range read through as
+ * `undefined`, and `?? 0` would turn it into a plausible-looking black pixel.
+ * A wrong DC coefficient is invisible until someone looks at a photograph.
+ */
+function sampleAt(samples: Uint8Array, index: number): number {
+  const value = samples[index];
+  if (value === undefined) {
+    throw new RangeError(
+      `Sample ${index} is outside the ${samples.length}-byte buffer.`,
+    );
+  }
+  return value;
 }
 
 /**
@@ -134,6 +181,10 @@ export function encodeBaselineJpeg(
 ): Uint8Array {
   if (samples.length < width * height) {
     throw new Error("Not enough samples for the declared dimensions.");
+  }
+
+  if (width <= 0 || height <= 0) {
+    throw new RangeError("A JPEG needs a positive width and height.");
   }
 
   const out: number[] = [];
@@ -179,7 +230,7 @@ export function encodeBaselineJpeg(
         const sy = Math.min(by * 8 + y, height - 1);
         for (let x = 0; x < 8; x++) {
           const sx = Math.min(bx * 8 + x, width - 1);
-          sum += samples[sy * width + sx] - 128;
+          sum += sampleAt(samples, sy * width + sx) - 128;
         }
       }
       const dc = Math.round(sum / 8 / DC_QUANT);
@@ -202,7 +253,7 @@ export function encodeBaselineJpeg(
     }
   }
 
-  out.push(...writer.finish());
+  append(out, writer.finish());
   out.push(0xff, 0xd9); // EOI
 
   return Uint8Array.from(out);

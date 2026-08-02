@@ -127,9 +127,14 @@ function requestedContext(
   // `display-p3` ignores the attribute and hands back an sRGB context without
   // complaining — recording the request rather than the grant would write a
   // wrong `photos.color_space` for every photo on that device.
-  const attributes = context.getContextAttributes?.() as
-    | { colorSpace?: string }
-    | undefined;
+  // `getContextAttributes` is on the offscreen context at runtime in every
+  // browser that ships `colorSpace`, but not in this lib.dom's type for it.
+  // Narrowed structurally rather than with `any` so the shape we depend on is
+  // written down.
+  const readAttributes = (
+    context as { getContextAttributes?: () => { colorSpace?: string } }
+  ).getContextAttributes;
+  const attributes = readAttributes?.call(context);
   const granted: ColorSpace =
     attributes?.colorSpace === "display-p3" ? "display-p3" : "srgb";
   return { context, granted };

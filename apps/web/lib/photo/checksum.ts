@@ -30,6 +30,15 @@ export async function sha256Hex(bytes: Uint8Array): Promise<Sha256Hex> {
   const digest = await subtle().digest("SHA-256", view.buffer as ArrayBuffer);
   const out = new Uint8Array(digest);
   let hex = "";
-  for (let i = 0; i < out.length; i++) hex += out[i].toString(16).padStart(2, "0");
+  for (let i = 0; i < out.length; i++) {
+    const byte = out[i];
+    if (byte === undefined) {
+      // Unreachable: `i` is bounded by `out.length`. Stated rather than
+      // asserted away, because a short digest would silently produce a
+      // checksum that matches nothing and reads as a corrupted upload.
+      throw new Error("The SHA-256 digest was shorter than its own length.");
+    }
+    hex += byte.toString(16).padStart(2, "0");
+  }
   return hex;
 }
