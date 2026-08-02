@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { BookOpen, Home, MessageCircle, Plus, Sparkles } from "lucide-react";
-import { partnerOf } from "@/lib/fixtures/members";
-import { useViewer } from "@/lib/viewer";
+import { AudioLines, BookOpen, Home, Plus, Sparkles } from "lucide-react";
 
 /**
  * The dock — a floating glass pill, the app's one piece of fixed
@@ -17,9 +15,11 @@ import { useViewer } from "@/lib/viewer";
  * destinations on a spring (layoutId), and the active label speaks —
  * inactive tabs are icons only, like a dock should be.
  *
- * The Partner tab is titled with the OTHER person's name: on Eva's
- * phone the conversation is with Adam. Today and the pocket are not
- * here on purpose — Today is the hero of Home, and the pocket is
+ * The fourth tab is Echo, and it is labelled "Echo" — never the
+ * other person's name. A tab reading "Adam" is a claim that tapping
+ * it reaches Adam, and hard line 1 of the AI spec is that this
+ * surface may never be mistakable for him. Today and the pocket are
+ * not here on purpose — Today is the hero of Home, and the pocket is
  * behind its lock in the Home header, never one accidental tap away.
  */
 
@@ -43,14 +43,12 @@ const SPRING = { type: "spring" as const, stiffness: 420, damping: 34 };
 
 export function Dock() {
   const pathname = usePathname();
-  const { member } = useViewer();
-  const partner = partnerOf(member);
 
   const tabs = [
     { href: "/home", label: "Home", icon: Home },
     { href: "/book", label: "The book", icon: BookOpen },
     { href: "/dates", label: "Dates", icon: Sparkles },
-    { href: "/partner", label: partner.displayName, icon: MessageCircle },
+    { href: "/echo", label: "Echo", icon: AudioLines },
   ];
 
   const isActive = (href: string) =>

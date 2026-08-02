@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, BookOpen, Plus } from "lucide-react";
 import { DualClocks } from "@/components/home/DualClocks";
 import { HomeHeader } from "@/components/home/HomeHeader";
-import { PartnerTile } from "@/components/home/PartnerTile";
+import { EchoTile } from "@/components/home/EchoTile";
 import { SealedCard } from "@/components/home/SealedCard";
 import { TonightCard } from "@/components/home/TonightCard";
 import { SHARED_DAYS } from "@/lib/fixtures/book";
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
  * Order is the day's own order: where the two of them are right now
  * (the clocks), what today's ritual is waiting on, what one left the
  * other, one idea that fits this window, and the two doorways —
- * the book and the partner conversation.
+ * the book and Echo.
  *
  * Sections rise in with a 70ms cascade (`--i`).
  */
@@ -58,7 +58,7 @@ export default function HomePage() {
 
       <div className="stagger-child grid grid-cols-2 gap-3" style={stagger(5)}>
         <BookTile />
-        <PartnerTile />
+        <EchoTile />
       </div>
     </div>
   );
