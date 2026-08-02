@@ -283,6 +283,29 @@ keep them passing.
    this app? (`frontend-design` calls this the differentiation anchor.)
 3. **The 11pm test** — does it work for Eva in New York at 11pm with the lights
    off, on an iPhone, installed to the home screen?
+
+   **This test needs enforcing, because the person who can't run it is the one
+   building it.** Adam will live his 5am hundreds of times and will never once
+   live Eva's 11pm. Every instinctive "does this feel right" check runs from his
+   side of the gap, so the product drifts toward fitting him exactly and
+   approximating her — invisibly, because from inside it only ever feels better.
+
+   Concrete consequences, all of them cheap:
+   - Nothing ships until it has been walked as the **exhausted** one at the end
+     of a long day, not the alert one at the start of a fresh one. The same
+     reveal that is savourable at 5am is friction at 11pm.
+   - Notification quiet-hours must be verified against **both** zones. This is
+     the bug most likely to exist and least likely to be noticed, because it will
+     only ever be debugged for the schedule the builder actually lives.
+   - **Never count or display who left more.** Adam's slack morning against Eva's
+     rushed commute-prep morning means he can leave more, and richer, without it
+     meaning anything about how much he loves her.
+   - If the product ever visualises who spoke first, note that Israel's calendar
+     flips first every single day — Adam would hold first-mover status
+     permanently, by geography.
+
+   "Eva's name first" is a real countermeasure but it fixes display order, not
+   any of the above.
 4. **The slop test** — the founder's. Two directions have already failed it.
 
 Nothing marked private appears in any ordinary view, thumbnail, preview, cache or
