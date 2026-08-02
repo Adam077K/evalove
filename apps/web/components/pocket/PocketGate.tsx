@@ -36,7 +36,10 @@ export function PocketGate() {
   };
 
   return (
-    <div className="flex min-h-[calc(100dvh-16rem)] flex-col items-center justify-center text-center">
+    // Centred in the screen less the shell's chrome and the dock's
+    // footprint — so the lock sits in the optical middle of what can
+    // actually be seen, not the middle of the area the dock covers.
+    <div className="flex min-h-[calc(100dvh-var(--dock-footprint)-11rem)] flex-col items-center justify-center text-center">
       <span
         className="glass flex h-20 w-20 items-center justify-center rounded-full text-us-deep"
         aria-hidden="true"

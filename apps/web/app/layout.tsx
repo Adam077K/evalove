@@ -36,6 +36,30 @@ try {
 `;
 
 /**
+ * The dock's measurements live here, on the scroll container itself,
+ * because two different things need them and only one of them is in
+ * document coordinates.
+ *
+ *   --dock-offset     how far the pill floats off the bottom edge
+ *   --dock-footprint  the whole band the dock covers: pill + offset
+ *
+ * `scroll-padding-bottom` is the load-bearing line. A `padding-bottom`
+ * further down the tree only lengthens the document, so it buys
+ * clearance at exactly one scroll offset — the very end. Every other
+ * scroll the browser performs (focusing a link, `scrollIntoView`, a
+ * hash target, Safari revealing an input above the keyboard) aligns to
+ * the *scrollport*, and the scrollport's bottom edge is the viewport's
+ * bottom edge — underneath the dock. Insetting the scrollport is what
+ * makes the clearance true at every scroll offset instead of one, and
+ * it holds whether the page overflows or not: if there is nothing to
+ * scroll, there is no scroll to land wrong.
+ */
+const DOCK_VARS =
+  "[--dock-offset:max(1rem,env(safe-area-inset-bottom))] " +
+  "[--dock-footprint:calc(4rem+var(--dock-offset))] " +
+  "scroll-pb-[calc(var(--dock-footprint)+1rem)]";
+
+/**
  * `dir` is FIXED to "ltr" and `lang` is FIXED to "en" — founder decision D7.
  * English only. There is deliberately no i18n framework, no locale negotiation,
  * no locale switcher and no RTL mirroring anywhere in this app. Do not add one
@@ -43,7 +67,7 @@ try {
  */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
+    <html lang="en" dir="ltr" className={DOCK_VARS} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: modeScript }} />
       </head>
