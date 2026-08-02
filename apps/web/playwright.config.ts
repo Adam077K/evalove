@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { TEST_ENV, mintSessionCookie } from "./e2e/test-session";
+
 /**
  * Layout regressions are geometry, and geometry has to be measured on a
  * real engine — a screenshot only proves what one person looked at once.
@@ -29,6 +31,8 @@ export default defineConfig({
     // Entrance animations translate cards for ~400ms. Measuring geometry
     // mid-cascade measures the animation, not the layout.
     reducedMotion: "reduce",
+    // Every app route is behind the door. See `e2e/test-session.ts`.
+    storageState: { cookies: [mintSessionCookie()], origins: [] },
   },
   projects: [
     { name: "390x844", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } } },
@@ -38,8 +42,11 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run dev -- -p ${PORT}`,
-    url: `http://127.0.0.1:${PORT}/home`,
+    // `/login` is the one route reachable without a session, so it is the
+    // honest readiness probe: waiting on `/home` would wait on a redirect.
+    url: `http://127.0.0.1:${PORT}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: { ...TEST_ENV, NODE_ENV: "development" },
   },
 });
