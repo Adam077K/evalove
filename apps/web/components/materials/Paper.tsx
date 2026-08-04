@@ -27,46 +27,59 @@ import { cn } from "@/lib/utils";
  * must be generated as stocks, not improvised from strips.)
  */
 
-export type PaperStock = "bone-laid" | "bone";
+export type PaperStock = "coldpress" | "bone-laid" | "bone";
 
 export interface PaperProps {
   /**
-   * Which stock the table is made of. bone-laid pairs with the
-   * Seam's default (bone-graded coldpress tear).
-   * @default "bone-laid"
+   * Which stock the table is made of. Pair it with the matching
+   * Seam strip grade — coldpress ↔ the stock-toned strip,
+   * bone-laid ↔ the bone-graded strip.
+   * @default "coldpress"
    */
   stock?: PaperStock;
   children: ReactNode;
   className?: string;
 }
 
+interface StockSpec {
+  src: string;
+  /**
+   * background-size, per stock, calibrated so the grain density
+   * matches the seam strip at the join (measured by texture sd at
+   * display scale, not eyeballed): bone-laid's 1792px source needs
+   * 134% up; the 1024px coldpress stock's coarser tooth needs 58%
+   * down. Recalibrate if a source is regenerated.
+   */
+  size: string;
+}
+
 /**
- * Full-bleed stocks. bone-laid ships as a runtime webp derived from
- * the canonical PNG (438 KB vs 6.8 MB — the PNG stays the source of
- * truth in the library); bone-v2 has no consumer yet and still
- * points at its PNG.
+ * Full-bleed stocks. coldpress is the generated substrate stock in
+ * the seam strip's own tone family, shipped as a vertically
+ * mirror-stacked runtime tile (its raw vertical wrap was not
+ * seamless: edge diff 10.6 vs internal 6.6). bone-laid ships as a
+ * runtime webp of the canonical PNG. The canonical assets stay in
+ * the library untouched.
  */
-const STOCKS: Record<PaperStock, string> = {
-  "bone-laid": "/materials/paper-bone-laid.webp",
-  bone: "/materials/paper-bone-v2.png",
+const STOCKS: Record<PaperStock, StockSpec> = {
+  coldpress: { src: "/materials/paper-coldpress-stock-tile.webp", size: "58% auto" },
+  "bone-laid": { src: "/materials/paper-bone-laid.webp", size: "134% auto" },
+  bone: { src: "/materials/paper-bone-v2.png", size: "100% auto" },
 };
 
-export function Paper({ stock = "bone-laid", children, className }: PaperProps) {
+export function Paper({ stock = "coldpress", children, className }: PaperProps) {
+  const spec = STOCKS[stock];
+
   return (
     <div className={cn("relative", className)} style={{ isolation: "isolate" }}>
-      {/* The stock, dimming with the room's lamp. 134%, not 100%:
-          the bone-laid source is 1792px wide against the seam
-          strip's 1344, so at equal display width the substrate's
-          grain renders 25% finer than the tear it ends in — the
-          density mismatch was measurable at the join (texture sd
-          5.5 vs 8.2). Scaling the stock to the strip's pixel scale
-          closes it. Painted before children — no z games. */}
+      {/* The stock, dimming with the room's lamp.
+          Painted before children — no z games. */}
       <div
         aria-hidden="true"
         className="under-lamp absolute inset-0"
         style={{
-          backgroundImage: `url(${STOCKS[stock]})`,
-          backgroundSize: "134% auto",
+          backgroundImage: `url(${spec.src})`,
+          backgroundSize: spec.size,
         }}
       />
       <div className="relative">{children}</div>

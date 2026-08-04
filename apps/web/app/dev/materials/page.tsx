@@ -29,7 +29,7 @@ export default function MaterialsBench() {
       {/* ---------------- PAPER — the table ----------------
           A real stock as substrate (same coldpress as the Seam, so
           the join cannot exist), dimming with the lamp at night. */}
-      <Paper stock="bone-laid" className="px-5 pb-14 pt-8">
+      <Paper stock="coldpress" className="px-5 pb-14 pt-8">
         <p className="type-micro text-mute">materials bench · wave 0</p>
 
         {/* The two hands. Caveat flows; Patrick Hand stands. */}

@@ -59,14 +59,15 @@ export interface SeamProps {
 
 /**
  * Natural dimensions ride along so the browser derives the aspect.
- * The coldpress strip is the -graded derivative: its sheet tone is
- * matched to paper-bone-laid's measured mean (mechanical per-channel
- * gain, ×1.025/1.028/1.069), so the sheet tearing at the bottom of a
- * bone-laid <Paper> reads as the same paper. The ungraded original
- * stays in the library.
+ * The coldpress strip is the -tostock derivative: its sheet tone is
+ * matched to paper-coldpress-stock's measured mean (mechanical
+ * per-channel gain ×0.965/0.964/0.976), so the sheet tearing at the
+ * bottom of a coldpress <Paper> is the same paper to the eye. A
+ * bone-graded sibling (seam-tear-coldpress-graded) pairs with the
+ * bone-laid stock; the ungraded original stays in the library.
  */
 const FIBRE: Record<SeamVariant, { src: string; width: number; height: number }> = {
-  coldpress: { src: "/materials/seam-tear-coldpress-graded.webp", width: 1344, height: 497 },
+  coldpress: { src: "/materials/seam-tear-coldpress-tostock.webp", width: 1344, height: 497 },
   bone: { src: "/materials/seam-tear-bone.webp", width: 1344, height: 507 },
 };
 
