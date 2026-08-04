@@ -270,7 +270,12 @@ function HeroItem({
           above. Transparent fill, a highlight below and a shade above
           each stroke — pressure without ink. This is typography, not
           a drawn material: the letterforms are the real hand fonts.
-          Decorative and unreadable by design; hidden from readers. */}
+          Decorative and unreadable by design; hidden from readers.
+
+          The highlight rides the lamp: a literal white at night read
+          as glowing ghost-writing on the dimmed paper (night capture,
+          pass 5). An impression is carved by light, so when the lamp
+          goes low it must fade with everything else on the table. */}
       {impression?.caption !== undefined && (
         <p
           aria-hidden="true"
@@ -278,7 +283,7 @@ function HeroItem({
           style={{
             color: "transparent",
             textShadow:
-              "0 1px 1px rgba(255,255,255,0.45), 0 -1px 1px rgba(25,21,18,0.10)",
+              "0 1px 1px rgb(255 255 255 / calc(0.45 - var(--lamp-dim, 0) * 0.28)), 0 -1px 1px rgba(25,21,18,0.10)",
           }}
         >
           {impression.caption}

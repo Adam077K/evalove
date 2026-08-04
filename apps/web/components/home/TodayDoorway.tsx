@@ -68,7 +68,11 @@ function DoorwayCorner({ returned }: { returned: Returned }) {
         elevation={3}
         className="ml-10 -mr-6"
       >
-        <div className="bg-surface px-5 pb-[var(--dock-footprint)] pt-4">
+        {/* pr-12, not px-5: the sheet's right side runs off the screen
+            (-mr-6 plus rotation), and a symmetric padding put "The
+            book ↗" straight into the cut. The label must sit clear of
+            the clipped edge. */}
+        <div className="bg-surface pb-[var(--dock-footprint)] pl-5 pr-12 pt-4">
           <div className="flex items-baseline justify-between gap-4">
             <p className="type-micro text-mute">{label}</p>
             <span className="type-micro flex shrink-0 items-center gap-1 text-mute">
