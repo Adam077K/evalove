@@ -30,7 +30,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
-  const [next, setNext] = useState("/home");
+  const [next, setNext] = useState("/today");
 
   // Where they were heading before the door stopped them. Read from the
   // live location rather than `useSearchParams` so this page has no
@@ -42,7 +42,7 @@ export function LoginForm() {
       const raw = new URLSearchParams(window.location.search).get("next");
       if (raw && raw.startsWith("/") && !raw.startsWith("//")) setNext(raw);
     } catch {
-      /* the default is already /home */
+      /* the default is already /today */
     }
   }, []);
 
@@ -100,12 +100,25 @@ export function LoginForm() {
           So the right name lands on what you write. You can change it
           any time — it decides nothing else.
         </p>
+        {/* Both quiet, neither filled: filling one and not the other
+            would make one of them the recommended answer.
+
+            No ink dots here. They were a legend, and a legend is the
+            one thing the authorship mark must not be — it means "made
+            by", and nobody has made anything at this point in the
+            session. The mapping is learned where it is actually
+            spent: on a photograph or a sealed note that carries the
+            edge and the maker's name together. */}
         <div className="mt-8 flex flex-col gap-3">
-          <PillButton ink="eva" onClick={() => choose("eva")} className="w-full">
+          <PillButton
+            variant="quiet"
+            onClick={() => choose("eva")}
+            className="w-full"
+          >
             Eva
           </PillButton>
           <PillButton
-            ink="adam"
+            variant="quiet"
             onClick={() => choose("adam")}
             className="w-full"
           >
@@ -138,10 +151,9 @@ export function LoginForm() {
         }}
       />
       <PillButton
-        ink="eva"
         type="submit"
         disabled={password === "" || pending}
-        className="mt-5 w-full disabled:opacity-50"
+        className="mt-5 w-full"
       >
         {pending ? "One moment…" : "Come in"}
       </PillButton>

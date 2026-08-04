@@ -22,14 +22,14 @@ export function TonightCard() {
 
   if (windowId === null) {
     return (
-      <div className="card rounded-[1.75rem] p-5">
+      <div className="card rounded-[1.25rem] p-5">
         <div className="well relative h-4 w-40 overflow-hidden rounded-full">
           <span
             aria-hidden="true"
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+                "linear-gradient(90deg, transparent, var(--shimmer), transparent)",
               animation: "shimmer 1.6s var(--ease-io) infinite",
             }}
           />
@@ -45,7 +45,7 @@ export function TonightCard() {
 
   if (!pick) {
     return (
-      <div className="card rounded-[1.75rem] p-5">
+      <div className="card rounded-[1.25rem] p-5">
         <h2 className="type-card text-ink">The shelf is empty</h2>
         <p className="type-caption mt-1 text-mute">
           The date library hasn&rsquo;t been loaded on this device yet.
@@ -59,15 +59,15 @@ export function TonightCard() {
   return (
     <Link
       href="/dates"
-      className="card hover-lift block rounded-[1.75rem] p-5"
+      className="card hover-lift block rounded-[1.25rem] p-5"
       aria-label={`For this window: ${pick.title}`}
     >
       <div className="flex items-start gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-us-soft text-us-deep">
+        <span className="well flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink">
           <Sparkles size={19} strokeWidth={1.8} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="type-micro text-us-deep">{windowLabel}</p>
+          <p className="type-micro text-mute">{windowLabel}</p>
           <h2 className="type-card mt-1 text-ink">{pick.title}</h2>
           <p className="type-caption mt-0.5 text-mute">{pick.description}</p>
           <p className="type-caption mt-2 flex gap-3 text-mute">

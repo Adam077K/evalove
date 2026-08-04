@@ -69,23 +69,22 @@ export function DatesExplorer() {
               aria-selected={isActive}
               onClick={() => setSelected(id)}
               className={`press relative shrink-0 whitespace-nowrap rounded-full px-4 py-2 transition-colors duration-200 ${
-                isActive ? "text-on-accent" : "card text-mute"
+                isActive ? "text-on-ink" : "card text-mute"
               }`}
             >
               {isActive ? (
                 <motion.span
                   layoutId="window-pill"
                   transition={SPRING}
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: "var(--grad-us)" }}
+                  className="pill-ink absolute inset-0 rounded-full"
                 />
               ) : null}
               <span className="type-label relative flex items-center gap-1.5">
                 {WINDOW_STRINGS[id]}
                 {isNow ? (
                   <span
-                    className={`rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide ${
-                      isActive ? "bg-white/25" : "bg-us-soft text-us-deep"
+                    className={`rounded-full border px-1.5 py-px text-[10px] font-bold uppercase tracking-wide ${
+                      isActive ? "border-current/40" : "border-line text-ink"
                     }`}
                   >
                     now
@@ -101,13 +100,13 @@ export function DatesExplorer() {
       {nowWindow === null ? (
         <div className="space-y-3 pt-2" aria-hidden="true">
           {[0, 1].map((i) => (
-            <div key={i} className="card h-24 overflow-hidden rounded-[1.5rem] p-5">
+            <div key={i} className="card h-24 overflow-hidden rounded-[1.125rem] p-5">
               <div className="well relative h-4 w-44 overflow-hidden rounded-full">
                 <span
                   className="absolute inset-0"
                   style={{
                     background:
-                      "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+                      "linear-gradient(90deg, transparent, var(--shimmer), transparent)",
                     animation: "shimmer 1.6s var(--ease-io) infinite",
                   }}
                 />
@@ -117,7 +116,7 @@ export function DatesExplorer() {
           ))}
         </div>
       ) : entries.length === 0 ? (
-        <div className="card rounded-[1.5rem] px-6 py-10 text-center">
+        <div className="card rounded-[1.125rem] px-6 py-10 text-center">
           <p className="type-card text-ink">A thin window</p>
           <p className="type-caption mx-auto mt-1.5 max-w-[28rem] text-mute">
             Nothing on the shelf fits {WINDOW_STRINGS[active]?.toLowerCase()} —
@@ -132,10 +131,10 @@ export function DatesExplorer() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...SPRING, delay: i * 0.05 }}
-              className="card hover-lift rounded-[1.5rem] p-5"
+              className="card hover-lift rounded-[1.125rem] p-5"
             >
               <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-us-soft text-us-deep">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center well rounded-full text-ink">
                   <Sparkles size={17} strokeWidth={1.8} />
                 </span>
                 <div className="min-w-0">

@@ -1,0 +1,197 @@
+/**
+ * design-critic final re-review rig — The Book, feat/book-what-came-back @ 30c1b68.
+ *
+ * Renders the REAL built route after the b503700 refactor. Viewport captures
+ * only (393x852). Nothing in the reviewed worktree is mutated.
+ *
+ * node final-shoot.mjs <outdir>
+ */
+import pw from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/@playwright/test/index.js";
+const { chromium } = pw;
+import { SignJWT } from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/jose/dist/webapi/index.js";
+import { readFileSync, mkdirSync } from "node:fs";
+
+const SCRATCH =
+  "/private/tmp/claude-501/-Users-adamks-VibeCoding-evalove--worktrees-ceo-3-1785631504/5cf8e0ee-2e9e-4a8f-94f8-5a8a5794b97f/scratchpad";
+const CREDS = JSON.parse(readFileSync(`${SCRATCH}/creds.json`, "utf8"));
+const BASE = process.env.BASE ?? "http://localhost:3111";
+
+function keyBytes() {
+  const binary = atob(CREDS.secret);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+const iat = Math.floor(Date.now() / 1000);
+const token = await new SignJWT({
+  sid: "3f1c0d2e-1111-4222-8333-444455556666",
+  v: 1,
+})
+  .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+  .setIssuedAt(iat)
+  .setExpirationTime(iat + 15552000)
+  .sign(keyBytes());
+
+const [outdir] = process.argv.slice(2);
+mkdirSync(outdir, { recursive: true });
+
+const browser = await chromium.launch();
+const ctx = await browser.newContext({
+  viewport: { width: 393, height: 852 },
+  deviceScaleFactor: 2,
+  isMobile: true,
+  hasTouch: true,
+});
+await ctx.addCookies([
+  {
+    name: "ea_session",
+    value: token,
+    domain: "localhost",
+    path: "/",
+    httpOnly: true,
+    secure: false,
+    sameSite: "Lax",
+  },
+]);
+const page = await ctx.newPage();
+
+const TARGETS = [
+  { id: "book", url: "/book" },
+  { id: "review-states", url: "/review/book-states" },
+];
+
+const report = [];
+
+for (const t of TARGETS) {
+  for (const mode of ["day", "night"]) {
+    const resp = await page.goto(`${BASE}${t.url}?mode=${mode}`, {
+      waitUntil: "networkidle",
+    });
+    await page.waitForTimeout(2600);
+    // Next's dev overlay badge is impossible in production; hide it.
+    await page.addStyleTag({
+      content: "nextjs-portal{display:none !important}",
+    });
+    await page.waitForTimeout(300);
+
+    const name = `${t.id}-${mode}`;
+    await page.screenshot({ path: `${outdir}/${name}.png` });
+
+    const metrics = await page.evaluate(() => {
+      const r = (el) => {
+        if (!el) return null;
+        const b = el.getBoundingClientRect();
+        return {
+          t: +b.top.toFixed(1),
+          l: +b.left.toFixed(1),
+          w: +b.width.toFixed(1),
+          h: +b.height.toFixed(1),
+        };
+      };
+      const cs = (el) => (el ? getComputedStyle(el) : null);
+      const h1 = document.querySelector("main h1");
+      const img = document.querySelector("main img");
+      const quotes = [...document.querySelectorAll("main .type-quote")].map(
+        (e) => ({
+          text: e.textContent.trim().slice(0, 50),
+          size: cs(e).fontSize,
+          family: cs(e).fontFamily.split(",")[0],
+          style: cs(e).fontStyle,
+          ...r(e),
+        }),
+      );
+      const micro = [...document.querySelectorAll("main .type-micro")].map(
+        (e) => ({
+          text: e.textContent.trim().slice(0, 48),
+          size: cs(e).fontSize,
+          transform: cs(e).textTransform,
+          color: cs(e).color,
+        }),
+      );
+      const caption = [...document.querySelectorAll("main .type-caption")].map(
+        (e) => ({
+          text: e.textContent.trim().slice(0, 48),
+          size: cs(e).fontSize,
+          transform: cs(e).textTransform,
+          color: cs(e).color,
+          ...r(e),
+        }),
+      );
+      const rules = [...document.querySelectorAll("main hr")].map((e) => ({
+        ...r(e),
+      }));
+      const links = [...document.querySelectorAll("main a")].map((e) => ({
+        href: e.getAttribute("href"),
+        label: e.getAttribute("aria-label"),
+        text: e.textContent.trim().slice(0, 40),
+        ...r(e),
+      }));
+      const main = document.querySelector("main");
+      const body = document.body;
+      const dock = document.querySelector("[class*='dock'], nav");
+      return {
+        url: location.pathname + location.search,
+        scrollHeight: document.documentElement.scrollHeight,
+        viewport: window.innerHeight,
+        canvas: cs(body).backgroundColor,
+        ink: cs(body).color,
+        dockFootprint: cs(document.documentElement)
+          .getPropertyValue("--dock-footprint")
+          .trim(),
+        h1: h1
+          ? {
+              text: h1.textContent.trim(),
+              size: cs(h1).fontSize,
+              family: cs(h1).fontFamily.split(",")[0],
+              ...r(h1),
+            }
+          : null,
+        img: img
+          ? {
+              natural: `${img.naturalWidth}x${img.naturalHeight}`,
+              complete: img.complete,
+              filter: cs(img).filter,
+              opacity: cs(img).opacity,
+              maxHeight: cs(img).maxHeight,
+              objectFit: cs(img).objectFit,
+              ...r(img),
+            }
+          : null,
+        quotes,
+        caption,
+        micro,
+        rules,
+        links,
+        mainPad: main
+          ? { pt: cs(main).paddingTop, pb: cs(main).paddingBottom, maxW: cs(main).maxWidth }
+          : null,
+        dockRect: r(dock),
+        // Any digit anywhere in the rendered body text? (count-contradiction check)
+        digits: (document.body.innerText.match(/\d+/g) || []).join(","),
+        emoji: (
+          document.body.innerText.match(
+            /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu,
+          ) || []
+        ).join(""),
+        bodyText: document.body.innerText.replace(/\n+/g, " | ").slice(0, 900),
+      };
+    });
+
+    report.push({
+      target: t.id,
+      mode,
+      status: resp ? resp.status() : null,
+      capture: `${name}.png`,
+      ...metrics,
+    });
+
+    // Foot of the page, at rest.
+    await page.evaluate(() => window.scrollTo(0, 99999));
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${outdir}/${name}-foot.png` });
+  }
+}
+
+console.log(JSON.stringify(report, null, 2));
+await browser.close();

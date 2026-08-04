@@ -1,47 +1,45 @@
 import { clsx } from "clsx";
-import type { MemberSlug } from "@/lib/types";
 
 /**
- * The one primary action per screen — a pill filled with the
- * gradient of whoever is holding the phone. Eva presses rose,
- * Adam presses amber; the fill glows softly because primary
- * actions in this product are warm, not procedural.
+ * The one primary action per screen.
+ *
+ * It used to be filled with the gradient of whoever was holding the
+ * phone — Eva pressed rose, Adam pressed amber — and it glowed. Both
+ * are gone: the palette has no accent colour at all now, and a
+ * person's ink is never a fill and never a button.
+ *
+ * What replaces it is stronger, and it comes from SORDJATI: an ink
+ * pill with paper text. In a page made of warm paper and hairlines,
+ * the only solid black object is unmistakably the thing to press.
+ * Nothing else on the screen can compete with it, which is exactly
+ * what "one primary action" is supposed to mean.
+ *
+ * `quiet` is the secondary form — paper, a hairline, ink text.
  */
 export function PillButton({
-  ink,
+  variant = "ink",
   children,
   className,
-  style,
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  ink: MemberSlug;
+  variant?: "ink" | "quiet";
 }) {
   return (
     <button
       {...rest}
       className={clsx(
-        "press relative inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-7 py-3",
-        "type-card text-on-accent",
-        ink === "eva" ? "shadow-glow-eva" : "shadow-glow-adam",
+        "press inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-7 py-3",
+        "type-card",
+        variant === "ink" ? "pill-ink" : "pill-quiet",
         className,
       )}
-      style={{
-        background: ink === "eva" ? "var(--grad-eva)" : "var(--grad-adam)",
-        boxShadow: undefined,
-        ...style,
-      }}
     >
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-full"
-        style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)" }}
-      />
-      <span className="relative inline-flex items-center gap-2">{children}</span>
+      {children}
     </button>
   );
 }
 
-/** The quiet alternative — text only, no fill. */
+/** The quiet alternative — text only, no fill, no border. */
 export function TextButton({
   children,
   className,

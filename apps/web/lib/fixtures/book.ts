@@ -82,4 +82,14 @@ export const DATE_PAGE_DAYS: Record<string, IsoDate> = {
 
 export const DAYS_TOGETHER: DaysTogether = { count: 41 };
 
-export const BEGUN: IsoDate = "2026-08-02";
+/**
+ * The date The Book began — derived from the earliest sharedDay in the
+ * archive so that backfilling an earlier day updates the colophon
+ * automatically. Never a hardcoded constant: a fixed value is one import
+ * away from the colophon printing a date that contradicts content beneath it.
+ */
+export const BEGUN: IsoDate = SHARED_DAYS.reduce<IsoDate>(
+  (min, d) => (d.date < min ? d.date : min),
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  SHARED_DAYS[0]!.date,
+);

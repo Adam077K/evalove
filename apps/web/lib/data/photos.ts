@@ -446,6 +446,11 @@ export async function readPhotoBytes(
 /**
  * Soft delete. Hidden from the interface, bytes untouched, fully reversible.
  *
+ * `requestedBy` is the member id of the person asking. A person may only remove
+ * a photo they authored — the check is here, in the data layer, so it holds for
+ * every caller regardless of whether the caller is an HTTP route or a future
+ * server action.
+ *
  * Note what this does NOT do: it does not change the tally. `v_days_together`
  * filters on `purged_at`, not on `deleted_at`, precisely so that tidying up an
  * old photo cannot retroactively erase a day they both showed up for.
@@ -453,6 +458,7 @@ export async function readPhotoBytes(
 export async function softDeletePhoto(
   deps: PhotoDeps,
   photoId: Uuid,
+  requestedBy: Uuid,
 ): Promise<void> {
   const row = await deps.gateway.findPhotoById(photoId);
   if (row === null) {
@@ -460,6 +466,9 @@ export async function softDeletePhoto(
   }
   if (row.purged_at !== null) {
     throw new DataError("not_found", "this photo was purged", { photoId });
+  }
+  if (row.author_member_id !== requestedBy) {
+    throw new DataError("forbidden", "forbidden", { photoId });
   }
   if (row.deleted_at !== null) return; // Already hidden. Deleting twice is fine.
 

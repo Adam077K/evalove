@@ -107,11 +107,10 @@ export function EchoChat() {
     "Find us something for Saturday",
   ];
 
-  const partnerGrad = partnerIsAdam ? "var(--grad-adam)" : "var(--grad-eva)";
-  const partnerSoft = partnerIsAdam ? "bg-adam-soft" : "bg-eva-soft";
-  const partnerInk = partnerIsAdam ? "text-adam-deep" : "text-eva-deep";
-  const viewerGrad = partnerIsAdam ? "var(--grad-eva)" : "var(--grad-adam)";
-  const dot = partnerIsAdam ? "bg-adam" : "bg-eva";
+  /* Echo is not a person and gets no ink of its own — and neither
+     does the presence dot. Where somebody is right now is a fact
+     about them, not something they made, and the two inks are only
+     ever spent on authored objects. */
 
   return (
     // The column fills the screen less the shell's own chrome (9rem of
@@ -122,25 +121,25 @@ export function EchoChat() {
     // hard-coded 14rem it replaces did not.
     <div className="flex min-h-[calc(100dvh-var(--dock-footprint)-9rem)] flex-col">
       <header className="flex items-center gap-4">
-        {/* The partner's colour, deliberately not the partner's
-            initial: a monogram in a chat header is an avatar, and an
-            avatar is the impersonation this surface may not make. */}
+        {/* Deliberately not the partner's initial: a monogram in a
+            chat header is an avatar, and an avatar is the
+            impersonation this surface may not make. Solid ink, the
+            same block the Echo tile on Home is made of. */}
         <span
           aria-hidden="true"
-          className="flex h-13 w-13 shrink-0 items-center justify-center rounded-full text-on-accent shadow-e2"
-          style={{ background: partnerGrad }}
+          className="pill-ink flex h-13 w-13 shrink-0 items-center justify-center rounded-full"
         >
           <AudioLines size={22} strokeWidth={1.9} />
         </span>
         <div>
           <h1 className="type-title text-ink">Echo</h1>
           <p className="type-caption mt-0.5 flex items-center gap-1.5 text-mute">
-            <span className="relative flex h-2 w-2" aria-hidden="true">
+            <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
               <span
-                className={`absolute inset-0 rounded-full ${dot}`}
+                className="absolute top-0 left-0 h-1.5 w-1.5 rounded-full bg-mute"
                 style={{ animation: "breathe 3.2s var(--ease-io) infinite" }}
               />
-              <span className={`relative inline-flex h-2 w-2 rounded-full ${dot}`} />
+              <span className="relative h-1.5 w-1.5 rounded-full bg-mute" />
             </span>
             {presence === null
               ? "reading the clock…"
@@ -155,12 +154,10 @@ export function EchoChat() {
           <div className="flex flex-col items-center px-4 pt-10 text-center">
             <span
               aria-hidden="true"
-              className="h-20 w-20 rounded-full opacity-80 blur-[2px]"
-              style={{
-                background: partnerGrad,
-                animation: "breathe 4.5s var(--ease-io) infinite",
-              }}
-            />
+              className="well flex h-20 w-20 items-center justify-center rounded-full text-mute"
+            >
+              <AudioLines size={30} strokeWidth={1.5} />
+            </span>
             <h2 className="type-title mt-6 text-ink">
               Everything {partner.displayName} has already said
             </h2>
@@ -177,7 +174,7 @@ export function EchoChat() {
                   key={p}
                   type="button"
                   onClick={() => setDraft(p)}
-                  className={`press type-label rounded-full px-4 py-2 ${partnerSoft} ${partnerInk}`}
+                  className="press pill-quiet type-label rounded-full px-4 py-2"
                 >
                   {p}
                 </button>
@@ -196,14 +193,11 @@ export function EchoChat() {
                   className={`flex ${b.from === "viewer" ? "justify-end" : "justify-start"}`}
                 >
                   <p
-                    className={`type-body max-w-[80%] rounded-[1.375rem] px-4 py-2.5 ${
+                    className={`type-body max-w-[80%] rounded-[1rem] px-4 py-2.5 ${
                       b.from === "viewer"
-                        ? "rounded-br-md text-on-accent"
+                        ? "pill-ink rounded-br-md"
                         : "card rounded-bl-md text-ink"
                     }`}
-                    style={
-                      b.from === "viewer" ? { background: viewerGrad } : undefined
-                    }
                   >
                     {b.body}
                   </p>
@@ -219,11 +213,11 @@ export function EchoChat() {
                   className="flex justify-start"
                   aria-label="Echo is looking through the record"
                 >
-                  <span className="card flex items-center gap-1.5 rounded-[1.375rem] rounded-bl-md px-4 py-3.5">
+                  <span className="card flex items-center gap-1.5 rounded-[1rem] rounded-bl-md px-4 py-3.5">
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}
-                        className={`h-1.5 w-1.5 rounded-full ${dot}`}
+                        className="h-1.5 w-1.5 rounded-full bg-mute"
                         style={{
                           animation: "breathe 1.2s var(--ease-io) infinite",
                           animationDelay: `${i * 0.18}s`,
@@ -240,11 +234,11 @@ export function EchoChat() {
       </div>
 
       {/* The composer — parked one rem above the dock's footprint, so
-          the home indicator pushes it up rather than under the glass.
+          the home indicator pushes it up rather than under the dock.
           Reads `--dock-footprint` (declared in app/layout.tsx) rather
           than restating the pill's height. */}
       <form
-        className="glass-strong sticky bottom-[calc(var(--dock-footprint)+1rem)] mt-4 flex items-center gap-2 rounded-full p-1.5 pl-5"
+        className="card sticky bottom-[calc(var(--dock-footprint)+1rem)] mt-4 flex items-center gap-2 rounded-full p-1.5 pl-5 shadow-float"
         onSubmit={(e) => {
           e.preventDefault();
           send();
@@ -261,8 +255,7 @@ export function EchoChat() {
           type="submit"
           aria-label="Send"
           disabled={draft.trim() === "" || thinking}
-          className="press flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-accent disabled:opacity-40"
-          style={{ background: partnerGrad }}
+          className="press pill-ink flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
         >
           <ArrowUp size={19} strokeWidth={2.2} />
         </button>

@@ -1,15 +1,20 @@
 import type { ReactNode } from "react";
-import { AuroraBackdrop } from "@/components/chrome/AuroraBackdrop";
 import { Dock } from "@/components/chrome/Dock";
 
 /**
- * The shell every surface lives in: the aurora sky behind, the dock
- * in front, and a phone-first column between them. On a desktop the
+ * The shell every surface lives in: warm paper behind, the dock in
+ * front, and a phone-first column between them. On a desktop the
  * column widens but never becomes a dashboard — this is a two-person
  * app and it keeps a hand-held scale on purpose.
  *
+ * There is deliberately nothing behind the column. `AuroraBackdrop`
+ * used to sit here — three animated gradient blobs, fixed, behind
+ * every authenticated surface in the product — which meant one
+ * component in one file was responsible for the wash on all seven
+ * screens. The background of this app is the page itself.
+ *
  * The bottom padding reserves the dock's footprint plus 4rem of air,
- * so the last card ends clear of the glass rather than against it.
+ * so the last card ends clear of the dock rather than against it.
  * `--dock-footprint` is declared once on `<html>` in `app/layout.tsx`;
  * nothing in this tree restates the pill's height as a number.
  *
@@ -30,7 +35,6 @@ import { Dock } from "@/components/chrome/Dock";
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <AuroraBackdrop />
       <main className="relative mx-auto w-full max-w-md px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[calc(var(--dock-footprint)+4rem)] sm:max-w-lg md:max-w-2xl md:px-8">
         {children}
       </main>

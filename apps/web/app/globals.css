@@ -1,189 +1,314 @@
 /* ============================================================
-   Eva & Adam — design system v6: "Between two skies".
-   Tailwind v4, CSS-first. Direction: docs/04-features/DESIGN-DIRECTION-V6.md
+   Eva & Adam — design system v7: "Paper and two inks".
+   Tailwind v4, CSS-first.
+   Direction: docs/08-agents_work/handoffs/2026-08-02-DESIGN-DIRECTION.md
 
-   The interface is the sky that connects two cities seven hours
-   apart. Rose over New York, amber over Tel Aviv, violet where
-   the two evenings touch. Surfaces float on that sky as layered
-   glass; colour is saturated and semantic — Eva's rose, Adam's
-   amber, and the violet that only exists when it's both of them.
+   THE LAW (§1): restraint lives in the chrome, warmth lives in
+   the paper. A screen with no photograph on it must still feel
+   like somewhere worth being.
 
-   Two people own two colours. Everything either of them makes is
-   carried in the colour of whoever made it. Violet belongs to
-   moments that are jointly theirs: the book, the sealed things,
-   the AI that speaks with the other one's memory.
+   So the product is a made object, not a canvas someone painted
+   light onto. Warm paper. White plates laid on it. Warm-black
+   ink. Hairline rules. Two archival inks at 2px, one per person,
+   and nothing else chromatic anywhere. Photographs are the only
+   saturated thing on any screen and they are never dimmed.
+
+   WHY THESE VALUES — the short version. Every number below is
+   argued in place; this is the index.
+
+     canvas #F8F5F1   warm at hue 34°, sat 2.8% — a red-leaning
+                      warm, not a yellow-leaning cream
+     surface #FFFFFF  a clean plate laid on the warm page; the
+                      hierarchy is two paper stocks, not a fill
+     ink #191512      warm near-black, 16.7:1 — never #000
+     eva #5B6B87      indigo ink,  sat 32.6%, 4.96:1
+     adam #875E50     red-oxide ink, sat 40.7%, 5.16:1
+                      203° apart so 2px is still legible as *who*
+     night #1E1A17    a deep warm neutral: the same paper, unlit
+
+   Deleted from v6 and not coming back: every gradient, the three
+   aurora blobs, every coloured glow, glass, the plum-tinted
+   shadows, `--photo-dim`, and `--us`. Jointness is composition,
+   not a third hue.
    ============================================================ */
 
 @import "tailwindcss";
 
 /* ------------------------------------------------------------
-   1 · The two rooms — day and night.
-   Night is half this product: Eva reads this at 11pm with the
-   lights off. Night is not inverted day — it is the same sky
-   after dark: deep plum, never black, accents glowing slightly
-   because everything glows a little at night.
+   1 · Day — warm paper.
+
+   The canvas is #F8F5F1: hue 34.3°, saturation 2.8%, value 97.3%.
+
+   Two decisions are load-bearing here.
+
+   Hue, not just warmth. The obvious warm canvas is a cream around
+   hue 40–45° — parchment, aged paper, and also the single most
+   over-produced background in machine-generated design. This one
+   leans red instead of yellow, and it leans red for a reason that
+   belongs to this product: human skin sits between hue 20° and
+   35°. A canvas on the same hue axis as a face makes a photograph
+   sit *into* the page rather than on top of it. The whole supply
+   of colour in this app is two people's faces; the paper should
+   be related to them.
+
+   Saturation low, value high. 2.8% at 97.3% is paper that has
+   been kept, not paper that has aged. It reads as white until a
+   true-white plate is laid on it, and then it reads as warm.
+   That contrast is the whole depth system: `--surface` is #FFFFFF
+   and separates from the canvas by *stock*, never by fill.
    ------------------------------------------------------------ */
 
 :root {
-  /* canvas & surfaces */
-  --canvas: #faf6fb;
+  /* the two papers, and the well cut into them */
+  --canvas: #f8f5f1;
   --surface: #ffffff;
-  --surface-2: #f3edf7; /* recessed wells, inputs, empty slots */
-  --glass: rgba(255, 255, 255, 0.68);
-  --glass-strong: rgba(255, 255, 255, 0.84);
-  --glass-edge: rgba(255, 255, 255, 0.75);
-  --line: rgba(43, 27, 62, 0.09);
-  --ink: #241735;
-  --mute: #6f6187;
-  --on-accent: #ffffff;
+  --surface-2: #f1ede7; /* recessed: inputs, empty slots, quiet zones */
 
-  /* the three hues */
-  --eva: #e8447f;
-  --eva-deep: #b92a5f;
-  --eva-soft: #fce4ee;
-  --eva-tint: rgba(232, 68, 127, 0.13);
-  --adam: #e0720d;
-  --adam-deep: #a95403;
-  --adam-soft: #ffeeda;
-  --adam-tint: rgba(224, 114, 13, 0.14);
-  --us: #7a5af8;
-  --us-deep: #5636cf;
-  --us-soft: #ece6fe;
-  --us-tint: rgba(122, 90, 248, 0.13);
+  /* ink. Warm-black, never #000 — pure black on warm paper reads
+     as a hole punched in the page. #191512 keeps the paper's own
+     hue at 16.7:1 on canvas, well past AA and past AAA. */
+  --ink: #191512;
 
-  /* semantic — errors are their own colour, never Eva's rose */
-  --danger: #d43d47;
-  --danger-soft: #fde5e6;
+  /* secondary ink — a warm grey, never a blue-grey. 5.49:1 on
+     canvas and still 5.12:1 on the recessed well, so it is AA
+     everywhere it can legally land, not just on the light case. */
+  --mute: #6b6259;
 
-  /* gradients — the only place colour is allowed to move */
-  --grad-eva: linear-gradient(135deg, #ff82ae 0%, #e8447f 100%);
-  --grad-adam: linear-gradient(135deg, #ffb35c 0%, #e0720d 100%);
-  --grad-us: linear-gradient(135deg, #a184ff 0%, #7a5af8 100%);
-  --grad-sky: linear-gradient(120deg, #ff82ae 0%, #a184ff 48%, #ffb35c 100%);
+  /* hairline. The only way surfaces separate. Warm-black at 10%. */
+  --line: rgba(37, 29, 22, 0.1);
 
-  /* the aurora backdrop — three blobs, one per hue */
-  --aur-rose: rgba(255, 130, 174, 0.4);
-  --aur-violet: rgba(161, 132, 255, 0.34);
-  --aur-amber: rgba(255, 179, 92, 0.32);
+  /* paper on ink — the one solid control, SORDJATI's black pill. */
+  --on-ink: #f8f5f1;
 
-  /* elevation — plum-tinted, never grey */
-  --e1: 0 1px 2px rgba(46, 26, 71, 0.05), 0 4px 14px -2px rgba(46, 26, 71, 0.07);
-  --e2: 0 2px 4px rgba(46, 26, 71, 0.06),
-    0 14px 34px -10px rgba(46, 26, 71, 0.16);
-  --e3: 0 4px 8px rgba(46, 26, 71, 0.07),
-    0 28px 64px -18px rgba(46, 26, 71, 0.26);
-  --glow-eva: 0 10px 30px -8px rgba(232, 68, 127, 0.45);
-  --glow-adam: 0 10px 30px -8px rgba(224, 114, 13, 0.42);
-  --glow-us: 0 10px 30px -8px rgba(122, 90, 248, 0.48);
+  /* The fill of that pill. By day it is simply the ink. It is a
+     separate token only because night needs it to be — see §2. */
+  --pill-fill: #191512;
 
-  --noise-opacity: 0.018;
-  --photo-dim: none;
+  /* --------------------------------------------------------
+     The authorship inks — the entire chromatic system outside
+     of photographs, and it is two hairlines wide.
 
-  /* motion — two easings and four durations; springs live in JS */
+     These are not brand colours, they are *inks*: the two
+     bottles a person would actually own. Eva's is an iron-gall
+     indigo, Adam's a red-oxide sepia. Both are archival
+     pigments, which is why both sit naturally on paper and
+     neither can be mistaken for a UI accent.
+
+     Three constraints decided the values, in this order:
+
+     1. Under 45% saturation (founder rule). Eva 32.6%,
+        Adam 40.7%.
+     2. Legible as *identity* at 2px. That needs hue distance,
+        not brightness: 218° and 15° are 203° apart, about as
+        far as two hues can be. Desaturating the old rose and
+        amber in place would have left two neighbours that are
+        indistinguishable once they are two pixels wide — the
+        edge would have stopped answering the only question it
+        exists to answer.
+     3. Equal weight. Relative luminance 0.145 and 0.137 — a
+        5% difference, below perception. Neither person's mark
+        is heavier on the page than the other's. This matters
+        more here than it looks: everything else in this
+        product already tilts toward Adam, whose calendar
+        flips first every single day.
+
+     Eva is defined first. Founder rule, and it is upheld in
+     source order, not only in rendered output.
+     -------------------------------------------------------- */
+  --eva: #5b6b87;
+  --adam: #875e50;
+
+  /* Failure is its own colour and is never Eva's and never
+     Adam's. Hue 2°, saturation 73% — far more saturated than
+     either ink, which is the point: an error is the one moment
+     the page is allowed to raise its voice. 6.67:1 on canvas. */
+  --danger: #9e2f2b;
+
+  /* --------------------------------------------------------
+     Elevation. Warm-tinted, wide, soft, barely there.
+
+     v6 tinted its shadows plum and ran them at 26% — a shadow
+     that dark is a coloured fill wearing a costume. These are
+     warm-black at 3–16% and spread wide, which is what a plate
+     resting on paper actually does to the light.
+     -------------------------------------------------------- */
+  --e1: 0 1px 1px rgba(41, 32, 24, 0.03), 0 3px 8px -2px rgba(41, 32, 24, 0.04);
+  --e2: 0 1px 2px rgba(41, 32, 24, 0.04),
+    0 10px 24px -8px rgba(41, 32, 24, 0.1);
+  --e3: 0 2px 4px rgba(41, 32, 24, 0.05),
+    0 24px 48px -16px rgba(41, 32, 24, 0.16);
+
+  /* The one shadow for the one thing that actually floats.
+
+     `--e1/2/3` describe a plate resting on paper. The dock and the
+     Echo composer are not resting on anything — they hang above
+     content that scrolls underneath them. Glass used to say that
+     with blur; opaque chrome has to say it with light, and it needs
+     three layers to be believed: a tight contact shadow, a mid
+     falloff, and a wide ambient one.
+
+     Without it the dock reads as the last card in the stack rather
+     than as something above the stack, which is precisely how it
+     was misread on first review — three separate "defects" reported
+     against it were all the same missing depth cue. */
+  --e-float: 0 1px 2px rgba(41, 32, 24, 0.07),
+    0 8px 16px -4px rgba(41, 32, 24, 0.14),
+    0 20px 40px -8px rgba(41, 32, 24, 0.18);
+
+  /* The sweep inside a loading skeleton. A skeleton sits in a
+     `well`, so by day the sweep is lighter than the well and by
+     night it is lighter still but far weaker — a bright sweep in
+     a dark room is a strobe. */
+  --shimmer: rgba(255, 255, 255, 0.85);
+
+  /* Grain. The cheapest way to make a flat value read as a
+     material rather than a fill, and the only texture allowed.
+     Fixed, pointer-transparent, 2.2% — under the 3% ceiling and
+     under the threshold at which anyone notices it directly. */
+  --noise-opacity: 0.022;
+
+  /* --------------------------------------------------------
+     Motion. Kept from v6 — these were never the problem — plus
+     the values R4 measured out of Vaul's and Sonner's shipped
+     source, so the next person doesn't re-derive them.
+
+     --ease-io is exactly Vaul's TRANSITIONS.EASE. --dur-4 is
+     exactly its 0.5s. Springs live in JS: this app runs
+     300/30 and 420/34, deliberately stiffer and less bouncy
+     than motion's own 100/10/1 default. That is a taste
+     decision someone already made. Don't reset it.
+     -------------------------------------------------------- */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-io: cubic-bezier(0.32, 0.72, 0, 1);
-  --dur-1: 150ms;
-  --dur-2: 220ms;
-  --dur-3: 320ms;
-  --dur-4: 520ms;
+  --ease-io: cubic-bezier(0.32, 0.72, 0, 1); /* Vaul, measured */
+  --dur-1: 150ms; /* press */
+  --dur-2: 220ms; /* standard UI */
+  --dur-3: 320ms; /* standard UI, upper bound */
+  --dur-4: 500ms; /* sheet / drawer — Vaul, measured */
+  --dur-toast-in: 300ms; /* Sonner, measured */
+  --dur-toast-out: 200ms; /* Sonner, measured */
+  --toast-gap: 14px; /* Sonner GAP, measured */
 }
 
-/* Night — the same sky after dark. */
+/* ------------------------------------------------------------
+   2 · Night — the same paper, unlit.
+
+   Night is not a theme toggle and not an inverted day. w1 in
+   `library.json` — "She's in bed, he's awake", IL 05:00–09:00 /
+   NYC 22:00–02:00 — is the biggest overlap window in their week,
+   and Eva spends it in bed with the lights off. This is the
+   highest-traffic surface in the product.
+
+   That single fact sets every value below:
+
+   Warm, because the screen is the only light source in a dark
+   bedroom. #1E1A17 is hue 26° — the day canvas taken down to
+   11.8% value, not swapped for a different material. v6's
+   #140E1E was plum, which is a colour choice pretending to be a
+   dark mode.
+
+   Not black, because a true black page makes every white plate
+   on it a lightbulb. #1E1A17 keeps plates and page in the same
+   family so the contrast between them stays a paper contrast.
+
+   Wells go *darker* than the surface at night, inverting the day
+   relationship. Light comes from above; at night a recess is in
+   shadow rather than in light. It is a small thing and it is the
+   difference between a dark mode that was designed and one that
+   was generated.
+
+   And photographs are still never dimmed — so at 11pm the
+   brightest thing on Eva's screen is Adam's face. That is the
+   correct hierarchy for this window and it costs nothing to get
+   right; it only required not writing `--photo-dim`.
+   ------------------------------------------------------------ */
+
 [data-mode="night"] {
-  --canvas: #140e1e;
-  --surface: #1e1530;
-  --surface-2: #281d3d;
-  --glass: rgba(32, 22, 52, 0.6);
-  --glass-strong: rgba(36, 26, 58, 0.82);
-  --glass-edge: rgba(255, 255, 255, 0.12);
-  --line: rgba(243, 237, 250, 0.1);
-  --ink: #f3edfa;
-  --mute: #a598c2;
-  --on-accent: #ffffff;
+  --canvas: #1e1a17;
+  --surface: #272220;
+  --surface-2: #171412;
 
-  --eva: #ff7fae;
-  --eva-deep: #ffa9c8;
-  --eva-soft: rgba(255, 127, 174, 0.16);
-  --eva-tint: rgba(255, 127, 174, 0.14);
-  --adam: #ffa057;
-  --adam-deep: #ffc08a;
-  --adam-soft: rgba(255, 160, 87, 0.15);
-  --adam-tint: rgba(255, 160, 87, 0.13);
-  --us: #a78bff;
-  --us-deep: #c4b1ff;
-  --us-soft: rgba(167, 139, 255, 0.17);
-  --us-tint: rgba(167, 139, 255, 0.15);
+  --ink: #ede7e0; /* 14.08:1 on canvas — warm off-white, not #fff */
+  --mute: #a0968d; /* 5.96:1 on canvas, 5.42:1 on surface */
+  --line: rgba(237, 231, 224, 0.11);
+  --on-ink: #1e1a17;
 
-  --danger: #ff7d84;
-  --danger-soft: rgba(255, 125, 132, 0.16);
+  /* Night is where the solid control stops being `--ink`.
+     `pill-ink` inverting to the full #EDE7E0 put the dock's send
+     button and active tab — a continuous ~150px band — at 14:1
+     against the page, on every authenticated surface, in the window
+     §2 calls the highest-traffic in the product. The brightest thing
+     on Eva's screen at 11pm was a navigation button, which is the
+     exact inversion of the hierarchy this file argues for two
+     sections earlier: the brightest thing should be Adam's face.
 
-  --grad-eva: linear-gradient(135deg, #ff8fb7 0%, #e8447f 100%);
-  --grad-adam: linear-gradient(135deg, #ffb877 0%, #e0720d 100%);
-  --grad-us: linear-gradient(135deg, #ab8fff 0%, #6d4bf0 100%);
-  --grad-sky: linear-gradient(120deg, #ff8fb7 0%, #ab8fff 48%, #ffb877 100%);
+     `tile-ink` already established this for a 140px block. Two
+     50px controls sitting next to each other are the same problem
+     wearing a different shape, so the fill comes down rather than
+     the rule being scoped by size. #C9BFB6 still carries 9.55:1
+     against its own text and reads unmistakably as the one solid
+     control — it just stops being a light source. */
+  --pill-fill: #c9bfb6;
 
-  --aur-rose: rgba(232, 68, 127, 0.22);
-  --aur-violet: rgba(122, 90, 248, 0.24);
-  --aur-amber: rgba(224, 114, 13, 0.16);
+  /* The same two inks, lifted to stay legible at 2px on a dark
+     page. Hue is held exactly — 218° and 15°, unchanged — so a
+     person's mark is the same mark in both modes. Saturation
+     falls (24.6% / 32.6%) because a hue at night reads more
+     saturated than the same hue by day. Luminance parity holds:
+     0.337 and 0.325. */
+  --eva: #8d9ebb;
+  --adam: #be9080;
 
-  --e1: 0 1px 2px rgba(0, 0, 0, 0.32), 0 4px 14px -2px rgba(0, 0, 0, 0.36);
-  --e2: 0 2px 4px rgba(0, 0, 0, 0.36), 0 14px 34px -10px rgba(0, 0, 0, 0.52);
-  --e3: 0 4px 8px rgba(0, 0, 0, 0.4), 0 28px 64px -18px rgba(0, 0, 0, 0.62);
-  --glow-eva: 0 10px 34px -6px rgba(255, 127, 174, 0.38);
-  --glow-adam: 0 10px 34px -6px rgba(255, 160, 87, 0.34);
-  --glow-us: 0 10px 34px -6px rgba(167, 139, 255, 0.42);
+  --danger: #ea9189; /* 7.33:1 on canvas */
 
-  --noise-opacity: 0.03;
-  --photo-dim: brightness(0.86) saturate(0.96);
+  --shimmer: rgba(237, 231, 224, 0.08);
+
+  --e1: 0 1px 1px rgba(0, 0, 0, 0.28), 0 3px 8px -2px rgba(0, 0, 0, 0.32);
+  --e2: 0 1px 2px rgba(0, 0, 0, 0.34), 0 10px 24px -8px rgba(0, 0, 0, 0.46);
+  --e3: 0 2px 4px rgba(0, 0, 0, 0.38), 0 24px 48px -16px rgba(0, 0, 0, 0.56);
+
+  /* Night needs it harder: the dock's surface is only 3% lighter
+     than the canvas behind it, so value alone cannot separate them
+     and the shadow is doing all of the work. */
+  --e-float: 0 1px 2px rgba(0, 0, 0, 0.44),
+    0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
+
+  --noise-opacity: 0.028;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-mode]) {
-    --canvas: #140e1e;
-    --surface: #1e1530;
-    --surface-2: #281d3d;
-    --glass: rgba(32, 22, 52, 0.6);
-    --glass-strong: rgba(36, 26, 58, 0.82);
-    --glass-edge: rgba(255, 255, 255, 0.12);
-    --line: rgba(243, 237, 250, 0.1);
-    --ink: #f3edfa;
-    --mute: #a598c2;
-    --on-accent: #ffffff;
-    --eva: #ff7fae;
-    --eva-deep: #ffa9c8;
-    --eva-soft: rgba(255, 127, 174, 0.16);
-    --eva-tint: rgba(255, 127, 174, 0.14);
-    --adam: #ffa057;
-    --adam-deep: #ffc08a;
-    --adam-soft: rgba(255, 160, 87, 0.15);
-    --adam-tint: rgba(255, 160, 87, 0.13);
-    --us: #a78bff;
-    --us-deep: #c4b1ff;
-    --us-soft: rgba(167, 139, 255, 0.17);
-    --us-tint: rgba(167, 139, 255, 0.15);
-    --danger: #ff7d84;
-    --danger-soft: rgba(255, 125, 132, 0.16);
-    --grad-eva: linear-gradient(135deg, #ff8fb7 0%, #e8447f 100%);
-    --grad-adam: linear-gradient(135deg, #ffb877 0%, #e0720d 100%);
-    --grad-us: linear-gradient(135deg, #ab8fff 0%, #6d4bf0 100%);
-    --grad-sky: linear-gradient(120deg, #ff8fb7 0%, #ab8fff 48%, #ffb877 100%);
-    --aur-rose: rgba(232, 68, 127, 0.22);
-    --aur-violet: rgba(122, 90, 248, 0.24);
-    --aur-amber: rgba(224, 114, 13, 0.16);
-    --e1: 0 1px 2px rgba(0, 0, 0, 0.32), 0 4px 14px -2px rgba(0, 0, 0, 0.36);
-    --e2: 0 2px 4px rgba(0, 0, 0, 0.36), 0 14px 34px -10px rgba(0, 0, 0, 0.52);
-    --e3: 0 4px 8px rgba(0, 0, 0, 0.4), 0 28px 64px -18px rgba(0, 0, 0, 0.62);
-    --glow-eva: 0 10px 34px -6px rgba(255, 127, 174, 0.38);
-    --glow-adam: 0 10px 34px -6px rgba(255, 160, 87, 0.34);
-    --glow-us: 0 10px 34px -6px rgba(167, 139, 255, 0.42);
-    --noise-opacity: 0.03;
-    --photo-dim: brightness(0.86) saturate(0.96);
+    --canvas: #1e1a17;
+    --surface: #272220;
+    --surface-2: #171412;
+    --ink: #ede7e0;
+    --mute: #a0968d;
+    --line: rgba(237, 231, 224, 0.11);
+    --on-ink: #1e1a17;
+    --pill-fill: #c9bfb6;
+    --eva: #8d9ebb;
+    --adam: #be9080;
+    --danger: #ea9189;
+    --shimmer: rgba(237, 231, 224, 0.08);
+    --e1: 0 1px 1px rgba(0, 0, 0, 0.28), 0 3px 8px -2px rgba(0, 0, 0, 0.32);
+    --e2: 0 1px 2px rgba(0, 0, 0, 0.34), 0 10px 24px -8px rgba(0, 0, 0, 0.46);
+    --e3: 0 2px 4px rgba(0, 0, 0, 0.38), 0 24px 48px -16px rgba(0, 0, 0, 0.56);
+    --e-float: 0 1px 2px rgba(0, 0, 0, 0.44),
+      0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
+    --noise-opacity: 0.028;
   }
 }
 
 /* ------------------------------------------------------------
-   2 · Tokens exposed to Tailwind utilities.
-   bg-canvas, bg-surface, text-ink, text-eva, shadow-e2, etc.
+   3 · What Tailwind is allowed to see.
+
+   Note what is *not* here: `--eva` and `--adam` are deliberately
+   not exposed as Tailwind colours. There is no `bg-eva`, no
+   `text-eva`, no `border-adam`. The law says the authorship hue
+   is only ever a ≤2px edge or a small dot — so the only way to
+   reach it is `.edge-eva` / `.dot-eva` in §6, and painting a
+   button with someone's colour would require writing new CSS to
+   do it. The rule is structural rather than advisory, which is
+   the only kind of rule that survives a deadline.
    ------------------------------------------------------------ */
 @theme inline {
   --color-canvas: var(--canvas);
@@ -192,42 +317,46 @@
   --color-ink: var(--ink);
   --color-mute: var(--mute);
   --color-line: var(--line);
-  --color-on-accent: var(--on-accent);
-  --color-eva: var(--eva);
-  --color-eva-deep: var(--eva-deep);
-  --color-eva-soft: var(--eva-soft);
-  --color-adam: var(--adam);
-  --color-adam-deep: var(--adam-deep);
-  --color-adam-soft: var(--adam-soft);
-  --color-us: var(--us);
-  --color-us-deep: var(--us-deep);
-  --color-us-soft: var(--us-soft);
+  --color-on-ink: var(--on-ink);
   --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
 
-  --font-sans: "Outfit Variable", "Outfit", ui-sans-serif, system-ui,
-    sans-serif;
+  --font-sans: "Outfit Variable", "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces Variable", "Fraunces", Georgia, serif;
 
   --shadow-e1: var(--e1);
   --shadow-e2: var(--e2);
   --shadow-e3: var(--e3);
-  --shadow-glow-eva: var(--glow-eva);
-  --shadow-glow-adam: var(--glow-adam);
-  --shadow-glow-us: var(--glow-us);
+  --shadow-float: var(--e-float);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-io: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* Radius scale — rounded and tactile. Cards 20–28, sheets 36, pills full. */
-  --radius-md: 0.875rem; /* 14 — chips, inputs, small tiles */
-  --radius-lg: 1.25rem; /* 20 — standard cards */
-  --radius-xl: 1.75rem; /* 28 — hero cards, photo plates */
-  --radius-2xl: 2.25rem; /* 36 — sheets, the dock */
+  /* Radius scale — brought down one step throughout.
+
+     The direction document originally asserted that radius "was
+     never the problem." It was not the *cause*, which is what that
+     line was reaching for. But once the gradients were gone and
+     there was a rendered page to look at, 28 and 36 were the
+     loudest thing left over from v6: they are consumer-app radii,
+     and paper does not have a 36px corner. A law about material
+     has to reach the corners too. §3 of the direction document is
+     corrected rather than worked around.
+
+     The ratios between steps are preserved, so nothing loses its
+     place in the hierarchy — the scale is simply tighter, and
+     reads as something cut rather than moulded.
+
+     Pills stay `rounded-full`. A pill is its own idiom, not a card
+     with a large radius, and SORDJATI's black pill is the model
+     for every solid control in this system. */
+  --radius-md: 0.625rem; /* 10 — chips, inputs, small tiles */
+  --radius-lg: 0.875rem; /* 14 — standard cards */
+  --radius-xl: 1.25rem; /* 20 — hero cards, photo plates */
+  --radius-2xl: 1.75rem; /* 28 — sheets */
 }
 
 /* ------------------------------------------------------------
-   3 · Base
+   4 · Base
    ------------------------------------------------------------ */
 html {
   font-family: var(--font-sans);
@@ -239,48 +368,132 @@ html {
 body {
   background: var(--canvas);
   color: var(--ink);
-  transition: background-color 400ms var(--ease-io), color 400ms var(--ease-io);
+  transition: background-color var(--dur-3) var(--ease-io),
+    color var(--dur-3) var(--ease-io);
 }
 
 ::selection {
-  background: var(--us-tint);
+  background: rgba(37, 29, 22, 0.12);
+}
+[data-mode="night"] ::selection {
+  background: rgba(237, 231, 224, 0.18);
 }
 
+/* With no accent colour in the system, the focus ring is ink.
+   It is the highest-contrast thing available in both modes,
+   which is what a focus ring is for. */
 :focus-visible {
-  outline: 2px solid var(--us);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
-  border-radius: 10px;
+  /* `inherit`, never a fixed value. The tree has 45 `rounded-full`
+     controls, and a 6px-radius ring drawn around a pill is visibly
+     tighter at the corners than the thing it is marking. */
+  border-radius: inherit;
 }
 
 /* ------------------------------------------------------------
-   4 · The type scale.
-   Outfit carries the interface; Fraunces speaks only at emotional
-   moments — the greeting, a day's name, the book. It never labels
-   a control.
+   5 · Type.
+
+   §4 of the direction is precise about the failure: it was scale,
+   not family. v6 ran 38 / 36 / 22 / 17 / 15 / 13 / 11 — a smooth
+   ramp with no gap anywhere in it, which is exactly what makes a
+   page read as filled-in rather than composed.
+
+   SORDJATI's masthead is ~120px against 11px uppercase meta with
+   almost nothing between. That contrast is the structure of the
+   page, not decoration on it. So:
+
+     type-masthead   59px at 393px    Outfit, edge to edge —
+                                      the door's wordmark only
+     type-hero       47px at 393px    Fraunces — the large end
+                                      inside the app
+     type-clock      38px             Outfit, tabular
+     ... a real gap ...
+     type-micro      11px uppercase   Outfit
+
+   `type-hero` is 47px and not 33px because of a correction made
+   after the first renders: the clock rail had been given masthead
+   scale, which made the largest object in the product the one thing
+   guaranteed to look identical on day four hundred — contradicting
+   PRODUCT-VISION-V2 §3.1 with type size while the copy agreed with
+   it. The large end belongs to what changed. Here that is the live
+   window sentence, computed from `lib/shared-day`; the hours sit
+   under it as its evidence.
+
+   The masthead is a *grotesque*, not a serif. This is the one
+   deliberate divergence from the obvious reading of "editorial
+   warmth", and it is taken from the reference rather than
+   invented: SORDJATI sets its wordmark in a grotesque at enormous
+   size, and the serif never appears at all. Keeping Fraunces off
+   the largest type also keeps this system clear of the warm-cream
+   + giant-serif pairing that is currently the house style of
+   machine-generated design.
+
+   Fraunces stays, and it keeps a job that only it can do: it is
+   the voice of Eva and Adam themselves — the greeting, a day's
+   name, the book, and their own words in `type-quote`. It never
+   labels a control. Its SOFT axis drops from v6's 60 to 0:
+   softened terminals are what make Fraunces read as a friendly
+   consumer brand, and this is meant to read as a book.
    ------------------------------------------------------------ */
+
+@utility type-masthead {
+  font-family: var(--font-sans);
+  font-size: clamp(3rem, 15vw, 5rem);
+  line-height: 0.9;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
 @utility type-hero {
+  /* The large end of the scale in the app, deliberately.
+
+     It was the clock rail, and that was wrong for a reason worth
+     recording: PRODUCT-VISION-V2 §3.1 cut The Gap as a surface
+     because "a clock is correct on day one and on day four hundred,
+     and correctness gives nobody a reason to return." Making the
+     clock the biggest object in the product contradicted that with
+     type size while the copy agreed with it — the largest thing on
+     the page was the one thing guaranteed to look identical in a
+     year.
+
+     This line is the opposite: it is computed live from
+     lib/shared-day, it changes four or five times a day, and it is
+     the sentence the whole product is organised around. That is what
+     earns 47px. */
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 5.5vw, 2.25rem);
-  line-height: 1.16;
-  font-weight: 540;
-  letter-spacing: -0.015em;
-  font-variation-settings: "opsz" 90, "SOFT" 60, "WONK" 0;
+  font-size: clamp(2.5rem, 12vw, 3.25rem);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 96, "SOFT" 0, "WONK" 0;
 }
 
 @utility type-title {
   font-family: var(--font-display);
   font-size: 1.375rem; /* 22 */
-  line-height: 1.75rem;
-  font-weight: 520;
-  letter-spacing: -0.01em;
-  font-variation-settings: "opsz" 50, "SOFT" 60, "WONK" 0;
+  line-height: 1.7rem;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  font-variation-settings: "opsz" 60, "SOFT" 0, "WONK" 0;
+}
+
+/* Their own words, in their own voice. Never UI copy. */
+@utility type-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.0625rem; /* 17 */
+  line-height: 1.55;
+  font-weight: 400;
+  font-variation-settings: "opsz" 24, "SOFT" 0, "WONK" 0;
 }
 
 @utility type-card {
   font-family: var(--font-sans);
   font-size: 1.0625rem; /* 17 */
   line-height: 1.4375rem;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: -0.01em;
 }
 
@@ -288,41 +501,49 @@ body {
   font-family: var(--font-sans);
   font-size: 0.9375rem; /* 15 */
   line-height: 1.4375rem;
-  font-weight: 450;
+  font-weight: 400;
 }
 
 @utility type-label {
   font-family: var(--font-sans);
   font-size: 0.8125rem; /* 13 */
   line-height: 1.125rem;
-  font-weight: 560;
-  letter-spacing: 0.005em;
+  font-weight: 550;
 }
 
 @utility type-caption {
   font-family: var(--font-sans);
   font-size: 0.8125rem; /* 13 */
   line-height: 1.1875rem;
-  font-weight: 450;
+  font-weight: 400;
 }
 
+/* The small end of the scale — SORDJATI's meta label exactly.
+
+   It uppercases, which is right for what it is for: a date, a section
+   label, a running head. It is NOT right for a person's name, and
+   several names landed in it during a token swap without that being
+   chosen. Uppercasing "Eva" is the register of a system talking about
+   a record rather than of two people writing to each other, and their
+   names are the most personal strings in the product. Where a name
+   sits at this size it carries `normal-case` alongside — the size,
+   weight and tracking are what was wanted, not the shouting. */
 @utility type-micro {
   font-family: var(--font-sans);
   font-size: 0.6875rem; /* 11 */
   line-height: 1rem;
-  font-weight: 640;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
 }
 
-/* Legacy alias — a few review surfaces still say type-eyebrow. */
 @utility type-eyebrow {
   font-family: var(--font-sans);
   font-size: 0.6875rem;
   line-height: 1rem;
-  font-weight: 640;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
 }
 
 /* The clocks. Digits must not jitter as they tick. */
@@ -330,67 +551,169 @@ body {
   font-family: var(--font-sans);
   font-size: 2.375rem; /* 38 */
   line-height: 1;
-  font-weight: 560;
+  font-weight: 500;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/* Body measure, stated in characters because that is what the
+   45–90 rule is actually about. 60ch at 15px lands near 470px. */
 @utility measure {
-  max-width: 34rem;
+  max-width: 60ch;
 }
 
 /* ------------------------------------------------------------
-   5 · Material — glass, trays, wells.
+   6 · Material.
+
+   Three materials and two marks. That is the whole kit.
    ------------------------------------------------------------ */
 
-/* Frosted glass with edge refraction: blur + saturate, a bright
-   hairline, and an inset top highlight. Fixed/floating chrome and
-   cards only — never on a large scrolling container. */
-@utility glass {
-  background: var(--glass);
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border: 1px solid var(--glass-edge);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--e2);
-}
-
-@utility glass-strong {
-  background: var(--glass-strong);
-  backdrop-filter: blur(28px) saturate(1.7);
-  -webkit-backdrop-filter: blur(28px) saturate(1.7);
-  border: 1px solid var(--glass-edge);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), var(--e3);
-}
-
-[data-mode="night"] .glass,
-[data-mode="night"] .glass-strong {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--e2);
-}
-
-/* An opaque raised card. */
+/* A plate laid on the page. White stock on warm stock, a hairline,
+   and barely any shadow — the separation is the paper, not the
+   elevation. */
 @utility card {
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--e1);
 }
 
-/* A recessed well — empty slots, inputs, quiet zones. */
+/* A well cut into the page: empty slots, inputs, quiet zones.
+   No inset shadow — at night an inset dark shadow on a dark
+   surface is invisible, so the recess is carried by value alone
+   and works identically in both modes. */
 @utility well {
   background: var(--surface-2);
-  box-shadow: inset 0 1px 2px rgba(46, 26, 71, 0.05);
+  border: 1px solid var(--line);
 }
 
-/* Photographs. */
-@utility photo {
-  filter: var(--photo-dim);
+/* An invalid field is red, and it is red from here rather than from a
+   utility class.
+
+   `.well` sets `border: 1px solid var(--line)` as a shorthand, and
+   `.well` and `border-danger` are both utilities-layer rules at equal
+   specificity — so which one painted the edge depended on Tailwind's
+   emission order, not on intent. It ordered in `.well`'s favour, and
+   the measured result was that a wrong password produced a
+   `rgba(37,29,22,0.1)` hairline: no red at all. Adding `border` next
+   to `border-danger` did not help, because width was never the losing
+   half.
+
+   `input[aria-invalid="true"]` is (0,1,1) against `.well`'s (0,1,0),
+   so it wins deterministically with no `!important` and no reliance on
+   build order. It is also the better rule: invalidity is a state of
+   the control, so every input in the product inherits it — the login
+   field, the pocket passphrase, anything added later — rather than
+   each component remembering to ask.
+
+   This is not cosmetic. `prefers-reduced-motion` removes `animation`
+   outright a few sections below, which takes the shake with it. For a
+   reduced-motion user a wrong password would otherwise be announced by
+   the message alone. */
+input[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--danger);
 }
-@utility photo-bright {
+
+/* Photographs. Full strength, always, in both modes. This utility
+   exists so the rule is greppable and so nobody reintroduces
+   `--photo-dim` by writing a one-off filter. */
+@utility photo {
   filter: none;
+  transition: filter var(--dur-2) var(--ease-out);
+}
+
+/* ...except when nobody is looking.
+
+   `is-away` is set on `<html>` by `PrivacyVeil` on `visibilitychange`,
+   `pagehide` and `blur`, and removed on the way back. §1 is intact:
+   photographs are never dimmed *while someone is looking at them*.
+   This is not a treatment applied to a photograph, it is what the
+   photograph does when it stops being on screen.
+
+   It exists because the colour law deleted `--photo-dim` — correctly —
+   and that was the only thing that had ever softened a private picture.
+   The landing surface now shows the most recent one full-width at full
+   strength, which is legible over a shoulder, and is what iOS captures
+   for its app-switcher card.
+
+   24px, not a discreet 6px: the point is that the subject is
+   unrecoverable from the blurred frame, not that it looks tasteful.
+   `scale(1.06)` hides the transparent fringe a large blur pulls in at
+   the edges. Under `prefers-reduced-motion` the transition above is
+   removed wholesale, so the veil snaps rather than fading — the
+   concealment itself is never conditional on a motion preference,
+   because it is a privacy control and not decoration. */
+.is-away .photo {
+  filter: blur(24px);
+  transform: scale(1.06);
+}
+
+/* --------------------------------------------------------
+   The authorship mark. Two forms, no third.
+
+   THE TEST, and it is a test rather than a judgement call:
+   **the mark attaches to a thing that exists and that someone
+   made. Never to a turn, a state, an intention, or a slot.**
+   It answers *who left this*, not *who is this about*.
+
+   This is written as a rule because the first pass spent the ink
+   on a clock card, an empty slot, a prepared plate, a presence
+   dot, a login chooser and a whose-turn chip — six places, none
+   of which anybody made. That is how "two hairlines of colour"
+   becomes colour-coded UI: not in one decision, but in six
+   individually defensible ones. The last of them, a pending turn
+   in an authored back-and-forth, was the strongest argument
+   available for an exception, which is precisely why there is no
+   exception. Accept it and every element *about* a person is
+   eligible.
+
+   `dot-*` currently has no consumer, and that is correct rather
+   than dead code: it is for a dense list where a 2px edge has
+   nowhere to sit — the book's index, when it exists — and every
+   authored surface built so far had room for the edge.
+
+   `edge-*` is the ≤2px left edge on something a person made.
+   It is a border rather than an inset shadow so it composes
+   with `.card` predictably — these rules are declared after
+   `.card`, so the left border wins and the other three sides
+   stay hairline.
+
+   `dot-*` is for dense lists where a 2px edge has nowhere to
+   sit. 6px, which is small enough to read as a mark rather
+   than a status light.
+   -------------------------------------------------------- */
+@utility edge-eva {
+  border-left: 2px solid var(--eva);
+}
+@utility edge-adam {
+  border-left: 2px solid var(--adam);
+}
+
+@utility dot-eva {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--eva);
+  flex: none;
+}
+@utility dot-adam {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--adam);
+  flex: none;
 }
 
 /* ------------------------------------------------------------
-   6 · Controls
+   7 · Controls.
+
+   One solid control in the system: ink filled, paper text.
+   SORDJATI's black pill, and it is the reason a zero-accent
+   palette still has an unmistakable primary action.
    ------------------------------------------------------------ */
+
 @utility press {
   transition: transform var(--dur-1) var(--ease-out);
   &:active {
@@ -411,9 +734,53 @@ body {
   }
 }
 
+@utility pill-ink {
+  background: var(--pill-fill);
+  color: var(--on-ink);
+  border: 1px solid var(--pill-fill);
+
+  /* Disabled is not "the same button, fainter". A solid pill at 50%
+     opacity over warm paper lands on a mid-grey that reads as an
+     ordinary enabled button — it was the most prominent thing on the
+     login screen and it was doing nothing. So disabled empties out:
+     it stops being solid, which is the property that made it the
+     primary action in the first place. */
+  &:disabled {
+    background: transparent;
+    color: var(--mute);
+    border-color: var(--line);
+  }
+}
+
+@utility pill-quiet {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+
+  &:disabled {
+    color: var(--mute);
+  }
+}
+
+/* A large block of solid ink. Distinct from `pill-ink` on purpose:
+   a small ink control inverts to paper at night and becomes a bright
+   target, which is right. A 140px block that inverts becomes a lamp
+   in a dark bedroom, which is not. At night this is a plate like any
+   other and the hairline does the work. */
+@utility tile-ink {
+  background: var(--ink);
+  color: var(--on-ink);
+  border: 1px solid var(--ink);
+}
+
 /* ------------------------------------------------------------
-   7 · Motion vocabulary — keyframes.
-   Only transform, opacity and filter animate, ever.
+   8 · Motion vocabulary.
+
+   Only transform and opacity animate, ever. The aurora drift
+   keyframes are gone with the backdrop that used them, and the
+   shimmer sweep is gone from the seal; what remains of `shimmer`
+   is loading skeletons, which is the only place a sweep is
+   describing something true.
    ------------------------------------------------------------ */
 
 /* Content arriving: a heavy, soft rise. */
@@ -428,7 +795,7 @@ body {
   }
 }
 
-/* Something popping into place — spring overshoot baked in. */
+/* Something landing in place. */
 @keyframes pop-in {
   0% {
     opacity: 0;
@@ -469,42 +836,13 @@ body {
   }
 }
 
-/* Skeleton shimmer. */
+/* Loading skeletons only. */
 @keyframes shimmer {
   from {
     transform: translateX(-100%);
   }
   to {
     transform: translateX(100%);
-  }
-}
-
-/* The aurora blobs drifting — ambient, 26s+, opacity via the blob itself. */
-@keyframes drift-a {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(6%, 4%, 0) scale(1.12);
-  }
-}
-@keyframes drift-b {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-5%, -6%, 0) scale(1.08);
-  }
-}
-@keyframes drift-c {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1.05);
-  }
-  50% {
-    transform: translate3d(4%, -5%, 0) scale(0.96);
   }
 }
 
@@ -525,73 +863,66 @@ body {
   }
 }
 
-/* Staggered entrance helper: set --i per child. */
+/* Staggered entrance helper: set --i per child. Stagger ≤50ms. */
 @utility stagger-child {
-  animation: rise-in var(--dur-4) var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 70ms);
+  /* --dur-3, not --dur-4. §5 puts content transitions at 220-320ms and
+     drawers at 500ms; the two were exactly swapped — a page entrance
+     was running at the measured Vaul drawer duration while the actual
+     drawer-class moment, the seal, ran at 200ms. */
+  animation: rise-in var(--dur-3) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
 }
 
+/* Reduced motion: full removal, not a degrade to opacity.
+
+   Our animation skill says degrade; Sonner's own shipped CSS
+   removes transitions and animations outright with !important,
+   and Sonner ships to more people than this app ever will. R4
+   confirmed it from source twice. Follow the source.
+
+   JS-driven motion is not reachable from here — components using
+   `motion/react` handle this themselves via `useReducedMotion`. */
 @media (prefers-reduced-motion: reduce) {
-  @keyframes rise-in {
-    from {
-      opacity: 0;
-      transform: none;
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  @keyframes pop-in {
-    0% {
-      opacity: 0;
-      transform: none;
-    }
-    100% {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  @keyframes photo-drop {
-    from {
-      opacity: 0;
-      transform: none;
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  @keyframes drift-a {
-    0%,
-    100% {
-      transform: none;
-    }
-  }
-  @keyframes drift-b {
-    0%,
-    100% {
-      transform: none;
-    }
-  }
-  @keyframes drift-c {
-    0%,
-    100% {
-      transform: none;
-    }
-  }
-  @keyframes breathe {
-    0%,
-    100% {
-      transform: none;
-      opacity: 0.9;
-    }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 
 /* ------------------------------------------------------------
-   8 · Fixed layers. Never inside a scroller.
+   9 · Fixed layers. Never inside a scroller.
+
+   One layer now. The aurora is deleted — `AuroraBackdrop` was
+   mounted in `app/(app)/layout.tsx`, which put an animated
+   three-blob gradient wash behind every authenticated surface in
+   the product. It was the single largest slop signal and it was
+   one line.
+
+   The grain stays, at 2.2%. It earns its place by being the only
+   thing that makes a flat colour read as a material: paper is
+   warm because of what it is made of, and this is the cheapest
+   honest way to say so. Multiply by day, because grain in paper
+   absorbs light; screen at night, because in a dark room the
+   grain is the light the page is scattering rather than eating.
    ------------------------------------------------------------ */
+/* The night half of `tile-ink` — see §7. Declared here rather than
+   inside the utility because it needs the mode selector's specificity. */
+[data-mode="night"] .tile-ink {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode]) .tile-ink {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--line);
+  }
+}
+
 .noise-layer {
   position: fixed;
   inset: 0;
@@ -601,19 +932,10 @@ body {
   mix-blend-mode: multiply;
 }
 [data-mode="night"] .noise-layer {
-  mix-blend-mode: overlay;
+  mix-blend-mode: screen;
 }
-
-.aurora-layer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-}
-.aurora-blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(70px);
-  will-change: transform;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode]) .noise-layer {
+    mix-blend-mode: screen;
+  }
 }

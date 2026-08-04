@@ -32,3 +32,19 @@ test-results/
 # service worker build output
 public/sw.js
 public/sw.js.map
+
+# Throwaway verification scripts — screenshot runs, contrast sweeps,
+# the local Tuesday render. They exist for one session and are deleted
+# after; this is so a stray one cannot be committed by `git add -A`.
+#
+# If one of these comes back, it must read the app password from an env
+# var. The versions used during the foundation work carried the local
+# throwaway password as a string literal, which was safe only because
+# they were never committed — that is a property of luck, not design.
+.shots.mjs
+.verify*.mjs
+.tuesday.mjs
+.a11y.mjs
+.err.mjs
+.q.mjs
+*.shots.mjs

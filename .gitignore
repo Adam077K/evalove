@@ -27,3 +27,10 @@ all_skills_stored/
 
 # Browser automation artifacts (agent research runs)
 .playwright-mcp/
+
+# Archive tools — local install only, never in apps/web
+tools/node_modules/
+
+# Export output — written by tools/export/index.ts during local runs and CI;
+# never committed — the point is that it lives in Eva's R2, not this repo
+apps/web/eva-and-adam-archive/

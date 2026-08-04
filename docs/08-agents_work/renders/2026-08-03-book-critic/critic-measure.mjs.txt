@@ -1,0 +1,228 @@
+/**
+ * Precise measurement pass on the real built /book.
+ * Answers only questions that squinting cannot: glyph extents, dock
+ * occlusion, contrast, tap targets, focus rings.
+ */
+import pw from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/@playwright/test/index.js";
+const { chromium } = pw;
+import { SignJWT } from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/jose/dist/webapi/index.js";
+import { readFileSync } from "node:fs";
+
+const SCRATCH =
+  "/private/tmp/claude-501/-Users-adamks-VibeCoding-evalove--worktrees-ceo-3-1785631504/5cf8e0ee-2e9e-4a8f-94f8-5a8a5794b97f/scratchpad";
+const CREDS = JSON.parse(readFileSync(`${SCRATCH}/creds.json`, "utf8"));
+const BASE = "http://localhost:3399";
+
+function keyBytes() {
+  const b = atob(CREDS.secret);
+  const a = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i += 1) a[i] = b.charCodeAt(i);
+  return a;
+}
+const iat = Math.floor(Date.now() / 1000);
+const token = await new SignJWT({
+  sid: "3f1c0d2e-1111-4222-8333-444455556666",
+  v: 1,
+})
+  .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+  .setIssuedAt(iat)
+  .setExpirationTime(iat + 15552000)
+  .sign(keyBytes());
+
+const browser = await chromium.launch();
+const ctx = await browser.newContext({
+  viewport: { width: 393, height: 852 },
+  deviceScaleFactor: 2,
+  isMobile: true,
+  hasTouch: true,
+});
+await ctx.addCookies([
+  {
+    name: "ea_session",
+    value: token,
+    domain: "localhost",
+    path: "/",
+    httpOnly: true,
+    secure: false,
+    sameSite: "Lax",
+  },
+]);
+const page = await ctx.newPage();
+
+const out = {};
+for (const mode of ["day", "night"]) {
+  await page.goto(`${BASE}/book?mode=${mode}`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(2600);
+  await page.addStyleTag({ content: "nextjs-portal{display:none !important}" });
+
+  out[mode] = await page.evaluate(() => {
+    const rect = (el) => {
+      if (!el) return null;
+      const b = el.getBoundingClientRect();
+      return {
+        top: +b.top.toFixed(1),
+        bottom: +b.bottom.toFixed(1),
+        left: +b.left.toFixed(1),
+        right: +b.right.toFixed(1),
+        w: +b.width.toFixed(1),
+        h: +b.height.toFixed(1),
+      };
+    };
+    // Exact glyph extent of the masthead via a Range over its text node.
+    const h1 = document.querySelector("h1");
+    const rng = document.createRange();
+    rng.selectNodeContents(h1);
+    const glyph = rect(rng);
+
+    // The dock: find the fixed-position element nearest the bottom.
+    const fixed = [...document.querySelectorAll("body *")].filter(
+      (e) => getComputedStyle(e).position === "fixed",
+    );
+    const dockRects = fixed.map((e) => ({
+      tag: e.tagName,
+      cls: (e.className || "").toString().slice(0, 70),
+      ...rect(e),
+    }));
+
+    const srgb = (c) => {
+      const [r, g, b] = c.match(/[\d.]+/g).map(Number);
+      const f = (v) => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+      };
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    const ratio = (a, b) => {
+      const [x, y] = [srgb(a), srgb(b)].sort((p, q) => q - p);
+      return +((x + 0.05) / (y + 0.05)).toFixed(2);
+    };
+    const canvas = getComputedStyle(document.body).backgroundColor;
+
+    const texts = [
+      ["masthead", "h1"],
+      ["colophon", "h1 + p"],
+      ["whylabel", "main p.type-micro.mb-4"],
+      ["quote", ".type-quote"],
+      ["stamp", "p.normal-case"],
+      ["daysinorder", 'a[href="/book/days"] span'],
+    ].map(([name, sel]) => {
+      const el = document.querySelector(sel);
+      if (!el) return { name, missing: sel };
+      const cs = getComputedStyle(el);
+      return {
+        name,
+        text: el.textContent.trim().slice(0, 40),
+        size: cs.fontSize,
+        weight: cs.fontWeight,
+        family: cs.fontFamily.split(",")[0].replace(/"/g, ""),
+        color: cs.color,
+        contrast: ratio(cs.color, canvas),
+        ...rect(el),
+      };
+    });
+
+    // Pill label — solid fill, its own contrast pair.
+    const pill = document.querySelector(".pill-ink");
+    const pillCS = pill ? getComputedStyle(pill) : null;
+
+    const taps = [...document.querySelectorAll("main a")].map((a) => {
+      const r = rect(a);
+      // Real hit area of the visible glyph inside a mostly-empty row.
+      const icon = a.querySelector("svg");
+      return {
+        href: a.getAttribute("href"),
+        row: r,
+        iconRect: rect(icon),
+        rowH: r.h,
+      };
+    });
+
+    // Author edge — is it actually painted, and how wide?
+    const edge = document.querySelector('[class*="edge-"]');
+    const edgeCS = edge ? getComputedStyle(edge) : null;
+
+    return {
+      scrollHeight: document.documentElement.scrollHeight,
+      canvas,
+      masthead: {
+        blockW: rect(h1).w,
+        glyphW: glyph.w,
+        glyphRight: glyph.right,
+        columnRight: rect(h1).right,
+        shortfall: +(rect(h1).right - glyph.right).toFixed(1),
+      },
+      dockRects,
+      texts,
+      pill: pill
+        ? {
+            bg: pillCS.backgroundColor,
+            color: pillCS.color,
+            contrast: ratio(pillCS.color, pillCS.backgroundColor),
+            radius: pillCS.borderRadius,
+            ...rect(pill),
+          }
+        : null,
+      taps,
+      edge: edgeCS
+        ? {
+            borderLeft: edgeCS.borderLeftWidth + " " + edgeCS.borderLeftColor,
+            paddingLeft: edgeCS.paddingLeft,
+            ...rect(edge),
+          }
+        : null,
+      photo: (() => {
+        const img = document.querySelector("main img");
+        if (!img) return null;
+        const cs = getComputedStyle(img);
+        return {
+          natural: `${img.naturalWidth}x${img.naturalHeight}`,
+          naturalRatio: +(img.naturalWidth / img.naturalHeight).toFixed(4),
+          renderedRatio: +(
+            img.getBoundingClientRect().width /
+            img.getBoundingClientRect().height
+          ).toFixed(4),
+          objectFit: cs.objectFit,
+          filter: cs.filter,
+          opacity: cs.opacity,
+          mixBlend: cs.mixBlendMode,
+          maxHeight: cs.maxHeight,
+          ...rect(img),
+        };
+      })(),
+      // Anything overlaying the photo?
+      overPhoto: (() => {
+        const img = document.querySelector("main img");
+        if (!img) return null;
+        const b = img.getBoundingClientRect();
+        const pts = [
+          [b.left + 10, b.top + 10],
+          [b.left + b.width / 2, b.top + b.height / 2],
+          [b.right - 10, b.bottom - 10],
+        ];
+        return pts.map(([x, y]) => {
+          const el = document.elementFromPoint(x, y);
+          return el ? el.tagName + "." + (el.className || "").toString().slice(0, 30) : null;
+        });
+      })(),
+    };
+  });
+
+  // Focus ring check — tab to each link and read the outline.
+  out[mode].focus = await page.evaluate(() => {
+    const res = [];
+    for (const a of document.querySelectorAll("main a")) {
+      a.focus();
+      const cs = getComputedStyle(a);
+      res.push({
+        href: a.getAttribute("href"),
+        outline: cs.outlineWidth + " " + cs.outlineStyle + " " + cs.outlineColor,
+        outlineOffset: cs.outlineOffset,
+        boxShadow: cs.boxShadow,
+      });
+      a.blur();
+    }
+    return res;
+  });
+}
+console.log(JSON.stringify(out, null, 2));
+await browser.close();

@@ -105,9 +105,9 @@ export function QuickSend() {
       </header>
 
       {/* The composer. */}
-      <section aria-label="Compose" className="card rounded-[1.75rem] p-5">
+      <section aria-label="Compose" className="card rounded-[1.25rem] p-5">
         {photoUrl ? (
-          <div className="relative overflow-hidden rounded-[1.25rem]">
+          <div className="relative overflow-hidden rounded-[0.875rem]">
             {/* eslint-disable-next-line @next/next/no-img-element -- local object URL */}
             <img
               src={photoUrl}
@@ -121,7 +121,7 @@ export function QuickSend() {
                 setPhotoUrl(null);
               }}
               aria-label="Remove the photograph"
-              className="press absolute top-2.5 right-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md"
+              className="press pill-ink absolute top-2.5 right-2.5 flex h-9 w-9 items-center justify-center rounded-full"
             >
               <X size={16} strokeWidth={2.2} />
             </button>
@@ -130,7 +130,7 @@ export function QuickSend() {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="press well flex w-full flex-col items-center justify-center gap-2 rounded-[1.25rem] border-2 border-dashed border-line py-10 text-mute"
+            className="press well flex w-full flex-col items-center justify-center gap-2 rounded-[0.875rem] border-2 border-dashed border-line py-10 text-mute"
           >
             <ImagePlus size={24} strokeWidth={1.6} />
             <span className="type-label">Add a photograph</span>
@@ -150,14 +150,13 @@ export function QuickSend() {
           rows={2}
           placeholder="A line to go with it — or instead of it"
           aria-label="A short note"
-          className="type-body well mt-3 w-full resize-none rounded-[0.875rem] px-4 py-3 text-ink outline-none placeholder:text-mute focus:shadow-[0_0_0_3px_var(--us-tint)]"
+          className="type-body well mt-3 w-full resize-none rounded-[0.625rem] px-4 py-3 text-ink outline-none placeholder:text-mute"
         />
 
         <PillButton
-          ink={member.slug}
           onClick={send}
           disabled={note.trim() === "" && !photoUrl}
-          className="mt-4 w-full disabled:opacity-50"
+          className="mt-4 w-full"
         >
           <Send size={17} strokeWidth={2} />
           Send to {partner.displayName}
@@ -168,7 +167,7 @@ export function QuickSend() {
       <section aria-label="Sent today" className="mt-8">
         <h2 className="type-micro mb-3 text-mute">Sent today</h2>
         {sent.length === 0 ? (
-          <p className="type-caption card rounded-[1.25rem] px-5 py-6 text-center text-mute">
+          <p className="type-caption card rounded-[0.875rem] px-5 py-6 text-center text-mute">
             Nothing yet today. The first small thing changes the shape of
             {" "}{partner.displayName}&rsquo;s afternoon.
           </p>
@@ -182,7 +181,7 @@ export function QuickSend() {
                   initial={{ opacity: 0, y: -10, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={SPRING}
-                  className="card flex items-center gap-3.5 rounded-[1.25rem] px-4 py-3.5"
+                  className="card flex items-center gap-3.5 rounded-[0.875rem] px-4 py-3.5"
                 >
                   <StateDot state={it.state} />
                   <div className="min-w-0 flex-1">
@@ -203,7 +202,7 @@ export function QuickSend() {
                     <button
                       type="button"
                       onClick={() => retry(it.id)}
-                      className="press type-label flex shrink-0 items-center gap-1.5 rounded-full bg-us-soft px-3.5 py-2 text-us-deep"
+                      className="press pill-quiet type-label flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2"
                     >
                       <RefreshCw size={14} strokeWidth={2.1} />
                       Try again
@@ -222,26 +221,28 @@ export function QuickSend() {
 function StateDot({ state }: { state: SentState }) {
   if (state === "delivered") {
     return (
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-us-soft text-us-deep">
+      <span className="well flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink">
         <Check size={15} strokeWidth={2.4} />
       </span>
     );
   }
   if (state === "needs_retry") {
     return (
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger">
+      <span className="well flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-danger">
         <RefreshCw size={14} strokeWidth={2.1} />
       </span>
     );
   }
+  /* In flight. A neutral dot: this reports the state of a delivery,
+     not who made the thing, so it is not an authorship mark. */
   return (
     <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
       <span
-        className="absolute h-2.5 w-2.5 rounded-full bg-us"
+        className="absolute h-1.5 w-1.5 rounded-full bg-mute"
         style={{ animation: "breathe 1.6s var(--ease-io) infinite" }}
         aria-hidden="true"
       />
-      <span className="h-2.5 w-2.5 rounded-full bg-us" />
+      <span className="h-1.5 w-1.5 rounded-full bg-mute" />
     </span>
   );
 }

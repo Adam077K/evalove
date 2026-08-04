@@ -16,11 +16,18 @@
  *   3. A correct password sets a cookie carrying every attribute that makes it
  *      safe.
  *   4. No response body ever says which branch refused it.
+ *
+ * Section 5 covers the degraded path: when the database is unreachable,
+ * scope='session' falls back to the in-process counter rather than 503.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ADDRESS_MAX_FAILURES } from "@/lib/auth/rate-limit";
+import {
+  ADDRESS_MAX_FAILURES,
+  DEGRADED_MAX_FAILURES,
+  __resetDegradedCounters,
+} from "@/lib/auth/rate-limit";
 import { FAILURE_FLOOR_MS } from "@/lib/auth/timing";
 import { TEST_APP_PASSWORD as PASSWORD } from "@/lib/__tests__/setup-env";
 
@@ -105,6 +112,8 @@ beforeEach(() => {
   attempts.fromAddress = [];
   attempts.everywhere = [];
   attempts.readThrows = false;
+  // Reset the in-process degraded counter so tests do not bleed into each other.
+  __resetDegradedCounters();
 });
 
 /* ------------------------------------------------------------------ *
@@ -207,15 +216,103 @@ describe("the rate limit", () => {
     expect(attempts.recorded).toHaveLength(0);
   });
 
-  it("fails CLOSED when it cannot read the history", async () => {
-    // A limiter that lets everything through when its storage is unreachable
-    // is a limiter an attacker switches off by making the storage unreachable.
+  it("degrades to in-process counter for session scope when storage is unreachable", async () => {
+    // The old behaviour was 503. The new behaviour for scope='session' is to
+    // fall back to the in-process counter. A correct password still gets in.
+    // See lib/auth/rate-limit.ts for the argument for why session degrades but
+    // vault does not.
     attempts.readThrows = true;
 
     const response = await POST(post({ password: PASSWORD }));
 
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(200);
+    expect(jar.set).toHaveBeenCalled();
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * 5. The degraded path (storage unreachable, session scope)
+ * ------------------------------------------------------------------ */
+
+describe("degraded session limiter (storage unreachable)", () => {
+  it("storage failure + correct password = 200 (the door stays open)", async () => {
+    // This is the property that justifies the change. The original fail-closed
+    // posture was correct in principle; the problem is that a Supabase free-tier
+    // pause is far more likely than a guessing attack, and this is a couple's
+    // private archive, not a public sign-in form.
+    attempts.readThrows = true;
+
+    const response = await POST(post({ password: PASSWORD }));
+
+    expect(response.status).toBe(200);
+  });
+
+  it(`${DEGRADED_MAX_FAILURES + 1} successful logins in a row are all allowed`, async () => {
+    // Repeated correct logins must not exhaust the budget. Troubleshooting an
+    // outage — clearing site data, switching devices, handing the phone to the
+    // other person — is exactly what happens during a Supabase pause. Without
+    // the refund on success, the fourth correct login would be refused for
+    // fifteen minutes, re-introducing the failure mode this brief exists to fix.
+    attempts.readThrows = true;
+
+    for (let i = 0; i < DEGRADED_MAX_FAILURES + 1; i++) {
+      const response = await POST(post({ password: PASSWORD }));
+      expect(response.status, `login ${i + 1} should succeed`).toBe(200);
+      // Each successful login must set a cookie and not exhaust the budget.
+      jar.set.mockClear();
+    }
+  });
+
+  it("storage failure + wrong password = 401 (same message as always)", async () => {
+    // The degraded path must not leak information about its own state. The
+    // 401 body is byte-identical to the ordinary wrong-password response.
+    attempts.readThrows = true;
+
+    const response = await POST(post({ password: "not it" }));
+    const body = await response.json() as { message: string };
+
+    expect(response.status).toBe(401);
+    // Same sentence as the healthy path — no "storage", "degraded", etc.
+    expect(body.message).toBe("That's not it. Try again.");
+  });
+
+  it(`storage failure + ${DEGRADED_MAX_FAILURES + 1} wrong passwords = the last one is 429`, async () => {
+    // The in-process counter allows DEGRADED_MAX_FAILURES attempts before
+    // shutting the door for the rest of the 15-minute window.
+    attempts.readThrows = true;
+
+    for (let i = 0; i < DEGRADED_MAX_FAILURES; i++) {
+      const r = await POST(post({ password: "not it" }));
+      expect(r.status, `attempt ${i + 1} should be 401`).toBe(401);
+    }
+
+    // The next one is refused. Whether the password is right or wrong does
+    // not matter — the instance budget is spent.
+    const refused = await POST(post({ password: "not it" }));
+
+    expect(refused.status).toBe(429);
+    expect(Number(refused.headers.get("Retry-After"))).toBeGreaterThan(0);
     expect(jar.set).not.toHaveBeenCalled();
+  });
+
+  it("the 429 on the degraded path is byte-identical to the ordinary rate-limit 429", async () => {
+    // Telling a caller "the limiter is degraded" is an oracle for the one
+    // attacker who can make storage unreachable on demand.
+    attempts.readThrows = false;
+    attempts.fromAddress = recentFailures(ADDRESS_MAX_FAILURES);
+    const ordinary = await POST(post({ password: "not it" }));
+    const ordinaryBody = await ordinary.json() as { message: string };
+
+    __resetDegradedCounters();
+    attempts.readThrows = true;
+    for (let i = 0; i < DEGRADED_MAX_FAILURES; i++) {
+      await POST(post({ password: "not it" }));
+    }
+    const degraded = await POST(post({ password: "not it" }));
+    const degradedBody = await degraded.json() as { message: string };
+
+    expect(degraded.status).toBe(429);
+    expect(degradedBody.message).toBe(ordinaryBody.message);
   });
 });
 

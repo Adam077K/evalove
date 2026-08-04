@@ -1,0 +1,24 @@
+# Nothing here is needed to build or run the app, and all of it was
+# being uploaded on every deployment.
+#
+# `docs/` alone is the bulk of it: design handoffs, research reports and
+# the screen captures those reports cite. Reference material for the
+# people building the product, not an input to the build.
+#
+# If Vercel's project root is ever set to `apps/web` rather than the
+# repository root, this file stops applying — Vercel reads
+# `.vercelignore` from the deployment root. In that case the paths
+# below are already outside the upload and this file is harmless, but
+# check before assuming it is doing anything.
+docs/
+war-room/
+war-room-dashboard/
+guides/
+
+# Committed screen captures at the repository root, from earlier builds.
+*.png
+*.jpeg
+
+.agent/
+.claude/
+.playwright-mcp/

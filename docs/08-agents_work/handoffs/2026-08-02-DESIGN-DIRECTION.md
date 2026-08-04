@@ -188,8 +188,33 @@ The v6 system is the rejected direction rendered as tokens. It goes.
 | `--glass`, `--glass-strong`, `--glass-edge` | Glassmorphism is attempt #2's fingerprint. Deleted unless a reviewer is convinced by a specific case. |
 | Night mode `#140e1e` plum | Night is genuinely half this product — Eva reads it at 11pm. Keep a night mode; rebuild it as true neutral, not plum. |
 
-Keep: `--ease-out`, `--ease-io`, the four durations, the radius scale. Those were
-never the problem.
+Keep: `--ease-out`, `--ease-io`, the four durations. Those were never the
+problem.
+
+### Correction — the radius scale, revised 2026-08-02 after the first render
+
+This section originally read "keep … the radius scale. Those were never the
+problem." That was an assertion written before anything had been rendered, and
+it was wrong.
+
+Design-lead built the foundation, screenshotted it at 393×852, and found that
+once the gradients, the aurora and the glows were gone, **28 and 36 were the
+loudest surviving v6 signal on the page**. They are consumer-app radii. Paper
+does not have a 36px corner, and a law about material has to reach the corners
+too — otherwise the geometry keeps saying "app" while the colour says "book."
+
+Evidence beat the assumption. The scale is now:
+
+| Token | Was | Is | Used for |
+|---|---|---|---|
+| `--radius-md` | 14 | **10** | chips, inputs, small tiles |
+| `--radius-lg` | 20 | **14** | standard cards |
+| `--radius-xl` | 28 | **20** | hero cards, photo plates |
+| `--radius-2xl` | 36 | **28** | sheets |
+
+The ratios between steps are preserved, so nothing lost its place in the
+hierarchy. Pills stay `rounded-full` — a pill is its own idiom, not a card with
+a big radius, and SORDJATI's black pill is the model for every solid control.
 
 ### The single highest-leverage deletion
 

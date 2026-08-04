@@ -1,0 +1,247 @@
+# ============================================================================
+# nightly-archive.yml
+# ============================================================================
+#
+# DO NOT DELETE OR DISABLE THIS WORKFLOW.
+#
+# Deleting or disabling this file has two consequences that together are
+# worse than either alone:
+#
+#   1. Eva's archive copy stops. The only automatic, nightly copy of the
+#      archive into storage Eva owns will no longer run. Whatever was last
+#      uploaded stays there indefinitely, growing stale.
+#
+#   2. The app goes offline after seven idle days. Supabase pauses free-tier
+#      projects after one week of inactivity. This job is the keep-alive —
+#      it queries the database on every run. Without it, the next quiet week
+#      in either of their lives ends with a paused database and a broken app.
+#      The pause is manual to lift (Supabase dashboard). There is no automatic
+#      recovery, no alert, and the silence is the worst possible moment.
+#
+# The fix, if this is a Pro-tier project: upgrade to Supabase Pro and then
+# remove this comment block — the 7-day pause rule does not apply to Pro.
+# Until that happens, this file is load-bearing infrastructure, not a cron.
+#
+# LOAD-BEARING DEPENDENCY: this repo must remain private.
+# GitHub automatically disables scheduled workflows in PUBLIC repositories
+# after 60 days of no repository activity (pushes, PRs, etc.). A scheduled
+# workflow run does not count as activity. Making this repo public for any
+# reason — even briefly, for an unrelated purpose — silently arms a 60-day
+# timer against both the archive copy and the keep-alive at once. Neither
+# the founder nor Eva would be notified on auto-disable. See ARCH §5.8a and
+# RUNBOOK-nightly-archive.md §6.
+#
+# NOT A MIRROR.
+# This copy does not propagate deletes from the main app. Eva's copy is
+# deliberately unreachable by Adam's delete operations — that is the point.
+# The founder has ruled that nothing in this system is ever permanently
+# destroyed (everything stays in storage), so there is nothing to propagate
+# anyway. But this property holds even if that policy ever changes.
+# Ref: PRODUCT-VISION-V2 §6 item 5 — "the change is not the mechanism; it
+# is whose account the copy lands in."
+# This deliberately contradicts ARCH §5.7 item 4 (mirror requirement);
+# the vision wins. See RUNBOOK-nightly-archive.md §5.
+#
+# VAULT EXCLUDED FROM THIS JOB.
+# The nightly job runs WITHOUT --include-vault. The vault's automatic copy
+# is handled by a separate encrypted-copy job (feat/vault-encrypted-copy).
+# The founder has decided: vault items are included in the automatic copy,
+# encrypted with age to three recipients (Eva, Adam, and the founder's
+# recovery key). That job is distinct from this one and does not pass
+# --include-vault here.
+#
+# ============================================================================
+
+name: nightly-archive
+
+on:
+  schedule:
+    # 02:00 UTC — after most of the day has ended in both New York and Israel
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    # Manual trigger: useful for the first run, after a credential rotation,
+    # or when verifying that last night's run did what it should have.
+    # See RUNBOOK-nightly-archive.md §4 for the manual-run procedure.
+
+jobs:
+  archive:
+    name: Export, verify, and upload to Eva's R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # 2. Node.js + pnpm setup
+      #
+      # pnpm is required for step 3's 'pnpm install --frozen-lockfile' in tools/.
+      # apps/web still uses npm (package-lock.json); pnpm/action-setup does not
+      # affect it. tools/ uses pnpm (pnpm-lock.yaml lockfileVersion 9.0).
+      #
+      # Canonical ruling (CTO, 2026-08-03): feat/archive-export-mirror OWNS
+      # this file. apps/web here uses npm; only tools/ uses pnpm. Therefore
+      # cache-dependency-path lists only tools/pnpm-lock.yaml. When
+      # feat/ci-floor rebases onto this tip, its workflow patch flips the
+      # apps/web install to pnpm and extends the cache-dependency-path list —
+      # that migration is ci-floor's scope, not this branch's.
+      # -----------------------------------------------------------------------
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: tools/pnpm-lock.yaml
+
+      # -----------------------------------------------------------------------
+      # 3. Install dependencies
+      #
+      # Two separate installs:
+      #   apps/web  — Next.js app dependencies (npm, package-lock.json)
+      #   tools     — @aws-sdk/client-s3 and @supabase/supabase-js for the
+      #               export CLI and upload.ts (pnpm, pnpm-lock.yaml)
+      #
+      # @aws-sdk/client-s3 must NOT be installed under apps/web — it must
+      # not appear in the Next.js bundle. The separation is intentional.
+      # @supabase/supabase-js lives in tools/ so the ESM resolver can find
+      # it from tools/export/read.ts without NODE_PATH tricks (which Node's
+      # ESM resolver ignores entirely).
+      # -----------------------------------------------------------------------
+      - name: Install apps/web dependencies
+        run: npm ci
+        working-directory: apps/web
+
+      - name: Install tools dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: tools
+
+      # -----------------------------------------------------------------------
+      # 4. Export + verify
+      #
+      # Runs B1's CLI (tools/export/index.ts) with --verify.
+      # --verify re-reads every written file and compares SHA-256 against
+      # photos.checksum_sha256. Exit 1 on any mismatch → this step fails →
+      # the job fails → no upload of corrupt bytes.
+      #
+      # This step also serves as the Supabase keep-alive: it queries the
+      # database to fetch all photos, members, dates, and book entries.
+      # Even with zero photos, the queries execute and the 7-day inactivity
+      # timer resets. One job, both purposes, so they cannot drift apart.
+      #
+      # The export writes to: apps/web/eva-and-adam-archive/
+      # That directory is gitignored and exists only during this run.
+      #
+      # Vault: --include-vault is NOT passed. See the vault seam comment at
+      # the top of this file.
+      # -----------------------------------------------------------------------
+      - name: Export archive and verify checksums
+        working-directory: apps/web
+        env:
+          # Bare names — the CLI also accepts NEXT_PUBLIC_SUPABASE_URL and
+          # SUPABASE_SERVICE_ROLE_KEY as aliases, but bare names are used here
+          # so this step is not accidentally coupled to Next.js config.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node --experimental-strip-types \
+            ../../tools/export/index.ts --verify
+
+      # -----------------------------------------------------------------------
+      # 5. Upload to Eva's R2
+      #
+      # Uploads every file in apps/web/eva-and-adam-archive/ to Eva's own
+      # Cloudflare R2 bucket. Exit 1 on any failure → job fails.
+      #
+      # After all files are uploaded, reads back the storage class of the
+      # first uploaded object. Exit 1 if not STANDARD — Infrequent Access
+      # carries a per-GB retrieval charge that destroys the
+      # restore-costs-nothing property that justified choosing R2 (ARCH §5.8).
+      #
+      # Credentials: all four R2_EVA_* secrets must be set, or this step
+      # exits 1 immediately with a clear error. No fallback to any other
+      # account.
+      # -----------------------------------------------------------------------
+      - name: Upload to Eva's R2 and assert storage class
+        env:
+          R2_EVA_ACCOUNT_ID: ${{ secrets.R2_EVA_ACCOUNT_ID }}
+          R2_EVA_BUCKET_NAME: ${{ secrets.R2_EVA_BUCKET_NAME }}
+          R2_EVA_ACCESS_KEY_ID: ${{ secrets.R2_EVA_ACCESS_KEY_ID }}
+          R2_EVA_SECRET_ACCESS_KEY: ${{ secrets.R2_EVA_SECRET_ACCESS_KEY }}
+        run: |
+          node --experimental-strip-types \
+            tools/export/upload.ts apps/web/eva-and-adam-archive
+
+      # -----------------------------------------------------------------------
+      # 6. Independent Supabase keep-alive
+      #
+      # Decouples the keep-alive from the archive export. Previously the export
+      # step doubled as the keep-alive by querying the DB with the service-role
+      # key — every export failure silently armed the 7-day pause timer. This
+      # step queries the DB independently via PostgREST introspection with the
+      # anon key, so the keep-alive fires even when the export is broken,
+      # mid-refactor, or blocked on an empty schema.
+      #
+      # Design decision — what counts as "activity"?
+      #   PostgREST's /rest/v1/ endpoint returns the OpenAPI schema. Generating
+      #   that schema requires PostgREST to introspect pg_catalog, which means
+      #   SQL queries execute — confirming Postgres is running. This step treats
+      #   HTTP 2xx or 4xx as "activity registered": both mean PostgREST
+      #   responded, which means Postgres was queried. Only 5xx or a timeout
+      #   counts as a failure to reach the database.
+      #
+      #   UNKNOWN: whether a 5xx or timeout still counts as activity in
+      #   Supabase's internal metrics. The docs do not specify and we have not
+      #   measured it. If the endpoint returns 5xx or times out, this step logs
+      #   a warning — do not rely on this step alone in that case. The outcome
+      #   is visible in the workflow log for founder review.
+      #
+      # Why anon key only?
+      #   The service-role key bypasses RLS and can read every photograph.
+      #   Using it here is doubly pointless: the schema is empty, and the only
+      #   goal is to confirm the database is reachable, not to read data. The
+      #   anon key is sufficient for PostgREST introspection.
+      #
+      # if: always() — runs whether the export and upload steps passed or
+      # failed. A broken export must not arm the 7-day pause timer silently.
+      #
+      # continue-on-error: true — a broken keep-alive query must never mask
+      # the export's outcome. The workflow's exit code reflects only the
+      # export/upload result. The keep-alive's job is to run, not to gate.
+      #
+      # Missing-secret behavior: exits 1, NOT 0. Under continue-on-error: true this
+      # yields steps.<id>.outcome=failure but conclusion=success — the job stays green
+      # in the run list. Truthful outcome-level signal only. For the founder-visible
+      # signal we use ::warning:: (below) which surfaces in the run summary where
+      # RUNBOOK-nightly-archive.md §3 actually points the founder.
+      # -----------------------------------------------------------------------
+      - name: Independent Supabase keep-alive
+        if: always()
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::warning::SUPABASE_ANON_KEY not set — keep-alive did not fire; the 7-day pause timer was not reset"
+            exit 1
+          fi
+          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            --max-time 30 \
+            "$SUPABASE_URL/rest/v1/")
+          if [ "${HTTP_CODE:0:1}" = "2" ] || [ "${HTTP_CODE:0:1}" = "4" ]; then
+            echo "keep-alive: PostgREST responded HTTP $HTTP_CODE at $(date -u +%FT%TZ) — activity registered" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::keep-alive: HTTP $HTTP_CODE — 5xx or timeout. Activity status UNKNOWN per Supabase docs. Founder review warranted."
+            exit 1
+          fi
