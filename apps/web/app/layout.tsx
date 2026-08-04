@@ -3,6 +3,12 @@ import type { ReactNode } from "react";
 import "@fontsource-variable/outfit";
 import "@fontsource-variable/fraunces/full.css";
 import "@fontsource-variable/fraunces/full-italic.css";
+/* Authorship scripts — §2 of the design law. One face per person,
+   never swapped. Caveat = Eva (flowing cursive). Patrick Hand = Adam
+   (semi-print). Poiret One = DECO titling only, ≥32px, night only. */
+import "@fontsource-variable/caveat";
+import "@fontsource/patrick-hand";
+import "@fontsource/poiret-one";
 import "./globals.css";
 import { NoiseLayer } from "@/components/chrome/NoiseLayer";
 import { PrivacyVeil } from "@/components/chrome/PrivacyVeil";

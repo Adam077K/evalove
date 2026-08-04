@@ -273,6 +273,18 @@
     0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
 
   --noise-opacity: 0.028;
+
+  /* DECO night colour scale — design law §1.
+     Night is not a dimmed version of the day. It is a window onto
+     another world. These tokens are used only by DECO / night-world
+     components; they have no day-mode equivalent. */
+  --night-sky: #0d1220;
+  --night-gold: #c49a1e;
+  --night-emerald: #275e42;
+  --night-burgundy: #6b1e30;
+  --night-amber: #d4892a;
+  --night-ink: #ede7e0;
+  --night-mute: #a0968d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -295,6 +307,15 @@
     --e-float: 0 1px 2px rgba(0, 0, 0, 0.44),
       0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
     --noise-opacity: 0.028;
+
+    /* DECO night colour scale — both night blocks, on purpose. */
+    --night-sky: #0d1220;
+    --night-gold: #c49a1e;
+    --night-emerald: #275e42;
+    --night-burgundy: #6b1e30;
+    --night-amber: #d4892a;
+    --night-ink: #ede7e0;
+    --night-mute: #a0968d;
   }
 }
 
@@ -322,6 +343,26 @@
 
   --font-sans: "Outfit Variable", "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces Variable", "Fraunces", Georgia, serif;
+
+  /* Authorship scripts — one per person, never swapped.
+     font-eva: Caveat (cursive, flowing — Eva's hand).
+     font-adam: Patrick Hand (semi-print, structured — Adam's hand).
+     font-deco: Poiret One — NIGHT ONLY, ≥32px only. Never in day
+     sections, never in captions, stamps, clocks, or labels. */
+  --font-eva: "Caveat Variable", "Caveat", cursive;
+  --font-adam: "Patrick Hand", cursive;
+  --font-deco: "Poiret One", var(--font-sans);
+
+  /* DECO night colour scale — Tailwind utilities.
+     bg-night-sky, text-night-gold, etc. Only use these in night-world
+     components — they have no meaningful day-mode value. */
+  --color-night-sky: var(--night-sky);
+  --color-night-gold: var(--night-gold);
+  --color-night-emerald: var(--night-emerald);
+  --color-night-burgundy: var(--night-burgundy);
+  --color-night-amber: var(--night-amber);
+  --color-night-ink: var(--night-ink);
+  --color-night-mute: var(--night-mute);
 
   --shadow-e1: var(--e1);
   --shadow-e2: var(--e2);
@@ -531,15 +572,6 @@ body {
 @utility type-micro {
   font-family: var(--font-sans);
   font-size: 0.6875rem; /* 11 */
-  line-height: 1rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-@utility type-eyebrow {
-  font-family: var(--font-sans);
-  font-size: 0.6875rem;
   line-height: 1rem;
   font-weight: 600;
   text-transform: uppercase;
