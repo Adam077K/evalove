@@ -143,7 +143,13 @@ What is banned: `filter: brightness()`, `filter: saturate()`, `mix-blend-mode`, 
 - The limited palette per scene rule: pick 3-4 colours per illustration layer and stay inside them. The reference images use 4-5 distinct values maximum per scene and read immediately.
 - Weather is real weather from their two cities — rain, snow, clear — expressed as illustration elements (rain lines, snow scatter, cloud layers), not as overlaid CSS filters.
 
-**The Book at night:** The Book's night face is the same paper stocks lit by lamplight from lower-left — warmer, dimmer, a reading-room quality. It is NOT the city sky. [See §8 for this disagreement with the brief's D2 formulation — read it before implementing The Book at night.]
+**The Book at night — governing metaphor for night navigation (settled, CEO-approved 2026-08-04):**
+
+The Book's night face is the same paper stocks lit by amber lamplight from lower-left — warm, dimmer, a reading-room quality. Not the city sky as a background. Not a dark flat canvas. A lit interior.
+
+This resolution is not just a visual choice — it defines the physical relationship between the two night surfaces. If at night you are in a lit room with the city out the window, then moving from Today to The Book is *turning away from the window and looking down at your lap.* You have not navigated to a different screen. You have changed the direction of your gaze inside one continuous space. The city is still there, behind you.
+
+This means the two night surfaces are one continuous place rather than two separate screens. A transition between them is a physical motion, not a route change — the city view pans or recedes as the book comes into focus; the book comes back out of focus and the city reasserts as you return to Today. This is the governing metaphor for night navigation. It supersedes the §7 open item "how Today and The Book relate as surfaces" — that question is now answered: they are one room.
 
 ---
 
@@ -347,7 +353,7 @@ This was documented from the current build. The law exists to prevent its recurr
 
 ### The five moves (from the prior law, now extended)
 
-1. **Full bleed one element.** The photograph runs edge-to-edge at its own aspect ratio. It is not contained in a card. It does not have a border-radius. It is a photograph on a table, and the table has edges, not the photograph.
+1. **Full bleed one element — off one edge, not four.** The hero photograph on Today bleeds off a single edge of the viewport and is clipped there. Three edges remain visible, showing the mount, the rotation, and the paper beneath. This satisfies "full bleed" in spirit — the object is larger than the frame it sits in — while preserving the scrapbook logic: a photograph on a table can extend past the table's edge without covering the entire table. A photograph that bleeds to all four edges simultaneously cannot wear a polaroid border, cannot sit at an angle, and cannot show the paper underneath it; those three things together describe a photograph that has escaped its scrapbook and become a background. Today's hero photograph is not a background. It is an object. The single-edge bleed is the rule.
 
 2. **Unequal pairs.** When two items appear near each other, one is larger. One leads; one follows. Never two equals.
 
@@ -361,11 +367,15 @@ This was documented from the current build. The law exists to prevent its recurr
 
 **Rotation** introduces a sixth visual variable that breaks the grid. A photo rotated −4° makes the eye work to resolve it. That work is engagement, not friction. The eye lingers. A composition where every element is at 0° is a spreadsheet.
 
-Rotation ranges by object type:
-- Photographs: −8°…+8° (can be aggressive; the subject is horizontal/vertical by nature, so the rotation reads against it)
-- Notes and torn paper: −5°…+5° (text alignment makes large rotations hard to read)
-- Stickers: any angle, −15°…+15° (stickers are lightweight; they tumble)
-- Washi tape: exactly perpendicular to the edge it bridges, ±5°
+Rotation ranges are context-specific, not global. The reason for the split is stated here and must not be "fixed" by unifying them — the inconsistency is intentional.
+
+| Context | Range | Reason |
+|---|---|---|
+| Today hero photograph | −5°…+5° | Large, single-edge-bleeding, subject-forward. More than ±5° eats vertical space on a 393px screen and crops the subject badly. The rotation is read from the visible mount edges and corner wedges of paper — it does not need to be aggressive to be legible. |
+| Photographs inside The Book | −8°…+8° | Smaller, surrounded by other objects, the scatter is the compositional point. Wider rotation reads correctly here because the photograph is one item among many, not the anchoring element of an entire surface. |
+| Notes and torn paper | −5°…+5° | Text alignment makes large rotations hard to read at speed. |
+| Stickers | −15°…+15° | Lightweight, tumble. Any angle is plausible. |
+| Washi tape | perpendicular to bridged edge, ±5° | Tape bridges objects; it should read as placed with intent, not dropped. |
 
 **Overlap** creates implied depth without an explicit z-index system. When a note sits partially behind a photo, the photo has mass — it is the heavier object. The relationship becomes legible through depth alone.
 
@@ -382,6 +392,8 @@ The rule: in any composition, mass is unequal and hierarchy is clear. What is ba
 Composition is deterministic, seeded from item ID. It never re-rolls. Reason: if a page looks right at 9am, it looks right at 9pm. A page that re-composes itself on refresh is a page that never finishes — which creates the exact "unfinished" feeling the no-slot rule is protecting against.
 
 The seed determines: rotation angle, mount type, mount position relative to the photo edge, sticker placement, tape placement. Within the seeded values, the physics engine settles the objects to their final positions on mount.
+
+**The seed must be the item's stable database ID, never its array index or its position in a list.** An index-seeded composition silently re-rolls the entire page the first time an item is inserted or removed — because inserting at position 0 shifts every subsequent index by 1, changing every item's seed, changing every rotation and mount assignment, producing a page that looks entirely different from how it was left. This failure will not be caught by looking at the screen once; it appears only when the page is revisited after a write operation. Using the item's stable ID as the seed is the only implementation that honours "never re-rolls."
 
 ### The Tuesday test consequence for composition
 
@@ -493,7 +505,9 @@ This section is honest about scope. An agent who reaches into these areas withou
 - The edit mode UX: which gestures trigger it, how tools appear, how drag-to-place works
 - The pocket (The Book's locked envelope) interaction model
 - The cassette's visual treatment at both scales (small object on Today vs. full record display)
-- Navigation model: how Today and The Book relate as surfaces, how you move between them
+- Night navigation animation: the exact motion of turning away from the window toward the book (the metaphor is settled in §1; the animation spec is not)
+
+*(Navigation model for night — how Today and The Book relate as surfaces — was listed as open in the first version of this document. It is now settled by the §1 Book-at-night governing metaphor: they are one room, two directions of gaze.)*
 
 **Deliberately deferred:**
 - The token file (`globals.css`) rewrite: this law specifies the values; a separate Phase 0 token task implements them
@@ -504,33 +518,32 @@ This section is honest about scope. An agent who reaches into these areas withou
 
 ## §8 — Disagreements with the Brief
 
-**Any agent on this project who argued back improved the outcome.** This section records my disagreements, clearly marked.
+**Any agent on this project who argued back improved the outcome.** This section records the three disagreements raised in the first version of this document, and their CEO rulings (2026-08-04). All three are now settled. Do not re-open them.
 
-### Disagreement 1 — D2: The Book at night
+### Disagreement 1 — D2: The Book at night — APPROVED
 
-**The brief states (D2):** "The Book is always paper — at night it is the same paper under a dimmer lamp."
+**Original brief (D2):** "The Book is always paper — at night it is the same paper under a dimmer lamp."
 
-**My disagreement:** If night = the deco city and Today's night face is the city, then The Book's night face being "the same paper under a dimmer lamp" creates a jarring material transition. Entering The Book from Today's night city view would be a sudden jump from a drawn scene to a dimmed flat surface. These are visually incompatible.
+**Disagreement raised:** This formulation, if implemented literally as `--night-sky` behind paper-coloured cards, produces a dark mode that is visually incompatible with Today's deco city night face. Entering The Book from a drawn scene into a dimmed flat surface is a jarring material jump. The amber-lit reading room resolution (§1) is coherent with D2's actual intent — the object does not change, the light on it does.
 
-**My proposed resolution:** The Book's night face is the paper stocks lit by lamplight from lower-left — a warm, amber-lit reading-room quality. Not the city sky as a background. Not a dark flat canvas. A lit interior. This means The Book at night is *inside the same world* as the city (you are in a room, the city is out the window), which is consistent with D2's intent (The Book is always paper) while solving the material conflict.
+**CEO ruling:** Approved as written. The "same paper under a dimmer lamp" formulation was underspecified; the amber-lit reading room is strictly better and honours D2's intent. The governing metaphor (turning away from the window and looking down at your lap) has been added to §1 and settles the night navigation model. See §1 for the full text.
 
-**Why this matters:** if an agent implements "the same paper under a dimmer lamp" as `--night-sky` behind paper-coloured cards, they will produce a dark mode that looks like every dark mode. If they implement it as amber-lit reading room, it is coherent with the world.
+### Disagreement 2 — Sorriso New York reference — APPROVED
 
-**This is a recommendation, not a unilateral change.** The founder decides. I am flagging it so it gets decided rather than defaulted.
+**Original note:** Screenshot `7:39:32 AM` (Sorriso New York, halftone restaurant image) is a different visual register — warm, analogue, photographic, not illustrative deco — and should not be in the city illustration generation brief.
 
-### Disagreement 2 — The deco references include one that is not a city
+**CEO ruling:** Correct. Keep it out of the city-illustration brief. Park it against the cassette or record feature work, where its warm-analogue-photographic quality may be relevant.
 
-Screenshot `7:39:32 AM` (Sorriso New York, the halftone restaurant image) is a different register — warm, analogue, photographic, not illustrative deco. It does not belong in the same generation prompt as the Batman:TAS references. It might be the reference for the cassette or the restaurant moment in the record feature, but it should not be in the city illustration brief.
+### Disagreement 3 — Rotation range — PARTIALLY UPHELD
 
-This is an asset organisation note, not a material disagreement. Flagging so the Phase 0b brief is written correctly.
+**Original brief:** −3°…+3° for photographs.
 
-### Disagreement 3 — Rotation range for photographs
+**Disagreement raised:** At ±3° the rotation reads as a rendering artifact. The reference images show significantly wider rotations; ±8° is needed for the eye to register a physical placement.
 
-The plan file specifies −3°…+3° for photographs. I have widened this to −8°…+8°.
+**CEO ruling:** ±3° was too tight; ±8° as a single global value exposed a contradiction: the Today photograph cannot simultaneously be full-bleed AND mounted AND rotated at ±8°. Both issues corrected together:
 
-**Reasoning:** The reference images show significantly wider rotations. The polaroid scatter in IMG_8120 has photographs at what appears to be ±12°. At −3°…+3°, the rotation is so subtle it will read as a rendering artifact rather than as a deliberate compositional choice. The eye needs to resolve it visibly to register that this is a physical object that has been placed, not a card in a grid.
-
-**If the founder prefers tighter:** the range is easy to change by adjusting the seed range. This is a configurable constant, not an architectural decision. But I would trial at −8°…+8° before deciding it is wrong.
+1. The full-bleed formulation is corrected to single-edge bleed (see §4 move #1). Three edges remain visible — the mount and paper are preserved.
+2. Rotation is split by context, not unified. Today hero: ±5°. The Book photographs: ±8°. Full table in §4. The reason for the split is stated in §4 and must not be unified by a later agent.
 
 ---
 
@@ -549,7 +562,8 @@ The plan file specifies −3°…+3° for photographs. I have widened this to �
 | Adam's hand | Patrick Hand (Google Fonts, SIL OFL) |
 | App voice | Fraunces italic |
 | Data/labels | Outfit |
-| Photograph rotation | −8°…+8° (seeded, deterministic) |
+| Today hero photograph rotation | −5°…+5° (seeded, deterministic) |
+| Book photograph rotation | −8°…+8° (seeded, deterministic) |
 | Note rotation | −5°…+5° |
 | Sticker rotation | −15°…+15° |
 | Physics settle time | ≤400ms |
