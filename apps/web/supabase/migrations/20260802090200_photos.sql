@@ -1,5 +1,5 @@
 -- =============================================================================
--- Eva & Adam — migration 03 of 14 — photos
+-- Eva & Adam — migration 03 of 11 — photos
 --
 --   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
 --   The founder confirmed from the Supabase dashboard on 2026-08-04 that

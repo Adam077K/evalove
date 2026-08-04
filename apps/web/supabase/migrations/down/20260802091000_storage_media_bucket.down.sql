@@ -1,7 +1,7 @@
 -- =============================================================================
--- DOWN for migration 11 of 12 — the `media` storage bucket
+-- DOWN for migration 11 of 11 — the `media` storage bucket
 --
--- Run the down migrations in REVERSE order (12 -> 01). This is the FIRST one to
+-- Run the down migrations in REVERSE order (11 -> 01). This is the FIRST one to
 -- run, because nothing else in the set depends on it and it depends on nothing
 -- in `public`.
 --

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Eva & Adam — migration 04 of 14 — vault_items
+-- Eva & Adam — migration 04 of 11 — vault_items
 --
 --   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
 --   The founder confirmed from the Supabase dashboard on 2026-08-04 that

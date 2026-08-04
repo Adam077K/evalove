@@ -1,5 +1,5 @@
 -- =============================================================================
--- Eva & Adam — migration 11 of 12 — the `media` storage bucket
+-- Eva & Adam — migration 11 of 11 — the `media` storage bucket
 --
 --   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
 --   The founder confirmed from the Supabase dashboard on 2026-08-04 that

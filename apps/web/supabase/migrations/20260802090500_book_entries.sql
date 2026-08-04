@@ -1,5 +1,5 @@
 -- =============================================================================
--- Eva & Adam — migration 06 of 14 — book_entries
+-- Eva & Adam — migration 06 of 11 — book_entries
 --
 --   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
 --   The founder confirmed from the Supabase dashboard on 2026-08-04 that

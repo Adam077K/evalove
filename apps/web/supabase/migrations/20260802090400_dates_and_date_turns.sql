@@ -1,5 +1,5 @@
 -- =============================================================================
--- Eva & Adam — migration 05 of 14 — dates and date_turns
+-- Eva & Adam — migration 05 of 11 — dates and date_turns
 --
 --   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
 --   The founder confirmed from the Supabase dashboard on 2026-08-04 that
