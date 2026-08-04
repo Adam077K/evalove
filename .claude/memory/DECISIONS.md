@@ -301,3 +301,21 @@ fourth is why CEO caught it in the delta review.
 **Reversibility:** reversible
 **Owner:** ceo
 **Affects:** research-lead (round 2 scoping) — W3 promoted to top round-2 priority: confirmed real, thinnest verified coverage.
+
+## 2026-08-04 — QA-Lead PASS on feat/wave-0-foundation (Wave 0 material foundation)
+
+**Context:** Full-tier QA gate on Wave 0 — token scale rewrite, 5 material primitives, 29 image assets, 3 fonts. Night CSS block rewritten ~140 lines (dim-not-invert per D1). Blast radius: dock/login/echo/today render differently at night, unreviewed outside bench.
+**Decision:** PASS. All 8 mandatory checklist items cleared. No P0/P1 findings. Accessibility verified (WCAG AA). TypeScript errors pre-existing on main.
+**Rationale:** P2 blast radius is CEO-accepted (D1), documented in HAND-FORWARD. P3 Taped naming mismatch is functional placeholder. Private two-person app; new token model internally consistent and AA-compliant.
+**Reversibility:** reversible (merge can be reverted; token model changes are CSS)
+**Owner:** qa-lead
+**Affects:** Wave 1 gate — must explicitly re-walk dock/login/echo/today in night mode before those surfaces merge.
+
+## 2026-08-04 — QA-Lead PASS on feat/wave-0-foundation re-submission (HEAD a5e4f7f)
+
+**Context:** Re-submission after BLOCK on Pinned.tsx lamp curve hardcoding. Fix: --lamp-brightness-drop and --lamp-sepia-saturation moved to :root; @utility under-lamp and Pinned.tsx inline filter both read from those tokens. /dev/materials now calls notFound() in production.
+**Decision:** PASS. One BLOCK cycle completed. P1 resolved. P3 resolved. All 8 mandatory checks remain CLEAR.
+**Rationale:** Values unchanged (0.27 / 0.22); definition now singular. Fallback asymmetry (Pinned with literals, utility bare) is correct for respective CSS/JSX contexts, not a sync risk.
+**Reversibility:** reversible
+**Owner:** qa-lead
+**Affects:** Wave 1 gate — dock/login/echo/today must be re-walked at night before those screens merge. prefers-reduced-motion needs OS-level screenshot evidence in Wave 1 acceptance.
