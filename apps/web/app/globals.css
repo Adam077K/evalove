@@ -187,6 +187,34 @@
   --dur-toast-in: 300ms; /* Sonner, measured */
   --dur-toast-out: 200ms; /* Sonner, measured */
   --toast-gap: 14px; /* Sonner GAP, measured */
+
+  /* --------------------------------------------------------
+     DECO — the window's own colours. These are PLACE tokens,
+     not MODE tokens, and they live in :root on purpose.
+
+     Revised §1 (2026-08-04): the clock stopped governing.
+     Paper is what they made; deco is the distance between
+     them. The stamp, the two cities and the Seam are DECO in
+     both light and dark mode — light/dark dims the PAPER
+     scale above; it never turns DECO on or off, and it never
+     converts a paper section into a deco one. So these seven
+     values are absolute constants, identical in every mode.
+
+     Do NOT move them into [data-mode="night"] or the
+     prefers-color-scheme fallback: a Seam rendered at noon
+     still falls into this exact sky, and a mode-scoped
+     --night-sky would leave the falloff with no bottom by
+     day. The --night-* names are kept even though these are
+     place tokens — the committed design law uses these names
+     and renaming here would desync the two documents.
+     -------------------------------------------------------- */
+  --night-sky: #0d1220;
+  --night-gold: #c49a1e;
+  --night-emerald: #275e42;
+  --night-burgundy: #6b1e30;
+  --night-amber: #d4892a;
+  --night-ink: #ede7e0;
+  --night-mute: #a0968d;
 }
 
 /* ------------------------------------------------------------
@@ -273,18 +301,6 @@
     0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
 
   --noise-opacity: 0.028;
-
-  /* DECO night colour scale — design law §1.
-     Night is not a dimmed version of the day. It is a window onto
-     another world. These tokens are used only by DECO / night-world
-     components; they have no day-mode equivalent. */
-  --night-sky: #0d1220;
-  --night-gold: #c49a1e;
-  --night-emerald: #275e42;
-  --night-burgundy: #6b1e30;
-  --night-amber: #d4892a;
-  --night-ink: #ede7e0;
-  --night-mute: #a0968d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -307,15 +323,6 @@
     --e-float: 0 1px 2px rgba(0, 0, 0, 0.44),
       0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
     --noise-opacity: 0.028;
-
-    /* DECO night colour scale — both night blocks, on purpose. */
-    --night-sky: #0d1220;
-    --night-gold: #c49a1e;
-    --night-emerald: #275e42;
-    --night-burgundy: #6b1e30;
-    --night-amber: #d4892a;
-    --night-ink: #ede7e0;
-    --night-mute: #a0968d;
   }
 }
 
@@ -347,15 +354,19 @@
   /* Authorship scripts — one per person, never swapped.
      font-eva: Caveat (cursive, flowing — Eva's hand).
      font-adam: Patrick Hand (semi-print, structured — Adam's hand).
-     font-deco: Poiret One — NIGHT ONLY, ≥32px only. Never in day
-     sections, never in captions, stamps, clocks, or labels. */
+     font-deco: Poiret One — DECO surfaces only (revised §1: the
+     old "night only" constraint now means the deco *place*, not
+     the dark hour), ≥32px only. Never in paper sections, never
+     in captions, stamps, clocks, or labels. */
   --font-eva: "Caveat Variable", "Caveat", cursive;
   --font-adam: "Patrick Hand", cursive;
   --font-deco: "Poiret One", var(--font-sans);
 
-  /* DECO night colour scale — Tailwind utilities.
-     bg-night-sky, text-night-gold, etc. Only use these in night-world
-     components — they have no meaningful day-mode value. */
+  /* DECO colour scale — Tailwind utilities. bg-night-sky,
+     text-night-gold, etc. Place tokens, not mode tokens: DECO
+     surfaces (the stamp, the cities, the Seam) render in both
+     light and dark mode, so these resolve everywhere — see the
+     :root block for why. */
   --color-night-sky: var(--night-sky);
   --color-night-gold: var(--night-gold);
   --color-night-emerald: var(--night-emerald);
