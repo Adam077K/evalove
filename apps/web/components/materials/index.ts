@@ -8,7 +8,8 @@
  * Import order reflects the dependency chain:
  *   Mounted → everything (rotation, mass, settle physics)
  *   Taped / Pinned / Torn → composite wrappers over Mounted content
- *   Seam → the boundary between paper world and DECO city (night only)
+ *   Seam → where the paper tears into the DECO sky — both modes,
+ *          always; place, not time (revised §1)
  */
 export { Mounted } from "./Mounted";
 export type { MountedProps, MountedContext } from "./Mounted";
@@ -23,4 +24,4 @@ export { Torn } from "./Torn";
 export type { TornProps } from "./Torn";
 
 export { Seam } from "./Seam";
-export type { SeamProps } from "./Seam";
+export type { SeamProps, SeamVariant } from "./Seam";

@@ -8,5 +8,5 @@ qa_verdict: PENDING — QA-Lead review requested
 
 Wave 0 shipped: 27 keyed material assets (webp, replacing 60 MB unkeyed PNGs), DECO tokens moved to `:root` as place-not-mode constants, three hand fonts declared in apps/web (not the kit root), five primitives (Mounted/Taped/Pinned/Torn/Seam) corrected against the revised §1, bench at `/dev/materials`, screenshots day+night in `screens/2026-08-04-wave0/`.
 Collision note: a second agent (design-lead-wave0) built in the same worktree from the stale packet; their good work was kept, their asset/token/font/Seam errors corrected — commits interleave.
-Seam needed three by-looking fixes (clipped fibre, tone-mismatch strip edge, ghost sticker shadows); final captures verified by eye, both modes.
-Known asset debts for Phase 0b: sticker die-cut white slivers (rose, star), seam tear ~65px repeat rhythm, materials stay day-lit at night — 11pm test must re-run in Wave 1 with a real photograph.
+Seam final: built on the generated `seam-tear-coldpress.webp` (CEO asset, main `e0d2084`), `variant` prop exposes `bone`; falloff starts below the tear — A/B judged by eye, lit fibre reads as a room, at-tear reads as a mask; both variants + the A/B frame captured for founder sight-choice.
+Known debts for Phase 0b: sticker die-cut white slivers (rose, star); materials stay day-lit at night (incl. the seam sheet's straight top edge on the dark table) — 11pm test must re-run in Wave 1 with a real photograph.
