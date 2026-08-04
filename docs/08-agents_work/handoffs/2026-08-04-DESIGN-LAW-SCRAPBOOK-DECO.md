@@ -1,0 +1,564 @@
+---
+date: 2026-08-04
+status: LOCKED — founder-directed
+authority: founder set the fourth direction in the session documented at /Users/adamks/.claude/plans/ceo-agent-you-are-witty-pillow.md. Every decision in "Decisions locked this session" is non-negotiable.
+supersedes: 2026-08-02-DESIGN-DIRECTION.md
+companion: /Users/adamks/.claude/plans/ceo-agent-you-are-witty-pillow.md
+from: design-lead
+to: frontend-engineer, product-designer, design-critic, design-polisher, CTO, CPO
+---
+
+# Design Law — Scrapbook & Deco
+## Eva & Adam · Fourth Direction · 2026-08-04
+
+---
+
+## §0 — Supersession Notice
+
+**Read this before anything else. If you obey the 2026-08-02 direction and ignore this document, you will sand the scrapbook back into a Linear clone. That is the one outcome this notice exists to prevent.**
+
+### What is dead
+
+The chromatic and material law in `2026-08-02-DESIGN-DIRECTION.md` is superseded in full. Specifically:
+
+| Rule in the old law | Status |
+|---|---|
+| "Restraint lives in the chrome" | **Reversed.** The chrome is now made of paper, tape and brass. |
+| No gradients | **Lifted for illustration and the night sky.** Still banned as a UI fill on a control. |
+| No texture | **Reversed completely.** Texture is the point. |
+| Two ≤2px desaturated inks as the only chromatic system | **Retired.** Authorship is carried by handwriting and by the objects a person chose, not by hairlines. |
+| Bone-only canvas | **Replaced** by a library of paper stocks; `#F8F5F1` survives as the base tone *under* real paper fibre, not as a flat fill. |
+| Night as "the same paper, unlit" | **Replaced** by the deco city. Night is a window onto another world, not a dimmed version of the day. |
+| The v7 token system on `feat/design-foundation` | **Wrong direction, correct engineering.** Its structure (motion constants, radius scale, elevation model, the Tailwind inline theme) is reused. Its chromatic content is replaced by this document. |
+
+The two inks (`--eva`, `--adam`) as hairlines are retired but not deleted from the token file — they still exist in the system for the stamp and for accessibility-specific authorship hints in dense list contexts. They are no longer the *entire* chromatic system.
+
+### What survives untouched
+
+Every behavioural rule in the old law was derived from real research, not from taste. None of them are reopened. Any agent who treats a behavioural rule as negotiable is operating outside authority.
+
+| Rule | Why it is structural |
+|---|---|
+| No counters, no streaks, no scorekeeping | P4 documented the exact mechanism by which displayed counts become pressure. R2 ranked it as killer #2 across the graveyard. |
+| No "seen" status, ever | Not delivered, not read, not opened, not "active now." No variant of this is acceptable. |
+| Nothing that makes a missed day feel like failure | Silence on a missed day. No empty-state copy, no dashed rectangle, no plus-in-a-well. |
+| Absolute stamps, never relative | "Monday, 5:12 his morning" — never "3 days ago." The two-timezone engine earns its place by being visible on every item. |
+| Photographs are never dimmed, tinted or washed | Full strength, always. Including at night, on a dark ground. §1 solves this — read it. |
+| Eva's name first | In copy, in source order of token definitions, everywhere. |
+| No emoji | None. Ever. |
+| No gamified affection-tokens | No "send a hug" button. A sticker placed on your own page is craft. A sticker sent to someone is a token. The line is authorship. |
+| Private content never in any ordinary view | No thumbnail, preview, cache or notification of private content. |
+| `lib/shared-day/` is untouchable | 109 tests, four DST transitions. |
+| Nothing above the item on Today | No masthead, no greeting, no skeleton, no reserved placeholder. |
+| No slot, no prepared place, no plus-in-a-well | The pen is always in the same place. It is never handed to anyone. |
+| The seal fires only on genuine sleep | Never a manufactured timer. Never a global reveal clock. |
+| The 11pm test enforced as process | Adam cannot run it. See §6. |
+
+### The one new behavioural rule (added this session)
+
+**Composing is never solicited.** The app must never prompt, suggest, remind or nudge anyone to decorate anything. Edit mode is found, not offered. This is not a tone note — it is a structural requirement. Any surface that hints "you could add something here" violates it.
+
+---
+
+## §1 — The Two Worlds
+
+The app exists in two states governed by each person's own local hour. Not a toggle. Not a preference. Eva at 11pm in New York sees the city. Adam at 11pm in Tel Aviv sees the city. At 10am they each see the table. The asymmetry is a feature, not a problem.
+
+### DAY — The Table
+
+**Mental model:** a table by a window with the day's things on it. Papers overlap. A pushpin holds a note. A photograph leans against something.
+
+**Ground palette:**
+
+| Token | Hex | Role | Reason |
+|---|---|---|---|
+| `--canvas-base` | `#F8F5F1` | Base tone under paper fibre | Retained from v7. Hue 34°, sat 2.8%. Red-leaning, not yellow-cream. Reads warm under a white plate (photograph). |
+| `--surface` | `#FFFFFF` | Clean plate — the photograph, a white note | Separates from canvas by *stock*, never by fill. |
+| `--surface-note` | `#FBF8F2` | Notes, torn paper with slight age | Warmer than `--surface`, the colour of paper that has been handled. |
+| `--kraft` | `#C4A673` | Kraft paper, card, envelope flap | Visible in scrapbook references. Never as a UI chrome colour. |
+| `--ink` | `#191512` | Primary text | Warm near-black, hue 34°. 16.7:1 on canvas. Never `#000`. |
+| `--mute` | `#6B6259` | Secondary text, labels | Warm grey, never blue-grey. 5.49:1 on canvas. |
+| `--line` | `rgba(37,29,22,0.10)` | Hairlines separating elements | Warm-black at 10%. |
+
+Colour in the day world comes from **photographs, washi tape, pressed flowers, ink, stickers, thread**. Never from a UI fill on a control. A button is not coloured. A card background is paper, not a colour.
+
+**Paper stocks (8 families — asset library, not CSS fills):**
+These are generated assets (scanned and composited), not CSS values. The `--canvas-base` is the tone UNDER the fibre. The stock sits on top of it.
+
+1. Bone writing paper — `#F8F5F1` base, subtle horizontal grain
+2. Kraft — `#C4A673`, rougher, visible fibre
+3. Ledger / ruled — `#EEE9E0`, light horizontal blue lines at 22px
+4. Graph — `#E8E4DB` with warm grey grid `#C0BAB0`
+5. Vellum — `#F4F1EC`, semi-transparent, used for layered overlays only
+6. Newsprint — `#D4CCBC`, warm grey, coarser grain
+7. Cold-press watercolour — `#EFE8DC`, slightly dimpled surface visible at high zoom
+8. Onion-skin — `#F2EFE8`, near-vellum, very thin, used for delicate inner pages
+
+**Material rules for day:**
+- Objects sit on the paper and cast **contact shadows that tighten as they settle.** A photo that has been sitting for an hour casts a wider ambient shadow than one just placed. The physics system handles this — the settled state is the display state.
+- Depth comes from real elevation: an object on top casts a shadow on what is below it. There are no backgrounds with z-index tricks; there is only physics.
+- Nothing glows. Nothing blurs behind a glass panel. Nothing has a gradient fill.
+- Warmth comes from the material, not from an applied effect. If you have to apply something to make it warm, you have made the mistake v6 made.
+
+### NIGHT — The Window
+
+**Mental model:** a window onto a deco city. Not a darkened version of the table. A different place entirely.
+
+This is illustration, not chrome. Nobody has ever made a deco *button.* The night face of Today is a drawn scene. The UI elements that appear in it (the stamp, the cassette, the window sentence) are objects held in the illustration — physically grounded in the scene, not floating above it.
+
+**References that define the look:**
+- Batman: The Animated Series background art — flat vector, hard-edged shadow, strong silhouette, limited palette per scene. This is the exact discipline. Not gradient mesh. Not photorealism.
+- The couple-at-window painting (images 12): two silhouettes against amber-orange dusk, deep navy curtains, city beyond. This is the romantic register.
+- The balcony scene (images 14): a woman on a balcony in the rain at night. Dramatic. Specific. A real place.
+- The jazz salon poster (screenshot 7:38): geometric art deco border, burgundy/amber/teal, flat bold shapes.
+
+**Night palette:**
+
+| Token | Hex | Role | Reason |
+|---|---|---|---|
+| `--night-sky` | `#0D1220` | Night canvas / sky ground | Deep navy-black. Hue 225°, sat 45%, light 9%. This is the Batman:TAS night sky — clearly night, a blue-black, not grey or warm-black. Never `#000`. |
+| `--night-gold` | `#C49A1E` | Building windows, streetlamps, architectural accent | Aged gold, not iPhone yellow. Hue 40°. The window-light of a lit building at 11pm. |
+| `--night-emerald` | `#275E42` | Foliage, certain building faces, verdigris patina | Deep forest green. Hue 150°. From Batman:TAS interiors. Not neon; deeply rich. |
+| `--night-burgundy` | `#6B1E30` | Curtains, bar interiors, upholstery, warm interiors | Deep wine red. Hue 340°. Sumptuous without reading as pink. |
+| `--night-amber` | `#D4892A` | Foreground lamp light, intimate table warmth | Brighter amber. Hue 33°. The glow of a reading lamp when you are close to it. |
+| `--night-ink` | `#EDE7E0` | Text on the dark ground | Warm off-white. Not `#FFF`. 14.08:1 on night sky. |
+| `--night-mute` | `#A0968D` | Secondary text at night | 5.96:1 on night canvas. |
+
+**The single hardest constraint — photographs at night:**
+
+The rule is absolute: photographs are never dimmed, tinted or washed. Including at night, on a dark ground.
+
+The solution is structural, not visual. **The mount carries the burden, not a filter on the photograph.**
+
+At night, a photograph always arrives in one of three frames:
+1. A **polaroid border** — its own white frame (photographed or rendered) already separates the image from the dark sky without touching the image itself. A polaroid border at `#F0EBE3` on a `#0D1220` sky is a 13.5:1 contrast. The photograph inside stays untouched.
+2. A **lit window in the city illustration** — the photograph sits inside a drawn window in the building facade. The window is lit from within the illustration. The photograph occupies the window as if it were a glowing panel. The surrounding city provides context; the photograph itself is never touched.
+3. **Held in the foreground, on a lit surface** — on the balcony, a photograph rests on a table lit by the night-amber lamp. The lit surface provides the separation.
+
+What is banned: `filter: brightness()`, `filter: saturate()`, `mix-blend-mode`, any CSS filter applied to the `<img>` element or its wrapper for the purpose of night adaptation. The photograph must render identically at day and at night. Only the surrounding context changes.
+
+**Material rules for night:**
+- The illustration is layered as separate assets so the sky, far skyline, mid skyline, near buildings, and foreground can be driven live. Sky tone shifts with the real hour (deepest at midnight, lifting toward dawn). Window lights change with whether that person is marked awake.
+- Flat vector and hard-edged shadow only. No gradient mesh (exception: the dusk-to-night sky gradient in the sky layer — the one place a gradient is allowed, because it is illustration, not chrome).
+- The limited palette per scene rule: pick 3-4 colours per illustration layer and stay inside them. The reference images use 4-5 distinct values maximum per scene and read immediately.
+- Weather is real weather from their two cities — rain, snow, clear — expressed as illustration elements (rain lines, snow scatter, cloud layers), not as overlaid CSS filters.
+
+**The Book at night:** The Book's night face is the same paper stocks lit by lamplight from lower-left — warmer, dimmer, a reading-room quality. It is NOT the city sky. [See §8 for this disagreement with the brief's D2 formulation — read it before implementing The Book at night.]
+
+---
+
+## §2 — Type
+
+Four typefaces. No others. Any agent who reaches for a fifth is out of scope.
+
+### The two hands
+
+**Eva's hand: Caveat** (Google Fonts, SIL Open Font License — fully commercially usable)
+
+Justification: Caveat is the most naturalistic flowing handwriting face available under a permissive license that remains legible at 15px on a phone. Its strokes are genuinely cursive — letters connect loosely, with natural pen lift variation — but the baseline is stable enough to read at small sizes without fighting the eye. The variable weight axis (400–700) means a single face covers captions (400) and emphasis (600) without switching families. Most importantly: at a glance, it reads as *a person who writes in connected script.* That is the visual signature of Eva's hand.
+
+**Adam's hand: Patrick Hand** (Google Fonts, SIL Open Font License)
+
+Justification: Patrick Hand has a structured, semi-print quality that is visually opposite to Caveat's cursive flow. Where Caveat's letters lean and connect, Patrick Hand's are more upright and clearly separated — closer to the handwriting of someone who trained as an engineer or an architect. At a glance, you read the difference between the two hands without looking at a label. This is the criterion that matters: disambiguation at speed, not aesthetic preference. Patrick Hand is also highly legible at 15px in a way that more casual scripts are not.
+
+**How to tell them apart at 15px in a phone screenshot:** Caveat flows; Patrick Hand stands. One is cursive-dominant; the other is print-dominant. This is the test.
+
+**What these hands write:**
+- Captions that were composed by that person
+- Notes placed on a page by that person
+- Anything authored, in the present tense of authorship
+
+**What they do NOT write:**
+- The stamp (see below)
+- The window sentence
+- System messages of any kind
+- Labels, clocks, navigation
+
+**They are never swapped.** Eva's text appears in Caveat. Adam's text appears in Patrick Hand. If the content's author is ambiguous, it appears in the app's own voice (Fraunces), not in either hand.
+
+### The app's own voice: Fraunces italic
+
+Fraunces italic is the app speaking. Not a person.
+
+Used for: the window sentence ("Eva's in bed, Adam's awake"), editorial notes, the book's colophon, any moment the system has a voice of its own.
+
+Fraunces italic has a warm, slightly literary quality that is distinct from both handwriting scripts and from the data display face. It reads as thoughtful, not functional.
+
+### Labels and clocks: Outfit
+
+Outfit is the functional voice. Used for: timestamps, duration displays, tab labels, anything that is a data value rather than a human-authored string.
+
+Outfit is NOT a display face. It is never large. It never carries emotional content.
+
+### Register table
+
+| Content type | Face | Reason |
+|---|---|---|
+| Eva's captions, notes | Caveat | She wrote it |
+| Adam's captions, notes | Patrick Hand | He wrote it |
+| The stamp | **Outfit, typeset** | The app speaks, not a person. The stamp is never handwritten. |
+| The window sentence | Fraunces italic | The app's editorial voice |
+| The book's colophon | Fraunces italic | The app's voice |
+| Clock values, durations | Outfit | Data |
+| Navigation labels | Outfit | Functional |
+| Book page headings | Fraunces italic | The book has its own voice |
+
+**The stamp rule in full:** The stamp reads *"left while Eva was asleep · Adam 6:20 am · Eva 11:20 pm"*. It is typeset in Outfit at small scale (10–11px equivalent). It is **never** in Caveat or Patrick Hand. The reason: the stamp is the app observing what happened. It is a fact, not a feeling. Handwriting the stamp would imply one of them wrote it. They didn't. The app wrote it.
+
+### Typography craft floor
+
+- Curly quotes (" " ' ') everywhere. Straight quotes are a regression.
+- En dash for ranges (5:12–6:20). Em dash for breaks — like this. One space after punctuation.
+- `'` does not work in JSX text content. Paste the real UTF-8 character.
+- Body measure: 45–90 characters per line.
+- Scale contrast: large versus small, with little in between. A 48px label beside an 11px meta label. Nothing in the mid-range unless it serves a specific reading purpose.
+- Text stays at WCAG AA whatever happens.
+
+---
+
+## §3 — The Material Library
+
+These are the physical families that make up the scrapbook. Every item in the list is an asset to be generated with a unified style bible (one fixed style prompt, one reference set, one seed, per family — the brief's instruction on asset coherence).
+
+This section specifies what exists and what each piece must do. Generation specs come from the style bible (Phase 0b work, not this document).
+
+### Paper stocks
+
+8 families, specified in §1. Physical requirements for each:
+- Realistic fibre texture visible at 2× pixel density
+- Natural curl at torn edges (not a straight rectangle)
+- No photorealistic shadow baked in — shadows come from the physics engine at runtime
+- Light transmission: vellum and onion-skin must feel translucent when layered (achieved via asset transparency at the edges)
+
+### Washi tape
+
+12 patterns. Each is a strip asset designed to be placed at any angle, bridging two objects or anchoring one to the surface.
+
+Physical requirements:
+- **Translucency is mandatory.** Washi tape is semi-transparent. You should see the paper or photograph beneath it. Opacity approximately 65–75%, with natural fibre variation.
+- Real fibre texture visible
+- Slightly rough edges (not a clean cut)
+- No uniform opacity — real washi tape has variation across its width
+
+Pattern families:
+1. Geometric: stripes (narrow), houndstooth, chevron — 3 variants
+2. Floral: small blooms, pressed appearance — 2 variants
+3. Kraft / neutral: torn-paper-coloured, nearly invisible except for the texture — 1 variant
+4. Colour-field: sage green, blush, dusty blue — 3 variants
+5. Botanical: leaf pattern, vine — 2 variants
+6. Scallop edge: one variant, white scallop border on translucent field — 1 variant
+
+### Mounts (photo presentation frames)
+
+Every photograph appears in a mount. A photograph without a mount is not on the scrapbook — it is a UI element. A mounted photograph is an object.
+
+**Polaroid frames — 3 variants:**
+- Classic: thick white bottom border, thinner sides and top. The classic ratio.
+- Wide-border: equal borders all around, slightly more square.
+- Mini: half the classic size. Used for secondary or older photographs.
+
+Physical requirements: the frame should show subtle paper texture. The bottom border is the natural place for a handwritten caption (Caveat or Patrick Hand, depending on who mounted it). The frame corners show the slight shadow a polaroid casts on the surface behind it.
+
+**Photo corners — 4 pieces that sit at the corners of a photograph:**
+Semi-transparent black or manila craft paper corner sleeves. Used when the photograph is not in a polaroid frame. The four corners together imply the photograph is held to the page without a full frame.
+
+**Torn-edge mounts — 8 variants:**
+A piece of backing paper with a torn, irregular edge, on which the photograph sits. The tear can be at any edge or combination of edges. The photograph overlaps the mount. This is the most "handmade" of the mounts.
+
+Physical requirements: the tear edge must look genuinely torn, not cookie-cut. Each of the 8 variants should have a different tear character (rough/fine, long/short, angled).
+
+**Deckle edge — 1 variant:**
+Soft wavy edge as if torn from watercolour paper. Used for notes and text pieces, not for photographs.
+
+### Fasteners
+
+These hold things to the surface. They cast real shadows and have mass.
+
+**Pushpins:**
+- Eva's pushpin: brass-topped, warm gold. This is her colour, expressed through the object she uses.
+- Adam's pushpin: cream or off-white topped. Neutral.
+- Shared / neutral: matte black or dark olive.
+- 3 variants total. Each has: a pin body, a round or faceted top, a tight shadow underneath (contact shadow), a small ambient shadow on the paper behind it.
+
+**Binder clips:**
+Large (for thick paper stacks) and small (for single sheets).
+Physical requirements: shiny chrome/steel texture, the two handles visible from the clipped position. Must render convincingly at mobile pixel densities.
+
+**Paperclips:**
+Standard and large. Semi-reflective silver. Used to attach one item to another, visible at the corner.
+
+**Staples:**
+Silver, very small. Used for multi-page attachments. Barely visible but present.
+
+**Brads (brass paper fasteners):**
+Brass-coloured, visible where the prong splits behind the page. Used for attaching items that rotate.
+
+### Stickers
+
+**The sunflower is first and it is Eva's motif.** This is not negotiable. The sunflower appears first in every sticker drawer, first in every array, first in every picker. The seed in the composition algorithm gives it higher placement weight when Eva has recently composed a page.
+
+Sticker families:
+
+**Pressed botanical (pressed flowers, flat, slightly translucent, dried colour):**
+1. Sunflower — **Eva's motif, always first** — warm gold, slightly dried, with visible petal detail at full size
+2. Lavender — pale purple, sprigs
+3. Baby's breath — white-cream, cloud of tiny blooms
+4. Rose — deep pink, single head, pressed flat
+5. Fern frond — green, arching
+6. Daisy — white petals, yellow centre
+
+**Stars (foil-style, slightly shiny):**
+Gold stars, 3 sizes. The kind you put on a child's homework. Unpretentious.
+
+**Playing card elements:**
+Ace of hearts. Two of hearts. Used sparingly — from the reference imagery, these read as small, slightly mischievous.
+
+**Cherries:**
+Illustrated, bright red, a pair with stems. Small. From the reference imagery.
+
+**Vinyl record (The Record motif):**
+A small illustrated vinyl record for pages that include a shared listening moment.
+
+**Music notes:**
+Small decorative, not functional. For musical moments.
+
+**All stickers share:** clean-cut or slightly rough cut edge (not a perfectly smooth SVG circle), no internal shadows (they are flat objects), a very light contact shadow when placed on the page.
+
+### Thread and ribbon
+
+Used as visual connectors between items, not as UI elements.
+
+- Jute twine: visible on cork board-style compositions. The reference imagery shows it.
+- Sage green silk ribbon: ties around a folded note, or hangs from a pushpin.
+- Blush ribbon: similar use.
+- Embroidery floss: red or dark green, stitched appearance between pinned items.
+
+These are used sparingly — one or two per composition at most.
+
+---
+
+## §4 — Composition Law
+
+### The diagnosed defect (carry forward from the build team's findings)
+
+> "Five full-width elements at one width, one radius, one elevation, one rhythm — the eye finds that rhythm on the second element and stops reading."
+
+This was documented from the current build. The law exists to prevent its recurrence.
+
+### The five moves (from the prior law, now extended)
+
+1. **Full bleed one element.** The photograph runs edge-to-edge at its own aspect ratio. It is not contained in a card. It does not have a border-radius. It is a photograph on a table, and the table has edges, not the photograph.
+
+2. **Unequal pairs.** When two items appear near each other, one is larger. One leads; one follows. Never two equals.
+
+3. **One masthead per surface.** The Book has a cover. Today has the photograph. Neither has a header bar.
+
+4. **Type directly on paper.** The caption sits on the paper, not in a labelled container. The window sentence sits on the paper near the photo, not in a pill below it.
+
+5. **Varied vertical rhythm.** No two successive elements have the same top margin. The eye must re-establish distance at each item.
+
+### What rotation, overlap and mass add (new this session)
+
+**Rotation** introduces a sixth visual variable that breaks the grid. A photo rotated −4° makes the eye work to resolve it. That work is engagement, not friction. The eye lingers. A composition where every element is at 0° is a spreadsheet.
+
+Rotation ranges by object type:
+- Photographs: −8°…+8° (can be aggressive; the subject is horizontal/vertical by nature, so the rotation reads against it)
+- Notes and torn paper: −5°…+5° (text alignment makes large rotations hard to read)
+- Stickers: any angle, −15°…+15° (stickers are lightweight; they tumble)
+- Washi tape: exactly perpendicular to the edge it bridges, ±5°
+
+**Overlap** creates implied depth without an explicit z-index system. When a note sits partially behind a photo, the photo has mass — it is the heavier object. The relationship becomes legible through depth alone.
+
+**Mass hierarchy:** A heavier object sits on top of a lighter one in any contact.
+1. Photograph — heaviest
+2. Note, torn paper — substantial
+3. Washi tape — light, bridges objects
+4. Small sticker — lightest, sits on top of anything
+
+The rule: in any composition, mass is unequal and hierarchy is clear. What is banned: three equally-rotated photographs at the same elevation, none overlapping. That is a template grid wearing a rotation costume.
+
+### The auto-composition system
+
+Composition is deterministic, seeded from item ID. It never re-rolls. Reason: if a page looks right at 9am, it looks right at 9pm. A page that re-composes itself on refresh is a page that never finishes — which creates the exact "unfinished" feeling the no-slot rule is protecting against.
+
+The seed determines: rotation angle, mount type, mount position relative to the photo edge, sticker placement, tape placement. Within the seeded values, the physics engine settles the objects to their final positions on mount.
+
+### The Tuesday test consequence for composition
+
+A composition without a photograph must be somewhere worth being. This means:
+- Bare paper is not an empty container. It is a clear table.
+- A note on bare paper (no photograph) is a valid and complete composition.
+- A washi tape strip and a stamp on bare paper is a valid and complete composition.
+- The absence of a photograph is not marked. No dashed rectangle. No "nothing yet."
+
+The ban on slots is not just a copy rule — it is a composition rule. There is no reserved rectangle where a photograph would go. The paper is always the default state.
+
+---
+
+## §5 — Motion and Physics Law
+
+### Measured constants (carry exactly)
+
+These values were measured from shipped source (Vaul, Sonner), not asserted. Do not re-derive. Do not reset.
+
+| Motion | Value | Provenance |
+|---|---|---|
+| Press | `150ms cubic-bezier(0.22,1,0.36,1)`, `scale(0.97)` | Correct in v7 globals. Keep. |
+| UI transition | `220–320ms` with `--ease-out` | Correct in v7 globals. Keep. |
+| Sheet / drawer | `500ms cubic-bezier(0.32,0.72,0,1)` | Measured from Vaul source. |
+| Toast in | `300ms` | Measured from Sonner source. |
+| Toast swipe-out | `200ms` | Measured from Sonner source. |
+| Toast gap | `14px` | Sonner's `GAP` constant. |
+| Spring — content | `stiffness 300, damping 30` | Deliberately stiffer than the motion library default. Do not reset. |
+| Spring — chrome | `stiffness 420, damping 34` | Deliberately stiffer. Do not reset. |
+
+### Physics rules
+
+**Paper does not bounce.** High damping; everything reaches rest inside ~400ms. This is not a reduction — it is more physically accurate. Real paper dropped on a table does not bounce. It makes contact and settles. Overshooting is a rubber-ball behaviour, not a paper behaviour.
+
+**Arranged pages load pre-settled.** A page someone composed yesterday is already settled when it opens. Physics activates on interaction (drag, place, remove), not on mount. No object enters with an animated settle on page load unless it was just placed in this session.
+
+**Transform, opacity and filter only.** Never `top`, `left`, `width`, `height`. Never `margin`, `padding`. These properties repaint; they are banned.
+
+**`prefers-reduced-motion` → full removal.** Following Sonner's actual shipped CSS: `transition: none; animation: none`. Not degraded to opacity-only. Full removal. Our own animation skill's degradation guidance is wrong on this point; follow the shipped source.
+
+**Stagger ≤50ms.** Never animate keyboard-initiated actions.
+
+**The page turn** (The Book) follows the thumb. The sheet bends at a natural flex point, the back catches light. This is the one expensive signature moment and it is engineered properly — a CSS perspective + transform sequence with the measured spring values above, not a pre-baked animation.
+
+### The `<Mounted>` primitive
+
+Every physical object on the scrapbook surface is rendered through a `<Mounted>` component that manages: its rotation (seeded, not random), its elevation (in the mass hierarchy), its contact shadow, its physics state (settled / being-dragged / settling). This primitive is the foundation of Phase 1 and nothing in Phases 2–7 can exist without it.
+
+---
+
+## §6 — The Four Tests
+
+These are the acceptance gate. A screen that does not pass all four is not shipped. Design-critic applies them.
+
+### 1. The Tuesday test
+
+Render the surface with **no photograph on it at all.** Not as a loading state — as a real state. Their entire photo supply is two people, one of whom is always asleep. A day when no photograph has arrived is Tuesday at 3pm, not an edge case.
+
+Is it still somewhere worth being? If it reads as a container waiting to be filled, it fails. If the paper and the objects on it are their own reason to look, it passes.
+
+Previous failure mode: the old law took this empty state, wrote it into statute as the standard, and produced a page that was only interesting when a photograph was present. This law reverses that. The paper is the answer to the Tuesday test, not the photograph.
+
+### 2. The logo test
+
+Screenshot the surface. Remove the wordmark. Would you know it was this app?
+
+The failure mode is not ugliness. It is being well-made and anonymous. A professional-looking interface that could belong to any product in the category fails this test. The scrapbook idiom, applied consistently, should make the product unmistakable without a logo.
+
+### 3. The 11pm test
+
+Walk the surface as Eva in New York at 11pm with the lights off, on an iPhone, installed to the home screen. Not as Adam at 5am. Not as a designer at noon. As the exhausted one at the end of a long day.
+
+**This test is enforced as process because the person who cannot run it is the one building it.** Adam will live his 5am hundreds of times and will never once live Eva's 11pm. Every instinctive "does this feel right" check runs from his side of the gap. The product will drift toward fitting him exactly and approximating her — invisibly, because from inside it only ever feels better.
+
+Concrete requirements:
+- Nothing ships until it has been walked as the exhausted one, not the alert one
+- The reveal that is savourable at 5am cannot be friction at 11pm
+- Notification quiet-hours verified against both zones
+- Night mode designed alongside day, never after
+
+The 11pm test has one specific pass criterion for night: **the brightest thing on Eva's screen is Adam's photograph, not a navigation element.** If any chrome element (dock, label, stamp) is brighter than a present photograph, it fails.
+
+### 4. The slop test
+
+The founder's own test. Two directions have already failed it.
+
+This one has no written rubric because it is a recognition test, not a checklist. The failure state has a specific texture: it looks like something a well-meaning AI generated, not like something a person made for two people.
+
+The scrapbook idiom should make this test easier to pass than the previous directions did, because the idiom is specific and physical. But the test still needs to be run. No direction is immune to being executed generically.
+
+### Verification mechanics
+
+- Viewport: 393×852, both modes
+- Full-page captures lie about `position: fixed` — they paint at viewport offset inside full document height. This has caused two false alarms in this project. Verify fixed elements at their actual viewport position.
+- Add `?mode=night` to any URL. Night is a primary surface and is tested simultaneously with day.
+- Frame rate: 60fps with a full page of objects, on a real iPhone, not a desktop throttle.
+
+---
+
+## §7 — What This Law Does NOT Decide
+
+This section is honest about scope. An agent who reaches into these areas without a separate directive is over-stepping.
+
+**Left open for screen work:**
+- The exact paper stock assigned to each page type (that is per-page composition work)
+- Specific washi tape patterns for each person (that is taste-level personalisation)
+- The detailed city illustration: exact skyline silhouette, building shapes, neighbourhood reference for each city
+- The rotation seed algorithm implementation detail (the *range* is specified; the implementation is engineering)
+- The edit mode UX: which gestures trigger it, how tools appear, how drag-to-place works
+- The pocket (The Book's locked envelope) interaction model
+- The cassette's visual treatment at both scales (small object on Today vs. full record display)
+- Navigation model: how Today and The Book relate as surfaces, how you move between them
+
+**Deliberately deferred:**
+- The token file (`globals.css`) rewrite: this law specifies the values; a separate Phase 0 token task implements them
+- Asset generation style bibles: this law specifies the family counts and physical requirements; Phase 0b generates to those specs
+- Night city illustration plates: the layered PNG/SVG plates are their own Phase 0b asset
+
+---
+
+## §8 — Disagreements with the Brief
+
+**Any agent on this project who argued back improved the outcome.** This section records my disagreements, clearly marked.
+
+### Disagreement 1 — D2: The Book at night
+
+**The brief states (D2):** "The Book is always paper — at night it is the same paper under a dimmer lamp."
+
+**My disagreement:** If night = the deco city and Today's night face is the city, then The Book's night face being "the same paper under a dimmer lamp" creates a jarring material transition. Entering The Book from Today's night city view would be a sudden jump from a drawn scene to a dimmed flat surface. These are visually incompatible.
+
+**My proposed resolution:** The Book's night face is the paper stocks lit by lamplight from lower-left — a warm, amber-lit reading-room quality. Not the city sky as a background. Not a dark flat canvas. A lit interior. This means The Book at night is *inside the same world* as the city (you are in a room, the city is out the window), which is consistent with D2's intent (The Book is always paper) while solving the material conflict.
+
+**Why this matters:** if an agent implements "the same paper under a dimmer lamp" as `--night-sky` behind paper-coloured cards, they will produce a dark mode that looks like every dark mode. If they implement it as amber-lit reading room, it is coherent with the world.
+
+**This is a recommendation, not a unilateral change.** The founder decides. I am flagging it so it gets decided rather than defaulted.
+
+### Disagreement 2 — The deco references include one that is not a city
+
+Screenshot `7:39:32 AM` (Sorriso New York, the halftone restaurant image) is a different register — warm, analogue, photographic, not illustrative deco. It does not belong in the same generation prompt as the Batman:TAS references. It might be the reference for the cassette or the restaurant moment in the record feature, but it should not be in the city illustration brief.
+
+This is an asset organisation note, not a material disagreement. Flagging so the Phase 0b brief is written correctly.
+
+### Disagreement 3 — Rotation range for photographs
+
+The plan file specifies −3°…+3° for photographs. I have widened this to −8°…+8°.
+
+**Reasoning:** The reference images show significantly wider rotations. The polaroid scatter in IMG_8120 has photographs at what appears to be ±12°. At −3°…+3°, the rotation is so subtle it will read as a rendering artifact rather than as a deliberate compositional choice. The eye needs to resolve it visibly to register that this is a physical object that has been placed, not a card in a grid.
+
+**If the founder prefers tighter:** the range is easy to change by adjusting the seed range. This is a configurable constant, not an architectural decision. But I would trial at −8°…+8° before deciding it is wrong.
+
+---
+
+## Summary of key numbers
+
+| Constant | Value |
+|---|---|
+| Day canvas base | `#F8F5F1` |
+| Day ink | `#191512` |
+| Night sky | `#0D1220` |
+| Night gold | `#C49A1E` |
+| Night emerald | `#275E42` |
+| Night burgundy | `#6B1E30` |
+| Night amber | `#D4892A` |
+| Eva's hand | Caveat (Google Fonts, SIL OFL) |
+| Adam's hand | Patrick Hand (Google Fonts, SIL OFL) |
+| App voice | Fraunces italic |
+| Data/labels | Outfit |
+| Photograph rotation | −8°…+8° (seeded, deterministic) |
+| Note rotation | −5°…+5° |
+| Sticker rotation | −15°…+15° |
+| Physics settle time | ≤400ms |
+| Press duration | 150ms |
+| UI transition | 220–320ms |
+| Sheet / drawer | 500ms |
+| Spring (content) | 300 stiffness / 30 damping |
+| Spring (chrome) | 420 stiffness / 34 damping |
+| Paper stocks | 8 families |
+| Washi patterns | 12 |
+| Mount variants | 3 polaroid + 4 corners + 8 torn + 1 deckle |
+| Sunflower | Eva's motif, always first |
