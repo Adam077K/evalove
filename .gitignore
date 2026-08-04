@@ -40,6 +40,7 @@ docs/08-agents_work/screens/*/keyed/
 
 # Python bytecode (committed once by mistake from docs tooling)
 __pycache__/
+*.pyc
 
 # Node — the repo root is not an install target; apps manage their own
 node_modules/
