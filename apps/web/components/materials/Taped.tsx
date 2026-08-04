@@ -32,9 +32,9 @@ export type TapeVariant =
   | "stripe-cream"
   | "stripe-sage"
   | "stripe-blush"
-  | "houndstooth"
+  | "washi-ochre-dots"
   | "chevron"
-  | "kraft"
+  | "washi-terracotta"
   | "floral-pressed"
   | "floral-blue"
   | "botanical-leaf"
@@ -53,8 +53,10 @@ export type TapePlacement =
 export interface TapedProps {
   /**
    * Which of the 12 washi patterns to composite.
-   * Currently available: 'houndstooth' (washi-ochre-dots),
-   * 'kraft' (washi-terracotta). Others render children with no strip.
+   * Currently available: 'washi-ochre-dots' and 'washi-terracotta' —
+   * named for what the assets actually are (Wave 0 QA gate: they
+   * were shipped as 'houndstooth'/'kraft', which claimed patterns
+   * that do not exist yet). Others render children with no strip.
    */
   variant: TapeVariant;
   /** Which edge (or corner) of the child the tape bridges. */
@@ -78,8 +80,8 @@ interface TapeAsset {
 
 /** Asset registry. Sizes follow each source's aspect (1024×240, 1024×336). */
 const TAPE_ASSETS: Partial<Record<TapeVariant, TapeAsset>> = {
-  houndstooth: { src: "/materials/washi-ochre-dots.webp", width: 84, height: 20 },
-  kraft: { src: "/materials/washi-terracotta.webp", width: 84, height: 28 },
+  "washi-ochre-dots": { src: "/materials/washi-ochre-dots.webp", width: 84, height: 20 },
+  "washi-terracotta": { src: "/materials/washi-terracotta.webp", width: 84, height: 28 },
 };
 
 /**

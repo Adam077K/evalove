@@ -1,68 +1,59 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Mail, MailOpen, Send } from "lucide-react";
-import { memberById, partnerOf } from "@/lib/fixtures/members";
+import { memberById } from "@/lib/fixtures/members";
 import { LEFT_KIND_LABEL, leftFor } from "@/lib/fixtures/left";
+import { partnerPresence } from "@/lib/shared-day";
 import { localTime } from "@/lib/time";
 import { useViewer } from "@/lib/viewer";
+import { Mounted, Taped } from "@/components/materials";
 
 /**
- * The sealed shelf — what the other one left.
+ * The sealed thing on the table — what the other one left while you
+ * slept.
  *
- * This is the signature moment of the product, and it was already
- * built. One of them is always awake to leave something the other
- * finds hours later; opening it is where the seven-hour gap turns
- * into a gift instead of a delay. It was buried under a violet
- * gradient fill, a glow and a repeating shimmer sweep, so what you
- * saw first was the decoration rather than the thing.
+ * This is the sealed-to-opened ceremony, the signature interaction of
+ * the product. It had zero import sites after the v7 rebuild and
+ * looked like dead code; it was unreachable, not unwanted. It is now
+ * an object on Today's paper table: a folded note, taped down, that
+ * opens into the sender's own hand.
  *
- * What it is now: an envelope on a desk. The author's own ink down
- * the left edge — two pixels, the only colour in the composition —
- * a closed seal, and the time it was left in *their* local hours,
- * because the whole point is that it was their morning and your
- * night.
+ * THE SEAL FIRES ONLY ON GENUINE SLEEP (law §0, non-negotiable).
+ * Never a manufactured timer, never a global reveal clock. The gate
+ * here is the recipient's own inferred presence at the instant the
+ * thing was left: if you were genuinely asleep when it was sealed,
+ * you meet it sealed and open it yourself. If you were awake when it
+ * was left, there is no seal to break — it lies open on the table
+ * from the start. Both branches render the same opened note; only
+ * the ceremony is conditional.
+ *
+ * NOTHING WAITING → NOTHING RENDERS. The previous empty state ("When
+ * Adam leaves something, it waits here" + a Leave-something button)
+ * violated two behavioural rules at once: it was a slot shaped like
+ * an absence, and it solicited composing. Both are structural
+ * violations now (§0: composing is never solicited; no slot, no
+ * prepared place). An empty shelf is not a designed state — it is
+ * nothing.
  *
  * Sealed things stay opaque on purpose: who, roughly when, what
  * kind. Never a preview.
  *
- * The motion, which is the whole point of the component.
- *
- * It has to be an *opening*, not a card animating. The first attempt
- * was `AnimatePresence mode="wait"`, which sequences unmount then
- * mount — so the seal was gone before the note existed, nothing ever
- * receded behind anything, and there was no shared space for the note
- * to arrive into. That is the default React exit animation wearing
- * this component's comments.
- *
- * `mode="popLayout"` is the fix: the seal leaves the layout flow and
- * keeps animating on top while the note takes its place underneath,
- * so for ~300ms both exist and you watch one become the other. The
- * seal recedes — scaling back and lifting slightly, never sliding
- * away — on Vaul's measured `cubic-bezier(0.32, 0.72, 0, 1)`, and the
- * note comes forward on this app's own spring. The whole gesture
- * lands around 500ms, which is drawer-class, because opening
+ * The motion is unchanged from the original, because it is the whole
+ * point of the component: `mode="popLayout"` lets the seal keep
+ * animating on top while the note takes its place underneath, so for
+ * ~300ms both exist and you watch one become the other. The seal
+ * recedes on Vaul's measured curve; the note arrives on this app's
+ * own 300/30 spring — markedly stiffer than motion's default, which
+ * is right for a thing made of paper. Do not reset it. The whole
+ * gesture lands around 500ms: drawer-class, because opening
  * something someone sealed for you is a drawer-class event.
  *
- * `layout` on the section absorbs the height change: the opened note
- * is taller than the seal, and without it the gesture would end by
- * shoving everything below it down the page.
+ * Reduced motion: full removal, the Sonner-shipped behaviour. The
+ * swap is instant.
  *
- * The spring is 300/30, kept exactly as it was. It is markedly
- * stiffer and less bouncy than motion's own 100/10/1 default; that
- * is someone's deliberate taste and it is right for a thing made of
- * paper. Do not reset it to the library default.
- *
- * The seal is their real gap and nothing else. No countdown, no
- * timer, no global reveal clock — a fixed clock would structurally
- * privilege one partner's morning over the other's, and with seven
- * hours between them that is broken by construction. It unlocks on
- * arrival because it arrived.
- *
- * Fixture note: the wired app fetches the body on open; here one
- * line stands in so the opened state is real, not lorem.
+ * Fixture note: the wired app fetches the body on open; one line
+ * stands in so the opened state is real, not lorem.
  */
 
 const FIXTURE_NOTE =
@@ -77,46 +68,30 @@ const RECEDE = { duration: 0.32, ease: [0.32, 0.72, 0, 1] as const };
 
 export function SealedCard() {
   const { member } = useViewer();
-  const partner = partnerOf(member);
   const waiting = leftFor(member.id);
   const [opened, setOpened] = useState(false);
   const reduced = useReducedMotion();
 
   const item = waiting[0];
 
-  /* Empty shelf — designed, and an invitation. */
-  if (!item) {
-    return (
-      <section aria-label="Left for later" className="card rounded-[1.25rem] p-5">
-        <div className="flex items-center gap-4">
-          <span className="well flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-mute">
-            <Mail size={20} strokeWidth={1.8} />
-          </span>
-          <div className="min-w-0">
-            <h2 className="type-card text-ink">Nothing sealed right now</h2>
-            <p className="type-caption mt-0.5 text-mute">
-              When {partner.displayName} leaves something, it waits here.
-            </p>
-          </div>
-        </div>
-        <Link
-          href="/send"
-          className="press pill-ink mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2"
-        >
-          <Send size={15} strokeWidth={2} />
-          <span className="type-label">
-            Leave something for {partner.displayName}
-          </span>
-        </Link>
-      </section>
-    );
-  }
+  /* Nothing waiting: nothing on the table. No shelf, no invitation. */
+  if (!item) return null;
+
+  /* The genuine-sleep gate. Was the recipient asleep, by their own
+     clock, at the instant this was sealed? Inference only — nothing
+     reports being awake, and `partnerPresence` reads a wall clock,
+     not a device. `unknown` does not seal: the ceremony must never
+     be more confident than the truth. */
+  const sealedWhileAsleep =
+    partnerPresence(member.slug, new Date(item.leftAt)).presence === "asleep";
 
   const from = memberById(item.fromMemberId);
   const fromIsAdam = from.slug === "adam";
   const their = fromIsAdam ? "his" : "her";
-  const edgeClass = fromIsAdam ? "edge-adam" : "edge-eva";
+  const hand = fromIsAdam ? "font-adam text-[19px]" : "font-eva text-[23px]";
   const when = `${localTime(item.leftAt, from.homeTimezone)} ${their} time`;
+
+  const showSealed = sealedWhileAsleep && !opened;
 
   /* Reduced motion: Sonner's own shipped CSS removes transitions and
      animations outright rather than degrading them to opacity, and
@@ -132,62 +107,55 @@ export function SealedCard() {
   return (
     <motion.section aria-label="Left for later" layout={!reduced}>
       <AnimatePresence mode="popLayout" initial={false}>
-        {!opened ? (
+        {showSealed ? (
           <motion.button
             key="sealed"
             type="button"
             onClick={() => setOpened(true)}
             exit={
-              reduced
-                ? { opacity: 0 }
-                : { opacity: 0, scale: 0.94, y: -6 }
+              reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94, y: -6 }
             }
             transition={reduced ? { duration: 0 } : RECEDE}
-            className={`press card ${edgeClass} block w-full rounded-[1.25rem] p-5 text-left`}
+            className="press block w-max text-left"
           >
-            <div className="flex items-start gap-4">
-              <span className="well flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-ink">
-                <Mail size={20} strokeWidth={1.8} />
-              </span>
-              {/* Two lines, one name each — never "Adam left a note
-                  for Eva". Eva before Adam is a founder decision and
-                  the rule is to rewrite the sentence rather than
-                  reorder the names, so the recipient's line carries
-                  the waiting and the sender's line carries the seal.
-                  Both facts survive; neither name queues behind the
-                  other. */}
-              <div className="min-w-0 flex-1">
-                <h2 className="type-card text-ink">
-                  {from.displayName} left {LEFT_KIND_LABEL[item.kind]}
-                </h2>
-                <p className="type-caption mt-0.5 text-mute">
-                  sealed by {from.displayName} · {when}
-                </p>
-                {/* On its own line, not squeezed against the text.
-                    As `ml-auto` it narrowed the column until the
-                    timestamp orphaned one word — "8:12 am his / time" —
-                    in the most important card on the surface. */}
-                <span className="type-label pill-ink mt-3 inline-block rounded-full px-3.5 py-1.5">
-                  Open
-                </span>
-              </div>
-            </div>
+            {/* The sealed note: white stock, taped down across one
+                corner — the classic fastening, and it stays off the
+                words (a perpendicular strip crossing the top edge ran
+                straight through "a note" in the first capture). Opaque
+                on purpose — who, roughly when, what kind. Never a
+                preview. */}
+            <Mounted id={item.id} context="note" elevation={3}>
+              <Taped variant="washi-terracotta" placement="top-left" angle={-3}>
+                <div className="bg-surface px-5 pb-4 pt-5">
+                  <p className="type-body text-ink">
+                    {from.displayName} left {LEFT_KIND_LABEL[item.kind]}
+                  </p>
+                  <p className="type-micro mt-1 normal-case text-mute">
+                    sealed · {when}
+                  </p>
+                  <p className="type-micro mt-3 normal-case text-ink underline underline-offset-4">
+                    open
+                  </p>
+                </div>
+              </Taped>
+            </Mounted>
           </motion.button>
         ) : (
-          <motion.figure
-            key="opened"
-            {...enter}
-            className={`card ${edgeClass} rounded-[1.25rem] p-5`}
-          >
-            <div className="flex items-center gap-2.5 text-mute">
-              <MailOpen size={17} strokeWidth={1.9} />
-              <figcaption className="type-micro normal-case">
-                {from.displayName} · {when}
-              </figcaption>
-            </div>
-            <blockquote className="type-quote measure mt-3 text-ink">
-              {FIXTURE_NOTE}
-            </blockquote>
+          <motion.figure key="opened" {...enter} className="w-max">
+            {/* Open, the note is his writing on the paper — their
+                hand, per the register table, never the app's voice. */}
+            <Mounted id={`${item.id}:open`} context="note" elevation={3}>
+              <div className="bg-surface px-5 pb-5 pt-4">
+                <figcaption className="type-micro normal-case text-mute">
+                  {from.displayName} · {when}
+                </figcaption>
+                <blockquote
+                  className={`${hand} mt-3 max-w-[16rem] leading-snug text-ink`}
+                >
+                  {FIXTURE_NOTE}
+                </blockquote>
+              </div>
+            </Mounted>
           </motion.figure>
         )}
       </AnimatePresence>
