@@ -1,20 +1,27 @@
 /**
- * The gap stamp — DESIGN-DIRECTION §7.
+ * The gap stamp — DECO (design law §1, revised 2026-08-04).
+ *
+ * The stamp is the distance speaking, not either of them. It is
+ * typeset — Outfit at small scale, never Caveat, never Patrick Hand —
+ * because the app wrote it, not a person (law §2, "the stamp rule in
+ * full"). It is absolute, never relative: both clocks at the instant
+ * of leaving, never an elapsed anything.
  *
  * Server component. Receives the instant and the author; never reads
- * `new Date()` in an effect. The app-open is the product's only arrival
- * path (§1.1 of the dispatch), so a stamp that hydrates is a skeleton
- * sitting next to the thing she opened for. This must not become a
- * client component.
+ * `new Date()` in an effect. The app-open is the product's only
+ * arrival path, so a stamp that hydrates is a skeleton sitting next
+ * to the thing she opened for. This must not become a client
+ * component.
  *
- * Renders two lines, nothing more:
- *   Line 1 — condition  "left while Eva was asleep"
- *   Line 2 — clocks     "Adam 6:20 am · Eva 11:20 pm"
+ * Two grounds, because the stamp appears in both rooms:
  *
- * `type-micro` at `normal-case`: the size and tracking are wanted;
- * uppercasing their names is the wrong register (see globals.css §5).
- * `text-mute`: this is metadata on the item, not the item itself.
- * No icon, no chip, no card, no background.
+ *   on="paper"  (default) — an item inside The Book. Two lines,
+ *               `text-mute`: metadata on the item, not the item.
+ *   on="night"  — the DECO band below Today's seam. One line with
+ *               `·` separators on `text-night-mute`, exactly the
+ *               form the founder accepted in wave0-night-seam.png.
+ *
+ * No icon, no chip, no card, no background — on either ground.
  */
 
 import type { IsoDateTime, MemberSlug } from "@/lib/types";
@@ -25,10 +32,24 @@ interface StampProps {
   leftAt: IsoDateTime;
   /** Who left it. */
   authorSlug: MemberSlug;
+  /**
+   * Which room the stamp is speaking in. Paper = the two-line form
+   * inside The Book; night = the one-line form on the DECO band.
+   * @default "paper"
+   */
+  on?: "paper" | "night";
 }
 
-export default function Stamp({ leftAt, authorSlug }: StampProps) {
+export default function Stamp({ leftAt, authorSlug, on = "paper" }: StampProps) {
   const stamp = stampFor(leftAt, authorSlug);
+
+  if (on === "night") {
+    return (
+      <p className="type-micro normal-case text-night-mute leading-snug">
+        {stamp.condition} · {stamp.author} · {stamp.other}
+      </p>
+    );
+  }
 
   return (
     <p className="type-micro normal-case text-mute leading-snug">

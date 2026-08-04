@@ -1,81 +1,103 @@
+/* eslint-disable @next/next/no-img-element -- the thumb is a content
+   photograph resolved from fixtures; `.photo` law forbids the
+   optimizer re-encoding it and any filter ever touching it. */
+
 /**
- * The today doorway — one thing from the archive, right now, → /book.
+ * The doorway to The Book — a physical page corner at the bottom edge.
  *
- * Structure:
- *   Head row  — why-label LEFT, "THE BOOK ↗" RIGHT, one baseline.
- *               The destination link lives here, not buried after the caption.
- *   44/56 row — thumbnail (44%) + caption with author edge (56%), 1rem below.
+ * The Book is always PAPER (§1: "The Book is an object they made.
+ * Always paper, no exceptions"), and at night the two surfaces are one
+ * room: moving Today → Book is turning away from the window and
+ * looking down at your lap. So the doorway is not a link row — it is
+ * the corner of the book itself, a paper sheet intruding from the
+ * bottom edge of the screen, mostly out of frame, resurfacing one
+ * thing from the archive. Tapping the corner lifts the book.
  *
- * When whatCameBack returns null (genuinely empty archive), nothing renders.
- * Both surfaces (Today and The Book) receive the same now, so they cannot
- * disagree on which item came back within a session.
+ * The sheet bleeds off the bottom AND right — a corner is the meeting
+ * of two edges, and a sheet clipped at both reads as "there is more
+ * of this below" rather than as a card that happens to touch the
+ * viewport. It runs under the dock's transparent gutters on purpose;
+ * the tappable content sits above `--dock-footprint`.
+ *
+ * `whatCameBack(now)` is the live wiring and must survive any re-skin.
+ * When it returns null (genuinely empty archive) nothing renders — no
+ * empty corner, no "the book is empty" copy.
  */
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import type { MemberSlug } from "@/lib/types";
 import { whatCameBack } from "@/lib/resurface";
 import { thumbSrc } from "@/lib/fixtures/resolve";
 import { memberById } from "@/lib/fixtures/members";
+import { Mounted } from "@/components/materials";
 
 type Returned = NonNullable<ReturnType<typeof whatCameBack>>;
 
 interface TodayDoorwayProps {
-  /** The same instant the pair was rendered with. Keeps both surfaces in sync. */
+  /** The same instant the rest of Today rendered with. Keeps surfaces in sync. */
   now: Date;
 }
 
 export function TodayDoorway({ now }: TodayDoorwayProps) {
   const returned = whatCameBack(now);
   if (returned === null) return null;
-  return <DoorwayItem returned={returned} />;
+  return <DoorwayCorner returned={returned} />;
 }
 
-function DoorwayItem({ returned }: { returned: Returned }) {
+function DoorwayCorner({ returned }: { returned: Returned }) {
   const { label, photo } = returned;
   const author = memberById(photo.authorMemberId);
-  const authorSlug = author.slug as MemberSlug;
-  const edgeClass = authorSlug === "eva" ? "edge-eva" : "edge-adam";
+  const hand =
+    author.slug === "eva" ? "font-eva text-[21px]" : "font-adam text-[17px]";
   const hasImage = photo.width > 0 && photo.height > 0;
 
   return (
     <Link
       href="/book"
-      aria-label={`${label} — open in the book`}
+      aria-label={`${label} — open the book`}
       className="press block"
     >
-      {/* Head row: why-label LEFT · THE BOOK ↗ RIGHT, one baseline.
-          The destination link belongs here, not buried after the caption. */}
-      <div className="flex items-baseline justify-between gap-4">
-        <p className="type-micro text-mute">{label}</p>
-        <span className="type-micro flex shrink-0 items-center gap-1 text-mute">
-          The book{" "}
-          <ArrowUpRight size={12} strokeWidth={2} aria-hidden="true" />
-        </span>
-      </div>
+      {/* The sheet: white stock under the room's light (bg-surface
+          dims with the night tokens — the Book's amber reading lamp
+          is Wave 2). Seeded note rotation; the pb runs the paper
+          on under the dock so the corner is clipped by the screen,
+          never finished above it. */}
+      <Mounted
+        id={photo.id}
+        context="note"
+        elevation={3}
+        className="ml-10 -mr-6"
+      >
+        <div className="bg-surface px-5 pb-[var(--dock-footprint)] pt-4">
+          <div className="flex items-baseline justify-between gap-4">
+            <p className="type-micro text-mute">{label}</p>
+            <span className="type-micro flex shrink-0 items-center gap-1 text-mute">
+              The book{" "}
+              <ArrowUpRight size={12} strokeWidth={2} aria-hidden="true" />
+            </span>
+          </div>
 
-      {/* 44/56 content — 1rem below the head row, no rule.
-          Thumbnail (44%) + caption with author edge (56%). */}
-      {(hasImage || photo.caption) && (
-        <div className="mt-4 flex items-start gap-4">
-          {hasImage && (
-            <div className="w-[44%] shrink-0 aspect-[3/4] overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={thumbSrc(photo)}
-                alt={photo.caption ?? `A photograph by ${author.displayName}`}
-                className="photo h-full w-full object-cover block"
-                loading="lazy"
-              />
-            </div>
-          )}
-          {photo.caption && (
-            <div className={`flex-1 ${edgeClass} pl-3 pt-0.5 min-w-0`}>
-              <p className="type-caption text-ink">{photo.caption}</p>
+          {(hasImage || photo.caption !== undefined) && (
+            <div className="mt-3 flex items-start gap-4">
+              {hasImage && (
+                <div className="w-[26%] shrink-0 overflow-hidden">
+                  <img
+                    src={thumbSrc(photo)}
+                    alt={photo.caption ?? `A photograph by ${author.displayName}`}
+                    className="photo block h-auto w-full"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              {photo.caption !== undefined && (
+                <p className={`${hand} min-w-0 flex-1 leading-snug text-ink`}>
+                  {photo.caption}
+                </p>
+              )}
             </div>
           )}
         </div>
-      )}
+      </Mounted>
     </Link>
   );
 }

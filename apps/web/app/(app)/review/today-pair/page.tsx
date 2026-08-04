@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { SharedDay } from "@/lib/types";
 import { Spread } from "@/components/spread/Spread";
 import { TodayPairContent } from "@/components/home/TodayPair";
+import { Paper } from "@/components/materials";
 import { SHARED_DAYS } from "@/lib/fixtures/book";
 import { PHOTOS } from "@/lib/fixtures/photos";
 
@@ -48,33 +49,52 @@ export default function ReviewTodayPairPage() {
 
       {/* ---- TodayPair states ---- */}
 
-      <div className="space-y-16 mb-20">
-        <section aria-labelledby="pair-half">
-          <h2 id="pair-half" className="type-micro mb-4 text-mute">
-            Pair — one posted (Adam posted, Eva&apos;s side is bare paper)
+      {/* Each state sits on the real coldpress stock — the torn mount
+          and the tape are graded against it, and judging them on the
+          flat canvas fill would be judging a different composition.
+          overflow-x-clip stands in for the page root's clip so the
+          single-edge bleed does not widen the review document. */}
+      <div className="space-y-16 mb-20 overflow-x-clip">
+        <section aria-labelledby="pair-one">
+          <h2 id="pair-one" className="type-micro mb-4 text-mute">
+            One item — hero (Adam posted, single-edge bleed)
           </h2>
           {/* The fixture state: Adam posted 2026-08-02, Eva has not yet */}
-          <TodayPairContent
-            adamPhoto={PHOTOS["d0802-adam"]}
-          />
+          <Paper stock="coldpress" className="-mx-5 px-5 py-8 md:-mx-8 md:px-8">
+            <TodayPairContent adamPhoto={PHOTOS["d0802-adam"]} />
+          </Paper>
         </section>
 
         <section aria-labelledby="pair-both">
           <h2 id="pair-both" className="type-micro mb-4 text-mute">
-            Pair — both posted
+            The pair — both posted, unequal on purpose
           </h2>
-          <TodayPairContent
-            evaPhoto={PHOTOS["d0730-eva"]}
-            adamPhoto={PHOTOS["d0730-adam"]}
-          />
+          <Paper stock="coldpress" className="-mx-5 px-5 py-8 md:-mx-8 md:px-8">
+            <TodayPairContent
+              evaPhoto={PHOTOS["d0730-eva"]}
+              adamPhoto={PHOTOS["d0730-adam"]}
+            />
+          </Paper>
         </section>
 
-        <section aria-labelledby="pair-none">
-          <h2 id="pair-none" className="type-micro mb-4 text-mute">
-            Pair — neither posted (collapses to meta lines only)
+        <section aria-labelledby="pair-tuesday">
+          <h2 id="pair-tuesday" className="type-micro mb-4 text-mute">
+            The Tuesday — nothing arrived; the last thing is still there
           </h2>
-          {/* No photos: both sides collapse. No empty box anywhere. */}
-          <TodayPairContent />
+          {/* Neither posted today: the last thing left, unchanged,
+              plus the pressed-through impression. Never an empty box. */}
+          <Paper stock="coldpress" className="-mx-5 px-5 py-8 md:-mx-8 md:px-8">
+            <TodayPairContent lastLeft={PHOTOS["d0731-eva"]} />
+          </Paper>
+        </section>
+
+        <section aria-labelledby="pair-empty">
+          <h2 id="pair-empty" className="type-micro mb-4 text-mute">
+            Empty archive — bare paper is a clear table, not a container
+          </h2>
+          <Paper stock="coldpress" className="-mx-5 px-5 py-8 md:-mx-8 md:px-8">
+            <TodayPairContent />
+          </Paper>
         </section>
       </div>
 
