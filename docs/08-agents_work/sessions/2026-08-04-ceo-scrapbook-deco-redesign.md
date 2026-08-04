@@ -2,7 +2,7 @@
 date: 2026-08-04
 role: ceo
 task: scrapbook-deco-redesign
-status: OPEN — awaiting founder direction call on the day panel
+status: CLOSED — direction approved; handed off at 2026-08-04-HANDOFF-SCRAPBOOK-DECO.md
 tier: n/a (design direction + docs only; no production code touched)
 qa_verdict: n/a
 supersedes: docs/08-agents_work/handoffs/2026-08-02-DESIGN-DIRECTION.md (chromatic/material half only)
@@ -53,10 +53,19 @@ One new behavioural rule: **composing is never solicited.** Edit mode is found, 
 
 RunPod public endpoints, no auth handshake: FLUX dev/schnell/Kontext, Seedream 4, Nano Banana Pro, Qwen. Verified end to end at **$0.003/image, ~15s**. **`curl` is denied**, so results cannot land on disk — this blocks Phase 0b asset generation and needs founder approval.
 
+## Founder verdict on the probe
+
+> *"It looks okay. It looks like you made it with coal and, like, the images are bad... really bad. But, like, the layouts and the colors and the fonts looks good. So this is a good start."*
+
+**Direction approved** — composition, palette, typography. **Materials rejected** — every physical object was faked in CSS. Fixed by generating real assets and compositing; first tranche committed at `ea4c667`.
+
+Also founder-set after the probe: Eva's sunflower is the **Nano Banana** version (CEO recommended Recraft; overruled). Ink confirmed at Adam `#2E2822` / Eva `#3B342B`.
+
 ## Open
 
-- **Founder direction call on the day panel** — blocks Phase 1 entirely.
-- `curl` permission for asset retrieval.
+- **`curl` is denied in the committed `.claude/settings.json`**, and the auto-mode classifier blocks network egress by any other route. Generated assets cannot reach disk without a config change. Recommended fix: drop the blanket deny, allow only the asset CDN host in `settings.local.json`.
+- Reference-image conditioning (founder-requested) is blocked on the same permission.
+- The ribbon-bow asset was rate-limited (429) and never submitted.
 - Ink: probe proposes Adam `#2E2822` (fine-liner, denser) / Eva `#3B342B` (ballpoint, lighter) — same warm near-black, differing in density not hue, so authorship stays in the letterform. CEO concurs; founder to confirm.
 - Patrick Hand could not be fetched (network denied); Adam's caption in the probe is a flagged stand-in. The agent correctly did not route around the denial.
 - Carried forward, unresolved: Eva has never been asked a question; the printed book; Echo has no home in the two-place structure; Spotify catalogues differ 15–40% IL/US.
