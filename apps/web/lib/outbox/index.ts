@@ -68,6 +68,9 @@ export type {
 export { drainOutbox, retryNow, retryAll, UPLOAD_CONCURRENCY } from "@/lib/outbox/uploader";
 export type { DrainOptions, DrainOutcome } from "@/lib/outbox/uploader";
 
+export { createSerialQueue } from "@/lib/outbox/serial";
+export type { SerialQueue, SerialTask } from "@/lib/outbox/serial";
+
 export { uploadDeferredOriginals } from "@/lib/outbox/originals";
 export type {
   OriginalTransport,
