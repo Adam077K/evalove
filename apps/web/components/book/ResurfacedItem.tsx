@@ -2,6 +2,8 @@
    fixture-resolved and under the `.photo` law: no filter, and the
    optimizer must never re-encode them. */
 
+import type { ReactNode } from "react";
+
 import type { MemberSlug } from "@/lib/types";
 import type { Return } from "@/lib/resurface";
 import { memberById } from "@/lib/fixtures/members";
@@ -9,7 +11,19 @@ import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Torn } from "@/components/materials";
 import Stamp from "@/components/item/Stamp";
 import { Polaroid } from "./Polaroid";
-import { chinHandClass, handClass, seededIn, seededPick } from "./compose";
+import { chinHandClass, handClass, mountFor, seededIn } from "./compose";
+
+/** Torn sheet or white stock border — the two paper backings. */
+function MountBacking({
+  mount,
+  children,
+}: {
+  mount: "torn" | "stock";
+  children: ReactNode;
+}) {
+  if (mount === "torn") return <Torn variant={8}>{children}</Torn>;
+  return <div className="bg-surface p-1.5">{children}</div>;
+}
 
 /**
  * ResurfacedItem — the page the ribbon held: the one item from the
@@ -49,8 +63,10 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
   const hasImage = photo.width > 0 && photo.height > 0;
   const caption = photo.caption;
 
-  /* Seeded composition — stable per item, varied across items. */
-  const mount = seededPick(photo.id, ["chin", "square", "torn"] as const);
+  /* Seeded composition — stable per item, varied across items. The
+     mount comes from the ONE shared pick (compose.mountFor): the same
+     photograph wears the same frame on every surface. */
+  const mount = mountFor(photo.id);
   const widthPct = Math.round(seededIn(`${photo.id}:w`, 74, 86));
   const leftward = seededIn(`${photo.id}:x`, 0, 1) < 0.5;
 
@@ -95,10 +111,15 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
           context="book-photo"
           elevation={4}
           className={leftward ? "-ml-2" : "-mr-2"}
-          style={{ width: `${widthPct}%`, ...(mount === "torn" ? {} : { boxShadow: "none" }) }}
+          style={{
+            width: `${widthPct}%`,
+            /* Polaroids cast along their keyed cut, not a rectangle;
+               torn and stock mounts genuinely are paper rectangles. */
+            ...(mount === "chin" || mount === "square" ? { boxShadow: "none" } : {}),
+          }}
         >
-          {mount === "torn" ? (
-            <Torn variant={8}>
+          {mount === "torn" || mount === "stock" ? (
+            <MountBacking mount={mount}>
               <img
                 src={photoSrc(photo)}
                 alt={alt}
@@ -107,7 +128,7 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
                 loading="lazy"
                 className="photo block h-auto max-h-[58dvh] w-full object-cover"
               />
-            </Torn>
+            </MountBacking>
           ) : (
             <Polaroid photo={photo} variant={mount} alt={alt}>
               {caption !== undefined && (

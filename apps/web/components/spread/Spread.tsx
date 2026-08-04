@@ -7,11 +7,13 @@ import { runningHeadDate } from "@/lib/time";
 import { postedAtLocal } from "@/lib/fixtures/photos";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Taped, Torn } from "@/components/materials";
+import type { TapePlacement, TapeVariant } from "@/components/materials";
 import { Polaroid } from "@/components/book/Polaroid";
 import {
   chinHandClass,
   handClass,
   isEva,
+  mountFor,
   seededIn,
   seededPick,
 } from "@/components/book/compose";
@@ -97,20 +99,24 @@ export function Spread({ day, evaPhoto, adamPhoto, dropIn }: SpreadProps) {
  * caption on its own paper; the others hand it back to the page.
  * ------------------------------------------------------------------ */
 
-type MountKind = "chin" | "square" | "torn" | "stock";
-
 function MountedFigure({
   photo,
   elevation,
   className,
   drop,
+  tape,
 }: {
   photo: Photo;
   elevation: 3 | 4;
   className?: string;
   drop?: boolean;
+  /** Washi across a corner — INSIDE the rotation, so the strip rides
+      the figure and actually crosses its edge. Wrapping Taped outside
+      Mounted left the strip bridging air beside the rotated frame
+      (first pair capture). */
+  tape?: { variant: TapeVariant; placement: TapePlacement; angle: number };
 }) {
-  const mount = seededPick<MountKind>(photo.id, ["chin", "square", "torn", "stock"]);
+  const mount = mountFor(photo.id);
   const alt = photo.caption ?? "A kept photograph";
   const dropClass = drop
     ? "[animation:photo-drop_var(--dur-3)_var(--ease-out)_both]"
@@ -127,6 +133,24 @@ function MountedFigure({
     />
   );
 
+  const mounted =
+    mount === "torn" ? (
+      <Torn variant={8}>{img}</Torn>
+    ) : mount === "stock" ? (
+      <div className="bg-surface p-1.5">{img}</div>
+    ) : (
+      <Polaroid photo={photo} variant={mount === "square" ? "square" : "chin"} alt={alt}>
+        {photo.caption !== undefined && (
+          <p
+            className={`${chinHandClass(photo.authorMemberId)} leading-tight text-ink`}
+            style={{ transform: `rotate(${seededIn(`${photo.id}:c`, -2, 1.2)}deg)` }}
+          >
+            {photo.caption}
+          </p>
+        )}
+      </Polaroid>
+    );
+
   return (
     <Mounted
       id={photo.id}
@@ -136,21 +160,12 @@ function MountedFigure({
       /* Polaroids cast along their keyed cut, not a rectangle. */
       style={mount === "chin" || mount === "square" ? { boxShadow: "none" } : undefined}
     >
-      {mount === "torn" ? (
-        <Torn variant={8}>{img}</Torn>
-      ) : mount === "stock" ? (
-        <div className="bg-surface p-1.5">{img}</div>
+      {tape ? (
+        <Taped variant={tape.variant} placement={tape.placement} angle={tape.angle}>
+          {mounted}
+        </Taped>
       ) : (
-        <Polaroid photo={photo} variant={mount} alt={alt}>
-          {photo.caption !== undefined && (
-            <p
-              className={`${chinHandClass(photo.authorMemberId)} leading-tight text-ink`}
-              style={{ transform: `rotate(${seededIn(`${photo.id}:c`, -2, 1.2)}deg)` }}
-            >
-              {photo.caption}
-            </p>
-          )}
-        </Polaroid>
+        mounted
       )}
     </Mounted>
   );
@@ -158,7 +173,7 @@ function MountedFigure({
 
 /** Does this photo's seeded mount put the caption on a chin? */
 function hasChin(photo: Photo): boolean {
-  return seededPick<MountKind>(photo.id, ["chin", "square", "torn", "stock"]) === "chin";
+  return mountFor(photo.id) === "chin";
 }
 
 /* ------------------------------------------------------------------ *
@@ -223,15 +238,21 @@ function PairComposition({
     const figure = isLead ? (
       <MountedFigure photo={photo} elevation={4} drop={drop} />
     ) : (
-      /* The follower fastens with washi across its inner top corner —
-         the strip lands on open paper, where tape can actually hold. */
-      <Taped
-        variant={tape}
-        placement={onLeft ? "top-right" : "top-left"}
-        angle={seededIn(`${photo.id}:t`, -5, 5)}
-      >
-        <MountedFigure photo={photo} elevation={3} drop={drop} />
-      </Taped>
+      /* The follower fastens with washi across its OUTER top corner —
+         the corner on open paper. The inner corner tucks under the
+         lead, and tape under the lead is a strip of washi doing
+         nothing (caught in the first pair capture, and by Wave 1
+         before that). */
+      <MountedFigure
+        photo={photo}
+        elevation={3}
+        drop={drop}
+        tape={{
+          variant: tape,
+          placement: onLeft ? "top-left" : "top-right",
+          angle: seededIn(`${photo.id}:t`, -5, 5),
+        }}
+      />
     );
 
     return (

@@ -103,21 +103,21 @@ export default function ReviewBookStatesPage() {
       </header>
 
       <div className="space-y-24">
-        <section aria-labelledby="s-cover-day-one" className="overflow-x-clip">
+        <section aria-labelledby="s-cover-day-one" className="overflow-x-clip pb-16">
           <Label id="s-cover-day-one">State 1a — the closed book, day one (thin)</Label>
           <div className="pr-6">
             <BookCover leafCount={0} begun="2026-08-02" />
           </div>
         </section>
 
-        <section aria-labelledby="s-cover-now" className="overflow-x-clip">
+        <section aria-labelledby="s-cover-now" className="overflow-x-clip pb-16">
           <Label id="s-cover-now">State 1b — the closed book, current archive</Label>
           <div className="pr-6">
             <BookCover leafCount={6} begun="2026-08-02" />
           </div>
         </section>
 
-        <section aria-labelledby="s-cover-year3" className="overflow-x-clip">
+        <section aria-labelledby="s-cover-year3" className="overflow-x-clip pb-16">
           <Label id="s-cover-year3">State 1c — the closed book, year three (thick)</Label>
           <div className="pr-6">
             <BookCover leafCount={200} begun="2026-08-02" />

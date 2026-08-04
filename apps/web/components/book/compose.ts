@@ -47,3 +47,24 @@ export function handClass(memberId: string, size: "caption" | "large" = "caption
 export function chinHandClass(memberId: string): string {
   return isEva(memberId) ? "font-eva text-[19px]" : "font-adam text-[15px]";
 }
+
+/**
+ * The mount an item lives in — ONE pick, every surface. An object IS
+ * its mount: the same photograph must appear in the same frame on the
+ * resurfaced opening, in a day spread, everywhere (the seeded-forever
+ * rule applied across surfaces, not just across sessions). The first
+ * pair capture caught d0730-adam wearing a chin frame on one surface
+ * and a square one on another because two lists diverged.
+ */
+export type MountKind = "chin" | "square" | "torn" | "stock";
+
+/**
+ * "square" (polaroid-frame-empty) is asset-gated out of the rotation:
+ * its scan carries a dark smear along the left border that survives
+ * any honest key — junk on the frame itself, not around it (verified
+ * against the raw at 1:1). The render path stays; return it to this
+ * list when a clean scan is generated. The Taped/Pinned pattern.
+ */
+export function mountFor(photoId: string): MountKind {
+  return seededPick<MountKind>(photoId, ["chin", "torn", "stock"]);
+}

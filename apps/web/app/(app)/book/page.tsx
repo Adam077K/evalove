@@ -72,10 +72,16 @@ function leafCount(): number {
  * the SUBSTRATE only: it sits above the stock and below every object
  * and every line of text, so nothing dims twice (§9.3) and no
  * photograph is ever touched. --lamp-dim drives it to zero by day.
+ *
+ * position: FIXED, not absolute — the lamp stands beside the chair,
+ * in the room, so its pool holds the lower-left of your VIEW as you
+ * scroll. Document-anchored it sat uselessly at the foot of a
+ * 2000px page (first night capture). Verify it in viewport shots;
+ * full-page captures lie about fixed elements.
  */
 const LAMPLIGHT: CSSProperties = {
   background:
-    "radial-gradient(110% 72% at 8% 100%, rgb(212 137 42 / calc(var(--lamp-dim, 0) * 0.17)), rgb(212 137 42 / 0) 62%)",
+    "radial-gradient(130% 88% at 6% 102%, rgb(212 137 42 / calc(var(--lamp-dim, 0) * 0.22)), rgb(212 137 42 / 0) 64%)",
 };
 
 export default function BookPage() {
@@ -96,7 +102,7 @@ export default function BookPage() {
         <div className="relative isolate">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -z-10"
+            className="pointer-events-none fixed inset-0 -z-10"
             style={LAMPLIGHT}
           />
 

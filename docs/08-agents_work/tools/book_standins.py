@@ -176,6 +176,53 @@ def build_ribbon() -> Image.Image:
     return rgba
 
 
+def rekey_polaroid(
+    source: str,
+    out_size: tuple[int, int],
+    window: tuple[float, float, float, float],
+) -> Image.Image:
+    """Re-key a polaroid frame from its raw scan, geometrically.
+
+    Shared recipe for both frames — see rekey_polaroid_chin below for
+    why value keying cannot work on these scans. `window` is the punch
+    rect as fractions (x0, x1, y0, y1), inset conservatively where the
+    scan is skewed: near-white outside the rect stays opaque and reads
+    as frame, which is harmless; frame edge lines inside the rect are
+    not near-white and survive.
+    """
+    import numpy as np
+    from scipy import ndimage
+
+    rgb = np.asarray(Image.open(ASSETS / source).convert("RGB")).astype(np.float32)
+    h, w, _ = rgb.shape
+    mn = rgb.min(axis=2)
+
+    outline = ndimage.binary_opening(mn < 244, iterations=2)
+    down = np.maximum.accumulate(outline, axis=0)
+    up = np.maximum.accumulate(outline[::-1, :], axis=0)[::-1, :]
+    right = np.maximum.accumulate(outline, axis=1)
+    left = np.maximum.accumulate(outline[:, ::-1], axis=1)[:, ::-1]
+    inside = down & up & right & left
+
+    ys, xs = np.mgrid[0:h, 0:w]
+    x0, x1, y0, y1 = window
+    zone = (ys > h * y0) & (ys < h * y1) & (xs > w * x0) & (xs < w * x1)
+    alpha = inside.astype(np.float32)
+    alpha[(mn >= 244) & inside & zone] = 0.0
+
+    row_run = outline.sum(axis=1)
+    col_run = outline.sum(axis=0)
+    long_rows = np.where(row_run > 0.5 * w)[0]
+    long_cols = np.where(col_run > 0.5 * h)[0]
+    alpha[: max(0, long_rows[0] - 4), :] = 0.0
+    alpha[long_rows[-1] + 4 :, :] = 0.0
+    alpha[:, : max(0, long_cols[0] - 4)] = 0.0
+    alpha[:, long_cols[-1] + 4 :] = 0.0
+
+    out = np.dstack([rgb, alpha[..., None] * 255]).astype(np.uint8)
+    return Image.fromarray(out, "RGBA").resize(out_size, Image.LANCZOS)
+
+
 def rekey_polaroid_chin() -> Image.Image:
     """Re-key polaroid-frame-chin from the raw scan, geometrically.
 
@@ -184,87 +231,28 @@ def rekey_polaroid_chin() -> Image.Image:
     244) — so no value threshold can separate frame paper from ground,
     and the border-connected flood ate the chin through any near-white
     bridge. The register bans decay, so the damage is a defect, not
-    patina.
-
-    Geometry succeeds where value cannot:
-      1. subject outline = every non-near-white pixel (the frame's
-         cream edges, shadows and texture form a closed contour)
-      2. fill the contour — frame INCLUDING window and chin
-      3. punch ONLY the enclosed near-white component whose centroid
-         sits in the upper 3/4: that is the window. The chin is the
-         enclosed white in the lower band and stays opaque.
-    Anti-aliasing comes from keying at scan resolution (1792×2304)
-    and resizing to the shipped 795×1024 — ~2.25× supersampling.
+    patina. Geometry (span fill + rect window punch + bbox clamp, in
+    rekey_polaroid above) succeeds where value cannot; anti-aliasing
+    comes from keying at scan resolution and resizing to the shipped
+    size (~2.25x supersampling).
     """
-    import numpy as np
-    from scipy import ndimage
+    return rekey_polaroid(
+        "polaroid-frame-chin.png", (795, 1024), (0.088, 0.912, 0.09, 0.752)
+    )
 
-    rgb = np.asarray(
-        Image.open(ASSETS / "polaroid-frame-chin.png").convert("RGB")
-    ).astype(np.float32)
-    h, w, _ = rgb.shape
-    mn = rgb.min(axis=2)
 
-    near_white = mn >= 244
-    outline = ~near_white
+def rekey_polaroid_empty() -> Image.Image:
+    """Re-key polaroid-frame-empty — same disease, same cure.
 
-    # SPAN FILL, not contour fill: the frame's bottom edge blows out
-    # to pure white in the scan, so its contour never closes and
-    # binary_fill_holes leaks (measured: the chin went 98.8%
-    # transparent). Span fill — inside = between the first and last
-    # outline pixel of both the column AND the row — tolerates any
-    # gap. Cost: the rounded corners square off by a few near-white
-    # pixels, invisible on the paper grounds polaroids sit on.
-    # Denoise before spanning: isolated dark specks in the scan's
-    # background stretch the spans to the canvas edge (measured: the
-    # corners came out 45% opaque). Opening removes sub-3px specks;
-    # the frame's edges are hundreds of pixels thick and survive.
-    outline = ndimage.binary_opening(outline, iterations=2)
-
-    down = np.maximum.accumulate(outline, axis=0)
-    up = np.maximum.accumulate(outline[::-1, :], axis=0)[::-1, :]
-    right = np.maximum.accumulate(outline, axis=1)
-    left = np.maximum.accumulate(outline[:, ::-1], axis=1)[:, ::-1]
-    inside = down & up & right & left
-
-    # Punch the window BY RECT, not by component: the thin dark line
-    # between window and chin is broken in the scan, so window and
-    # chin merge into one near-white component and any component-level
-    # rule takes the chin with the window (measured, twice). The
-    # window's geometry is known from the original key (x 9.6–90.6%,
-    # y 9.8–75.3%): punch near-white only inside that zone — the
-    # frame's edge lines within it are not near-white and survive.
-    _ = ndimage  # geometry replaced component analysis; keep import stable
-    ys, xs = np.mgrid[0:h, 0:w]
-    window_zone = (ys > h * 0.09) & (ys < h * 0.752) & (xs > w * 0.088) & (xs < w * 0.912)
-    alpha = inside.astype(np.float32)
-    # `mn >= 244` is INLINED here rather than reusing `near_white`.
-    # Observed in this environment (Python 3.14 user-site numpy): the
-    # bound `near_white` array evaluated to a DIFFERENT mask than the
-    # same expression recomputed in the same frame (1,055,189 vs
-    # 3,073,579 true pixels, same `mn`, printed side by side). Cause
-    # unidentified; the inline form measures correct, so it ships and
-    # the anomaly is recorded rather than fought further.
-    alpha[(mn >= 244) & inside & window_zone] = 0.0
-
-    # Clamp to the frame's true bbox: a comb of background stripes
-    # survived the spans above the top edge (visible against midnight
-    # in the proof). The frame's edges are the rows/cols where the
-    # outline runs long; nothing outside them is frame.
-    row_run = outline.sum(axis=1)
-    col_run = outline.sum(axis=0)
-    long_rows = np.where(row_run > 0.5 * w)[0]
-    long_cols = np.where(col_run > 0.5 * h)[0]
-    top, bottom = long_rows[0], long_rows[-1]
-    left_e, right_e = long_cols[0], long_cols[-1]
-    alpha[: max(0, top - 4), :] = 0.0
-    alpha[bottom + 4 :, :] = 0.0
-    alpha[:, : max(0, left_e - 4)] = 0.0
-    alpha[:, right_e + 4 :] = 0.0
-
-    out = np.dstack([rgb, alpha[..., None] * 255]).astype(np.uint8)
-    img = Image.fromarray(out, "RGBA")
-    return img.resize((795, 1024), Image.LANCZOS)
+    Its flood-keyed webp had a clean window but an eaten lower border
+    (obvious in the first pair-spread capture). The raw scan is skewed
+    ~2 deg, so the punch rect is inset ~1%: the skew wedges left opaque
+    at the window corners are frame-cream over the print and read as
+    the frame's own overlap.
+    """
+    return rekey_polaroid(
+        "polaroid-frame-empty.png", (900, 1024), (0.115, 0.90, 0.125, 0.73)
+    )
 
 
 def clean_ribbon() -> None:
@@ -284,6 +272,13 @@ def clean_ribbon() -> None:
     h, w, _ = a.shape
     a[:, : int(w * 0.40), 3] = 0
     a[:, int(w * 0.63) :, 3] = 0
+    # In-band junk at the tail: the shadow cloud also sits BEHIND the
+    # strip's cut end (a white patch in the first capture). The silk
+    # is dark sage everywhere — near-white pixels in the lower half
+    # are shadow remnant, never ribbon.
+    lower = a[int(h * 0.5) :, :, :]
+    mn = lower[:, :, :3].min(axis=2)
+    lower[:, :, 3] = np.where(mn >= 225, 0, lower[:, :, 3])
     Image.fromarray(a, "RGBA").save(path, quality=90)
 
 
@@ -308,6 +303,9 @@ def main() -> None:
 
     chin = rekey_polaroid_chin()
     chin.save(PUBLIC / "polaroid-frame-chin.webp", quality=92)
+
+    empty = rekey_polaroid_empty()
+    empty.save(PUBLIC / "polaroid-frame-empty.webp", quality=92)
 
     for name in ("book-fore-edge-standin.webp", "polaroid-frame-chin.webp"):
         p = PUBLIC / name
