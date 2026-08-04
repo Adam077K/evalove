@@ -1,7 +1,12 @@
 -- =============================================================================
--- Eva & Adam — migration 11 of 12 — the `media` storage bucket
+-- Eva & Adam — migration 11 of 11 — the `media` storage bucket
 --
---   !! NEVER APPLIED. This file has not been run against any database. !!
+--   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
+--   The founder confirmed from the Supabase dashboard on 2026-08-04 that
+--   tables exist in project oqiyzzpcsdlqqcjlpmix. Nobody has verified which
+--   of these migrations are applied, or whether the live schema matches this
+--   file exactly — that check has not been done. Verify against the live
+--   schema before running anything here.
 --   See ./README.md for what applying it means and who signs it off.
 --
 -- Down: ./down/20260802091000_storage_media_bucket.down.sql

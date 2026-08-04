@@ -319,3 +319,12 @@ fourth is why CEO caught it in the delta review.
 **Reversibility:** reversible
 **Owner:** qa-lead
 **Affects:** Wave 1 gate — dock/login/echo/today must be re-walked at night before those screens merge. prefers-reduced-motion needs OS-level screenshot evidence in Wave 1 acceptance.
+
+## 2026-08-04 — Correction: migration headers went stale and misled two agents into a false Irreversible-tier escalation
+
+**Context:** The 2026-08-02 entry above ("T2 authors the migration but does not apply it") was correct when written — no Supabase project existed and the migrations genuinely had never run. Every file in `apps/web/supabase/migrations/*.sql` still asserted `NEVER APPLIED` in the present tense two days later. On 2026-08-04 the founder confirmed directly from the Supabase dashboard that the tables exist in project `oqiyzzpcsdlqqcjlpmix`. Two agents independently read the stale header plus the 08-02 entry, concluded the schema had never been applied, and triggered a false Irreversible-tier escalation to the founder.
+**Fix:** Headers in all 11 migration files rewritten to state application status as unknown — not applied, not unapplied — and to require verification against the live schema before running anything. No SQL statement changed, no migration applied, no database touched.
+**Lesson:** A document describing the state of the world goes stale in a way a document describing intent does not. This file records intent and stays true; a migration header's `NEVER APPLIED` claim recorded a fact about the world at write time and rotted the moment the world changed underneath it. When two documents disagree about a fact, the tie-break is looking at the world, not weighing documents against each other.
+**Reversibility:** reversible (comment-only correction)
+**Owner:** technical-writer, routed by ceo
+**Affects:** every agent reading migration headers going forward — verify against the live schema, do not trust the comment alone.

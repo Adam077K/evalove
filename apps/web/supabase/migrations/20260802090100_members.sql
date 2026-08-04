@@ -1,7 +1,12 @@
 -- =============================================================================
--- Eva & Adam — migration 02 of 14 — members
+-- Eva & Adam — migration 02 of 11 — members
 --
---   !! NEVER APPLIED. This file has not been run against any database. !!
+--   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
+--   The founder confirmed from the Supabase dashboard on 2026-08-04 that
+--   tables exist in project oqiyzzpcsdlqqcjlpmix. Nobody has verified which
+--   of these migrations are applied, or whether the live schema matches this
+--   file exactly — that check has not been done. Verify against the live
+--   schema before running anything here.
 --
 -- Down: ./down/20260802090100_members.down.sql
 -- Source of truth: docs/03-system-design/LDR-APP-ARCHITECTURE.md §2.1
@@ -33,7 +38,7 @@ create table if not exists public.members (
 -- encodes a snapshot of it would eventually reject a zone that became valid.
 --
 -- photos.shared_day_tz and vault_items.shared_day_tz need no equivalent check.
--- The shared_day trigger (migration 10) evaluates `ts at time zone tz` on every
+-- The shared_day trigger (migration 08) evaluates `ts at time zone tz` on every
 -- write, and PostgreSQL raises on an unrecognised zone — so those two columns are
 -- validated against actual tzdata on every row, which is stronger than a regex.
 do $mig$

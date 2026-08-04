@@ -1,7 +1,12 @@
 -- =============================================================================
--- Eva & Adam — migration 04 of 14 — vault_items
+-- Eva & Adam — migration 04 of 11 — vault_items
 --
---   !! NEVER APPLIED. This file has not been run against any database. !!
+--   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
+--   The founder confirmed from the Supabase dashboard on 2026-08-04 that
+--   tables exist in project oqiyzzpcsdlqqcjlpmix. Nobody has verified which
+--   of these migrations are applied, or whether the live schema matches this
+--   file exactly — that check has not been done. Verify against the live
+--   schema before running anything here.
 --
 -- Down: ./down/20260802090300_vault_items.down.sql
 -- Source of truth: docs/03-system-design/LDR-APP-ARCHITECTURE.md §2.1, §5.5

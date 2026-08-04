@@ -1,7 +1,12 @@
 -- =============================================================================
 -- Eva & Adam — migration 09 of 11 — v_shared_days and v_days_together
 --
---   !! NEVER APPLIED. This file has not been run against any database. !!
+--   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
+--   The founder confirmed from the Supabase dashboard on 2026-08-04 that
+--   tables exist in project oqiyzzpcsdlqqcjlpmix. Nobody has verified which
+--   of these migrations are applied, or whether the live schema matches this
+--   file exactly — that check has not been done. Verify against the live
+--   schema before running anything here.
 --   See ./README.md for what applying it means and who signs it off.
 --
 -- Down: ./down/20260802090800_views_shared_days_and_days_together.down.sql

@@ -2,7 +2,12 @@
 -- Eva & Adam — migration 07 of 11 — activity_state, activity_log,
 --                                   auth_attempts, purge_audit, app_settings
 --
---   !! NEVER APPLIED. This file has not been run against any database. !!
+--   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
+--   The founder confirmed from the Supabase dashboard on 2026-08-04 that
+--   tables exist in project oqiyzzpcsdlqqcjlpmix. Nobody has verified which
+--   of these migrations are applied, or whether the live schema matches this
+--   file exactly — that check has not been done. Verify against the live
+--   schema before running anything here.
 --   See ./README.md for what applying it means and who signs it off.
 --
 -- Down: ./down/20260802090600_activity_auth_and_settings.down.sql
@@ -10,14 +15,17 @@
 -- Depends on: members (02)
 -- =============================================================================
 
--- NUMBERING NOTE. Migrations 01-06 carry a header reading "of 14", a count from
--- a superseded plan that split these five tables across three files and placed
--- the shared_day trigger at position 10. The delivered set is ELEVEN files, and
--- the shared_day trigger is migration 08. The comment in migration 02 that says
--- "the shared_day trigger (migration 10)" means migration 08. Those six headers
--- were left exactly as the earlier run wrote them rather than rewritten, because
--- editing files that are already in the sign-off pile to fix a cross-reference is
--- a worse trade than writing the correction down once, here and in ./README.md.
+-- NUMBERING NOTE (historical). Migrations 01-06 originally carried a header
+-- reading "of 14", a count from a superseded plan that split these five tables
+-- across three files and placed the shared_day trigger at position 10.
+-- Migration 02's comment "the shared_day trigger (migration 10)" was the same
+-- leftover. The earlier run left both as-is, reasoning that editing files
+-- already in the founder's sign-off pile to fix a cross-reference was a worse
+-- trade than documenting the correction once, here and in ./README.md.
+--
+-- Corrected 2026-08-04 (see ./README.md and .claude/memory/DECISIONS.md):
+-- every header now reads "of 11", and migration 02 now says "migration 08".
+-- This note stays as the record of why they once disagreed.
 
 -- WHAT IS IN THIS FILE. The five tables the LDR §2.1 block lists after
 -- date_turns. They share a migration because none of them is referenced by any

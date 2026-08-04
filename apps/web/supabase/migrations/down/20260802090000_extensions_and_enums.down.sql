@@ -1,7 +1,7 @@
 -- =============================================================================
--- DOWN for migration 01 of 14 — extensions and enum types
+-- DOWN for migration 01 of 11 — extensions and enum types
 --
--- Run the down migrations in REVERSE order (14 -> 01). These types are still in
+-- Run the down migrations in REVERSE order (11 -> 01). These types are still in
 -- use by photos and dates; dropping them before those tables are gone will raise
 -- a dependency error, which is the correct behaviour.
 --

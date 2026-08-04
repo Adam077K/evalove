@@ -1,7 +1,12 @@
 -- =============================================================================
--- Eva & Adam — migration 01 of 14 — extensions and enum types
+-- Eva & Adam — migration 01 of 11 — extensions and enum types
 --
---   !! NEVER APPLIED. This file has not been run against any database. !!
+--   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
+--   The founder confirmed from the Supabase dashboard on 2026-08-04 that
+--   tables exist in project oqiyzzpcsdlqqcjlpmix. Nobody has verified which
+--   of these migrations are applied, or whether the live schema matches this
+--   file exactly — that check has not been done. Verify against the live
+--   schema before running anything here.
 --   See ./README.md for what applying it means and who signs it off.
 --
 -- Down: ./down/20260802090000_extensions_and_enums.down.sql
