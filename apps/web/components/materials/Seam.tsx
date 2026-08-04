@@ -50,35 +50,39 @@ export function Seam({ height = 80, className }: SeamProps) {
       className={cn("relative w-full overflow-hidden", className)}
       style={{ height }}
     >
-      {/* Light falling off into the sky. Transparent at the top so the
-          canvas continues through the tear; --night-sky at the bottom so
-          the DECO section below picks up seamlessly. The stops are
-          rgb(13 18 32 / …) rather than `transparent` because a gradient
-          through transparent-black greys out its midpoint. */}
+      {/* Light falling off into the sky. Transparent through the fibre
+          zone so the canvas continues into the tear; --night-sky well
+          before the bottom edge so the handoff to the DECO section
+          below has margin. The stops are rgb(13 18 32 / …) rather than
+          `transparent` because a gradient through transparent-black
+          greys out its midpoint. */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0.35) 34%, rgb(13 18 32 / 0.82) 62%, var(--night-sky) 100%)",
+            "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0.28) 30%, rgb(13 18 32 / 0.75) 58%, var(--night-sky) 92%)",
         }}
       />
 
-      {/* The real fibre edge. The mask is compositing, not drawing: it
-          blends the sheet's crop line into the canvas above (top 12px)
-          and lets the hanging fibre dissolve into the dark instead of
-          ending on the crop's hard bottom edge. */}
+      {/* The real fibre edge. The derived band is three mirrored tiles
+          of the tear, so at full width it stands about 43px tall and
+          the whole tear — sheet, tear line, hanging fibre — lives and
+          fades inside the seam instead of being clipped by it. The
+          mask is compositing, not drawing: it blends the sheet's crop
+          line into the canvas above and lets the fibre dissolve into
+          the dark instead of ending on a crop edge. */}
       {/* eslint-disable-next-line @next/next/no-img-element -- keyed
           material composite; the image optimizer adds nothing to a
-          32 KB webp and must never re-encode its alpha. */}
+          small webp and must never re-encode its alpha. */}
       <img
         src={FIBRE_SRC}
         alt=""
         className="absolute inset-x-0 top-0 h-auto w-full"
         style={{
           WebkitMaskImage:
-            "linear-gradient(to bottom, transparent 0, #000 12px, #000 55%, rgb(0 0 0 / 0.35) 82%, transparent 100%)",
+            "linear-gradient(to bottom, transparent 0, #000 6px, #000 16px, rgb(0 0 0 / 0.5) 24px, transparent 38px)",
           maskImage:
-            "linear-gradient(to bottom, transparent 0, #000 12px, #000 55%, rgb(0 0 0 / 0.35) 82%, transparent 100%)",
+            "linear-gradient(to bottom, transparent 0, #000 6px, #000 16px, rgb(0 0 0 / 0.5) 24px, transparent 38px)",
         }}
       />
     </div>

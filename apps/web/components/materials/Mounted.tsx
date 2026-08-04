@@ -56,6 +56,19 @@ const SHADOW: Record<1 | 2 | 3 | 4, string> = {
 /** Z-index per elevation: heavier objects sit on top. */
 const Z_INDEX: Record<1 | 2 | 3 | 4, number> = { 1: 10, 2: 20, 3: 30, 4: 40 };
 
+/**
+ * Contact shadow for alpha-silhouette children (sticker context) —
+ * drop-shadow follows the cut edge where box-shadow would draw a
+ * rectangle. Single layer: filters cannot stack spreads the way
+ * box-shadow does, and a sticker is the lightest thing on the table.
+ */
+const DROP_SHADOW: Record<1 | 2 | 3 | 4, string> = {
+  1: "0 1px 3px rgba(41,32,24,0.22)",
+  2: "0 2px 6px rgba(41,32,24,0.26)",
+  3: "0 2px 8px rgba(41,32,24,0.3)",
+  4: "0 4px 12px rgba(41,32,24,0.34)",
+};
+
 export type MountedContext = "today-hero" | "book-photo" | "note" | "sticker" | "tape";
 
 export interface MountedProps {
@@ -146,16 +159,24 @@ export function Mounted({
     };
   }, [id, context]);
 
-  const shadow = SHADOW[elevation];
   const zIndex = Z_INDEX[elevation];
 
   /* Rotation is NOT in this style object. On the animated path,
      motion/react owns the `transform` property outright — a rotate
      passed via `style.transform` is silently discarded the moment
      y/scale animate. The static path adds it back below; the motion
-     path carries it through initial/animate instead. */
+     path carries it through initial/animate instead.
+
+     Stickers cast their shadow with drop-shadow, not box-shadow: a
+     sticker is an alpha silhouette, and a box-shadow behind it draws
+     a phantom rectangle on the paper (verified on the bench — the
+     sunflower grew a ghost card). drop-shadow follows the die-cut
+     edge. Everything else on the table genuinely is a rectangle of
+     paper, so the cheaper box-shadow stays correct there. */
   const baseStyle: CSSProperties = {
-    boxShadow: shadow,
+    ...(context === "sticker"
+      ? { filter: `drop-shadow(${DROP_SHADOW[elevation]})` }
+      : { boxShadow: SHADOW[elevation] }),
     zIndex,
     position: "relative",
     ...style,
