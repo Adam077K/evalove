@@ -49,9 +49,9 @@ export interface SeamProps {
   /**
    * Total height in pixels: the fibre strip at its natural aspect
    * (~37% of render width — ~145px at 393px) plus the falloff below
-   * it. The default gives the tear an ~80px falloff at phone width;
+   * it. The default gives the deep end ~110px of run at phone width;
    * anything under ~180 starts cropping the tear itself.
-   * @default 224
+   * @default 256
    */
   height?: number;
   className?: string;
@@ -64,16 +64,27 @@ const FIBRE: Record<SeamVariant, { src: string; width: number; height: number }>
 };
 
 /**
- * Falloff stops, as fractions of the container at the 393px baseline.
- * Measured from the coldpress alpha channel: solid paper ends at 83%
- * of the strip, fibre is gone by 95% — at height 224 that is ~54% and
- * ~62% of the container. Darkness starts under the lit fibre (58%),
- * not at the tear line.
+ * Falloff stops, as fractions of the container at the 393px baseline
+ * (height 256; the fibre tips land at ~54%, measured from the
+ * coldpress alpha channel). The shape is asymmetric on purpose, and
+ * it was chosen against pixels, not by argument — four geometries
+ * were screenshot in both modes:
+ *
+ *   - The ramp under the fibre is STEEP (0 → 0.6 over ~15px): by day
+ *     the canvas is bright, and every semi-transparent pixel below
+ *     the tear leaks page-light into the window — a slow start reads
+ *     as fog, not depth.
+ *   - The deep end is LONG (0.6 → night-sky over ~90px): by night
+ *     both sides are dark, and the slow deepening is what gives the
+ *     sky distance. A short deep end reads as a colour block.
+ *
+ * The fibre itself stays inside the transparent zone — light remains
+ * on the torn lip. Straight-to-dark read as a mask in every capture.
  */
 const FALLOFF =
-  "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 58%, rgb(13 18 32 / 0.45) 70%, rgb(13 18 32 / 0.85) 84%, var(--night-sky) 96%)";
+  "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 54%, rgb(13 18 32 / 0.6) 60%, rgb(13 18 32 / 0.8) 76%, var(--night-sky) 95%)";
 
-export function Seam({ variant = "coldpress", height = 224, className }: SeamProps) {
+export function Seam({ variant = "coldpress", height = 256, className }: SeamProps) {
   const fibre = FIBRE[variant];
 
   return (
