@@ -62,9 +62,49 @@ Every behavioural rule in the old law was derived from real research, not from t
 
 ## §1 — The Two Worlds
 
-The app exists in two states governed by each person's own local hour. Not a toggle. Not a preference. Eva at 11pm in New York sees the city. Adam at 11pm in Tel Aviv sees the city. At 10am they each see the table. The asymmetry is a feature, not a problem.
+> **REVISED 2026-08-04 (founder).** The clock no longer governs. What follows replaces the previous rule that deco was the night and scrapbook was the day.
+>
+> **Naming:** the two worlds are now **PAPER** and **DECO**. Wherever the rest of this document says *day world* read **PAPER**, and *night world* read **DECO** — including "NIGHT ONLY" constraints, which mean "DECO only". The palettes, stocks, type registers and material rules below are unchanged and still correct; only what *selects* them has changed.
 
-### DAY — The Table
+### The governing rule
+
+**Paper is what they made. Deco is the distance between them.**
+
+Both worlds can appear on the same screen, because a screen holds a thing they made *and* the distance it crossed. This is what makes the two styles mean something rather than decorate. A style that arrives because of the hour is a skin; a style that arrives because of what it is describing is a place.
+
+| Surface / element | World | Why |
+|---|---|---|
+| The photograph, at full strength | **PAPER** | It is the thing one of them left. |
+| The caption, in their hand | **PAPER** | It is theirs. |
+| The Book — cover, spreads, fore-edge | **PAPER** | The Book *is* an object they made. Always paper, no exceptions. |
+| The Pocket | **PAPER** | A locked envelope inside the Book. |
+| Echo / archive search | **PAPER** | It returns their actual words. It quotes; it never invents. Lives inside the Book. |
+| The stamp — both clocks, the other's state | **DECO** | This is the distance speaking, not either of them. |
+| The window sentence (*"Eva's in bed, Adam's awake"*) | **DECO** | Same. |
+| The Night City — the two skylines | **DECO** | It is literally the two cities and the space between. |
+| The Record | **DECO** | A shared present moment held across the gap. Jazz register, and it earns it. |
+| The one-card date suggestion | **DECO** | **The founder's instinct, and it is right.** A date is the plan to be together across the distance — so it is the distance, not the artefact. One card, gold on midnight, then out of the way. It was never going to be a browsable shelf; as a single deco card it is the best-dressed thirty seconds in the product. |
+| The Tape (cassette) | **BOTH** | The cassette is an object on the table — PAPER. *Playing* it dims the room and brings the city up — the transition itself is the effect. |
+
+### The seam, and why there is only one room
+
+The table stands **by a window**. The table is paper; the window is deco. Both are true at once, which is how a room actually is — you do not wait for nightfall to have a window.
+
+So the transition is not a theme change, it is **your gaze moving**. Scrolling down Today from the photograph to the stamp and the cities is lifting your eyes from the table to the window. It must be built as one continuous space with a light falloff across the seam, never as two stacked panels with a hard edge.
+
+This preserves D2 in a stronger form. The old ruling — *moving Today → Book is turning away from the window and looking down at your lap* — was already this idea; it just needed the clock to stop pretending it was in charge.
+
+**The seam is the hardest thing in this design and it is where the direction will be judged.** A bad seam looks like two half-designed apps stitched together, and both worlds cheapen at once.
+
+### What still selects a world
+
+1. **Section allocation** (the table above) — primary, and always wins.
+2. **Light / dark mode** — a global override either of them can set. Dark is the lamp off: PAPER sections stay paper, lit dimmer and warmer; DECO sections come forward. It never turns a paper section into a deco section.
+3. **The clock — opening default only.** Eva opening at 23:10 NYC lands in dark; Adam opening at 05:40 IL lands in light. Either can flip it, and the flip is remembered. The hour proposes; it no longer decides.
+
+**Unchanged and non-negotiable:** photographs are never dimmed, tinted or washed — including in DECO sections, on a dark ground, at full strength. The three legal mounts in §3 exist precisely so a photograph can sit in the deco world without a filter ever touching the `<img>`.
+
+### PAPER — The Table
 
 **Mental model:** a table by a window with the day's things on it. Papers overlap. A pushpin holds a note. A photograph leans against something.
 
@@ -100,9 +140,9 @@ These are generated assets (scanned and composited), not CSS values. The `--canv
 - Nothing glows. Nothing blurs behind a glass panel. Nothing has a gradient fill.
 - Warmth comes from the material, not from an applied effect. If you have to apply something to make it warm, you have made the mistake v6 made.
 
-### NIGHT — The Window
+### DECO — The Window
 
-**Mental model:** a window onto a deco city. Not a darkened version of the table. A different place entirely.
+**Mental model:** a window onto a deco city. Not a darkened version of the table. A different place entirely — but *in the same room*, visible at the same time, reached by looking up rather than by waiting.
 
 This is illustration, not chrome. Nobody has ever made a deco *button.* The night face of Today is a drawn scene. The UI elements that appear in it (the stamp, the cassette, the window sentence) are objects held in the illustration — physically grounded in the scene, not floating above it.
 

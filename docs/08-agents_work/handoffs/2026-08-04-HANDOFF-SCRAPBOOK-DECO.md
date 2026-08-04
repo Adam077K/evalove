@@ -44,8 +44,9 @@ It is not a place to be together — FaceTime already is that. This is where the
 
 | # | Decision |
 |---|---|
-| D1 | **Deco is the night, scrapbook is the day**, on each person's own local hour. They are 7h apart, so the app is *never the same on both phones at once*. That asymmetry is the signature. |
-| D2 | **The room changes, the object doesn't.** Today has two faces. The Book is always paper — at night, an amber-lit reading room. Moving Today → Book at night is *turning away from the window and looking down at your lap*: one room, two directions of gaze. |
+| D1 | **REVISED — the clock does not govern.** ~~Deco is the night, scrapbook is the day.~~ The rule is now **paper is what they made; deco is the distance between them.** Both worlds can share one screen. Allocation table in the law §1 — read it before you build anything. The photograph, the caption, the Book, the Pocket and Echo are **PAPER**. The stamp, the window sentence, the two cities, the Record and the one-card date suggestion are **DECO**. |
+| D1b | **The clock proposes, it does not decide.** Her 23:10 opens dark, his 05:40 opens light; either can flip it and the flip is remembered. Light/dark is a global override that dims paper — it never converts a paper section into a deco one. |
+| D2 | **One room, two directions of gaze.** The table stands by a window: the table is paper, the window is deco, both true at once. Scrolling Today from the photograph down to the stamp and the cities is *lifting your eyes from the table to the window* — one continuous space with a light falloff, never two stacked panels with a hard edge. **The seam is the hardest thing in this design and where the direction gets judged.** The Book is always paper. |
 | D3 | **Auto-composed by default, hand-editable on demand.** Deterministic, seeded from the item's **stable database ID — never its array index**. Never re-rolls. |
 | D4 | **Book = pages you turn; inside a page, total freedom.** No grid, no slots, no his-side/her-side. |
 | D5 | **No ownership of a page.** Either may compose any page. The photograph records who took it; the page records that they made it. |
@@ -163,7 +164,7 @@ Verify at **393×852, both modes**. Full-page captures lie about `position: fixe
 
 1. **Eva has never been asked a single question** in this project's entire history. Every persona is Adam's account of what she feels. Five are drafted at `research/2026-08-03-EVA-FIVE-QUESTIONS.md`. An hour with a pen would also yield her real handwriting as a font — the one design element that literally cannot be copied.
 2. **The printed book** was not selected but is the only feature that survives the company dying, and the Couple/Pair shutdown fear runs under all the research.
-3. **Echo** (the AI margin) is built, orphaned, and has no home in the two-place structure.
+3. **Echo** (the AI margin) — *partly resolved.* Product Vision V2 §2.4 already narrowed it: the partner simulacrum is cut, a strictly-quoting search over the archive survives, and it lives inside The Book rather than as a tab. D1's allocation makes it **PAPER**, since it returns their actual words. What is still missing is a *design* — nobody has drawn what "search the archive" looks like as a paper object. Suggested register, not law: a slip of onion-skin laid into the Book, not a search field.
 4. **Spotify catalogues differ 15–40%** IL↔US. Some records won't cross. Needs a graceful answer before The Record ships.
 5. **Patrick Hand is not in the probe** — Adam's caption is a flagged stand-in (Homemade Apple). One `@font-face` swap.
 
