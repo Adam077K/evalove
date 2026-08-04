@@ -1,0 +1,127 @@
+import { cn } from "@/lib/utils";
+
+/**
+ * THE SIGNATURE COMPONENT.
+ *
+ * The paper world does not end at a border — it tears, and through the
+ * tear you see the night between the two cities. The Seam is the room's
+ * one window edge: above it, the table (PAPER — what they made); below
+ * it, the distance (DECO — the sky, the skylines, the stamp).
+ *
+ * It is NOT a divider. If it reads as a section break, it has failed.
+ *
+ * PLACE, NOT TIME. The Seam renders in both light and dark mode and
+ * takes no mode check — revised §1 (2026-08-04): the clock stopped
+ * governing. Do not re-introduce a `[data-mode]` gate here; the
+ * --night-* tokens this component depends on are :root constants
+ * precisely so a Seam at noon still falls into the same sky.
+ *
+ * MATERIAL. The fibre edge is a generated horizontal tear
+ * (seam-tear-*.webp), purpose-made for this component: its top row is
+ * 100% opaque so it butts flush against the paper above with no join,
+ * its tear meanders with real geometry (std ~17px), and everything
+ * below the fibre is true alpha. It composites as a plain <img> with
+ * no masks — the feathering is in the material. Never simulate this
+ * edge with box-shadow, clip-path or an SVG filter, and never crop a
+ * band off torn-edge-coldpress.webp for it: that asset's tear runs
+ * vertically and any horizontal crop of it is a straight line wearing
+ * texture (that failure shipped twice on this branch already).
+ *
+ * LIGHT. The falloff gradient sits BEHIND the fibre and begins just
+ * below the tear line, not at it — a torn edge with light still on
+ * its fibre reads as a real object; one that goes straight to black
+ * reads as a mask. It lands on var(--night-sky) before the bottom
+ * edge, and the DECO section below must open on that exact colour —
+ * the handoff is invisible by construction.
+ */
+
+export type SeamVariant = "coldpress" | "bone";
+
+export interface SeamProps {
+  /**
+   * Which torn sheet ends the paper world. 'coldpress' is the soft
+   * deckle with cotton fibres (default — it reads as a sheet ending);
+   * 'bone' is the rougher hand-ripped tear with laid lines. The
+   * founder picks on sight; swapping is this one word.
+   * @default "coldpress"
+   */
+  variant?: SeamVariant;
+  /**
+   * Total height in pixels: the fibre strip at its natural aspect
+   * (~37% of render width — ~145px at 393px) plus the falloff below
+   * it. The default gives the deep end ~110px of run at phone width;
+   * anything under ~180 starts cropping the tear itself.
+   * @default 256
+   */
+  height?: number;
+  className?: string;
+}
+
+/**
+ * Natural dimensions ride along so the browser derives the aspect.
+ * The coldpress strip is the -tostock derivative: its sheet tone is
+ * matched to paper-coldpress-stock's measured mean (mechanical
+ * per-channel gain ×0.965/0.964/0.976), so the sheet tearing at the
+ * bottom of a coldpress <Paper> is the same paper to the eye. A
+ * bone-graded sibling (seam-tear-coldpress-graded) pairs with the
+ * bone-laid stock; the ungraded original stays in the library.
+ */
+const FIBRE: Record<SeamVariant, { src: string; width: number; height: number }> = {
+  coldpress: { src: "/materials/seam-tear-coldpress-tostock.webp", width: 1344, height: 497 },
+  bone: { src: "/materials/seam-tear-bone.webp", width: 1344, height: 507 },
+};
+
+/**
+ * Falloff stops, as fractions of the container at the 393px baseline
+ * (height 256; the fibre tips land at ~54%, measured from the
+ * coldpress alpha channel). The shape is asymmetric on purpose, and
+ * it was chosen against pixels, not by argument — four geometries
+ * were screenshot in both modes:
+ *
+ *   - The ramp under the fibre is STEEP (0 → 0.6 over ~15px): by day
+ *     the canvas is bright, and every semi-transparent pixel below
+ *     the tear leaks page-light into the window — a slow start reads
+ *     as fog, not depth.
+ *   - The deep end is LONG (0.6 → night-sky over ~90px): by night
+ *     both sides are dark, and the slow deepening is what gives the
+ *     sky distance. A short deep end reads as a colour block.
+ *
+ * The fibre itself stays inside the transparent zone — light remains
+ * on the torn lip. Straight-to-dark read as a mask in every capture.
+ */
+const FALLOFF =
+  "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 47%, rgb(13 18 32 / 0.55) 55%, rgb(13 18 32 / 0.8) 72%, var(--night-sky) 93%)";
+
+export function Seam({ variant = "coldpress", height = 256, className }: SeamProps) {
+  const fibre = FIBRE[variant];
+
+  return (
+    <div
+      aria-hidden="true"
+      className={cn("relative w-full overflow-hidden", className)}
+      style={{ height }}
+    >
+      {/* Light dying into the sky — behind and below the fibre, never
+          on top of it. The stops are rgb(13 18 32 / …) rather than
+          `transparent` because a gradient through transparent-black
+          greys out its midpoint. */}
+      <div className="absolute inset-0" style={{ background: FALLOFF }} />
+
+      {/* The torn sheet itself, flush against the paper above. It
+          carries .under-lamp so at night it dims with the substrate
+          it continues — same asset, same curve, so the join stays
+          invisible in the dark too. The falloff behind it is the
+          outside and never dims. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- keyed
+          material composite; the image optimizer adds nothing to a
+          small webp and must never re-encode its alpha. */}
+      <img
+        src={fibre.src}
+        alt=""
+        width={fibre.width}
+        height={fibre.height}
+        className="under-lamp absolute inset-x-0 top-0 h-auto w-full"
+      />
+    </div>
+  );
+}

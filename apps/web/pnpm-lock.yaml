@@ -14,6 +14,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@fontsource-variable/caveat':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource-variable/fraunces':
         specifier: ^5.3.0
         version: 5.3.0
@@ -21,6 +24,12 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource-variable/outfit':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/patrick-hand':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/poiret-one':
         specifier: ^5.3.0
         version: 5.3.0
       '@radix-ui/react-dialog':
@@ -546,6 +555,9 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
+  '@fontsource-variable/caveat@5.3.0':
+    resolution: {integrity: sha512-Q3mjghoYIlXgwqBPJKZ4q6f3zu921Gq7UU76r9Z+NAmhapHfX130GIFpOCYf8vt2SIcgCi9RHDT7anfJKg/kiA==}
+
   '@fontsource-variable/fraunces@5.3.0':
     resolution: {integrity: sha512-9BYGySn4AHEJdgp9Z28tQ3X+laJMEOITXkQarZXeloWQZDq5oOvXJ3kDA8c7MGIfpogIaZfjrQBqmda8POOCKA==}
 
@@ -554,6 +566,12 @@ packages:
 
   '@fontsource-variable/outfit@5.3.0':
     resolution: {integrity: sha512-fPb5XnYK0k7SbR++HEmm4+ZqDszmLKQ+sPRUr8oQ/KNC0vy6r6hazJFe8iYozv4cqlHbvJ/JECkJWrfDodUMVQ==}
+
+  '@fontsource/patrick-hand@5.3.0':
+    resolution: {integrity: sha512-V8C38IlIFfdWg0Xtri3F7sLCVpm069rUwn6w4n+oyn38gt7H4arOJmuReg3tAw1Q6jHqZp89wTnAAJagq4Atxw==}
+
+  '@fontsource/poiret-one@5.3.0':
+    resolution: {integrity: sha512-nCAUIB6f5805lUG7t0ES0W0YhJHcKa2EPlafb7/0AU1W/V4tQvmoSbwNNUnt6nVIagvyStxLG5nzqMptQ3FCgQ==}
 
   '@hono/node-server@2.0.12':
     resolution: {integrity: sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg==}
@@ -4431,11 +4449,17 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
+  '@fontsource-variable/caveat@5.3.0': {}
+
   '@fontsource-variable/fraunces@5.3.0': {}
 
   '@fontsource-variable/literata@5.3.0': {}
 
   '@fontsource-variable/outfit@5.3.0': {}
+
+  '@fontsource/patrick-hand@5.3.0': {}
+
+  '@fontsource/poiret-one@5.3.0': {}
 
   '@hono/node-server@2.0.12(hono@4.12.34)':
     dependencies:
