@@ -14,10 +14,12 @@ import {
   createIndexedDbRecordStore,
   createOpfsBlobStore,
   createOutboxStore,
+  createSerialQueue,
   drainOutbox,
   retryNow,
   type OutboxRecord,
   type OutboxStore,
+  type SerialQueue,
   type UploadTransport,
 } from "@/lib/outbox";
 
@@ -78,10 +80,31 @@ export function QuickSend() {
     setRecords(await getClient().store.list());
   };
 
-  const drain = async () => {
-    const { store, transport, codec } = getClient();
-    await drainOutbox({ store, transport, codec, onChange: () => void refresh() });
-    await refresh();
+  /*
+   * `drain()` is fired from three independent places below — the mount
+   * effect, `send()` and `retry()` — and none of them wait for another to
+   * finish. Two overlapping runs of `drainOutbox` both read the same pending
+   * item, each takes its OWN upload ticket, and each PUTs the bytes to a
+   * different storage path under a different `photoId`. The commit
+   * endpoint's idempotency on `clientUuid` means only one of the two rows is
+   * ever written — the other call's uploaded bytes are then an orphaned
+   * object nothing points at and nothing is allowed to delete.
+   *
+   * `drainQueue` fixes this by construction rather than by coordinating the
+   * two runs: every call to `drain()` is enqueued behind whatever the
+   * previous call was doing, so a burst of calls becomes a strict sequence.
+   * By the time a later call's own `drainOutbox` reads `store.pending()`,
+   * the earlier call has already committed the item, and there is nothing
+   * left for it to do. See `lib/outbox/serial.ts`.
+   */
+  const drainQueue = useRef<SerialQueue | null>(null);
+  const drain = (): Promise<void> => {
+    drainQueue.current ??= createSerialQueue();
+    return drainQueue.current(async () => {
+      const { store, transport, codec } = getClient();
+      await drainOutbox({ store, transport, codec, onChange: () => void refresh() });
+      await refresh();
+    });
   };
 
   /* On open: pick up wherever the queue left off. iOS has no Background
