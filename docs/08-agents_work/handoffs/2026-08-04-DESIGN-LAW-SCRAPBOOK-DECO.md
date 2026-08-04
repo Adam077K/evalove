@@ -155,7 +155,9 @@ This means the two night surfaces are one continuous place rather than two separ
 
 ## §2 — Type
 
-Four typefaces. No others. Any agent who reaches for a fifth is out of scope.
+Five typefaces. No others. Any agent who reaches for a sixth is out of scope.
+
+The count was four in the first version of this document — correct for the day world, wrong for the night world. The visual probe agent (working independently, without contact with this law) reached for a deco display face on its own. That independent convergence is the evidence. The day world's type is *handwriting on paper*; four faces is right there. The night world is *illustration*, and deco illustration is inseparable from deco lettering. Outfit set on a night city will read as a web app with a skyline behind it — exactly the "well-made and anonymous" failure the §6 logo test exists to catch. So: five faces, scoped hard.
 
 ### The two hands
 
@@ -194,20 +196,51 @@ Fraunces italic has a warm, slightly literary quality that is distinct from both
 
 Outfit is the functional voice. Used for: timestamps, duration displays, tab labels, anything that is a data value rather than a human-authored string.
 
-Outfit is NOT a display face. It is never large. It never carries emotional content.
+Outfit is NOT a display face. It is never large. It never carries emotional content. It does data at night too — the clock, the window sentence's time values, any label.
+
+### Night world titling: Poiret One — NIGHT ONLY
+
+**Poiret One** (Google Fonts, SIL Open Font License)
+
+Justification: Both Limelight and Poiret One are SIL OFL and have credible geometric deco construction from the 1920s–30s register. They are visually distinguishable: Limelight is high-drama, high-contrast, very thick-thin — the Broadway marquee. Poiret One is lighter, more uniform stroke width, the refined poster. The night world is primarily illustration, and type in it should feel part of the scene, not labeled on top of it. Limelight's high contrast commands attention and competes with the illustration; Poiret One cooperates with it. At the display sizes where this face appears (32px minimum — see scope below), Poiret One reads unmistakably as art deco without dominating the visual field. That cooperation is the criterion.
+
+Named after Paul Poiret, whose geometric fashion sensibility is precisely the register the SALON poster and the couple-at-window references inhabit.
+
+**Scope — this face has a leash. Read it.**
+
+Poiret One may set:
+- City indicators within the night illustration context ("New York," "Tel Aviv," a street sign in the foreground layer)
+- The app's own wordmark *when displayed in a night-world context only*
+- Any single-line night-world titling at 32px or larger
+
+Poiret One must never set:
+- Any caption
+- The stamp — ever. The stamp is typeset in Outfit.
+- Any clock value or time display
+- Any navigation label
+- Any body text or note
+- Anything in the day world — even a heading
+- Fraunces italic's territory (the window sentence, editorial voice, book colophon)
+- Outfit's territory (data values, labels)
+
+If Poiret One appears at less than 32px, it is being misused. Its thin strokes become illegible below that threshold.
+
+The leash exists because a deco face with no constraint becomes a costume. It is one accent in a large composition; if it leaks into functional text or daytime surfaces, the design collapses into theming.
 
 ### Register table
 
-| Content type | Face | Reason |
+| Content type | Face | World |
 |---|---|---|
-| Eva's captions, notes | Caveat | She wrote it |
-| Adam's captions, notes | Patrick Hand | He wrote it |
-| The stamp | **Outfit, typeset** | The app speaks, not a person. The stamp is never handwritten. |
-| The window sentence | Fraunces italic | The app's editorial voice |
-| The book's colophon | Fraunces italic | The app's voice |
-| Clock values, durations | Outfit | Data |
-| Navigation labels | Outfit | Functional |
-| Book page headings | Fraunces italic | The book has its own voice |
+| Eva's captions, notes | Caveat | Day (and Book) |
+| Adam's captions, notes | Patrick Hand | Day (and Book) |
+| The stamp | **Outfit** | Both — the stamp is never handwritten |
+| The window sentence | Fraunces italic | Both |
+| The book's colophon | Fraunces italic | Both |
+| Clock values, durations | Outfit | Both |
+| Navigation labels | Outfit | Both |
+| Book page headings | Fraunces italic | Both |
+| City indicators in illustration | **Poiret One** | Night only, ≥32px only |
+| App wordmark in night context | **Poiret One** | Night only |
 
 **The stamp rule in full:** The stamp reads *"left while Eva was asleep · Adam 6:20 am · Eva 11:20 pm"*. It is typeset in Outfit at small scale (10–11px equivalent). It is **never** in Caveat or Patrick Hand. The reason: the stamp is the app observing what happened. It is a fact, not a feeling. Handwriting the stamp would imply one of them wrote it. They didn't. The app wrote it.
 
@@ -561,7 +594,8 @@ This section is honest about scope. An agent who reaches into these areas withou
 | Eva's hand | Caveat (Google Fonts, SIL OFL) |
 | Adam's hand | Patrick Hand (Google Fonts, SIL OFL) |
 | App voice | Fraunces italic |
-| Data/labels | Outfit |
+| Data/labels | Outfit (both worlds) |
+| Night world titling | Poiret One (Google Fonts, SIL OFL) — night only, ≥32px only |
 | Today hero photograph rotation | −5°…+5° (seeded, deterministic) |
 | Book photograph rotation | −8°…+8° (seeded, deterministic) |
 | Note rotation | −5°…+5° |
