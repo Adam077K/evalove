@@ -125,7 +125,7 @@ export function SealedCard() {
                 on purpose — who, roughly when, what kind. Never a
                 preview. */}
             <Mounted id={item.id} context="note" elevation={3}>
-              <Taped variant="kraft" placement="top-left" angle={-3}>
+              <Taped variant="washi-terracotta" placement="top-left" angle={-3}>
                 <div className="bg-surface px-5 pb-4 pt-5">
                   <p className="type-body text-ink">
                     {from.displayName} left {LEFT_KIND_LABEL[item.kind]}

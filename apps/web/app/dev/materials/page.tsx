@@ -73,8 +73,8 @@ export default function MaterialsBench() {
         {/* Taped object — corner strips at 45°, translucency check
             over the busiest asset in the drawer. */}
         <Mounted id="bench-ticket-taped" context="book-photo" elevation={4} className="mt-16 ml-14 w-[220px]">
-          <Taped variant="houndstooth" placement="top-left" angle={-3}>
-            <Taped variant="kraft" placement="top-right" angle={4}>
+          <Taped variant="washi-ochre-dots" placement="top-left" angle={-3}>
+            <Taped variant="washi-terracotta" placement="top-right" angle={4}>
               <img
                 src="/materials/sticker-ticket-cinema.webp"
                 alt=""

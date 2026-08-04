@@ -357,12 +357,12 @@ function PairSpread({
       className={`ml-4 w-[58%] ${evaLeads ? overlap : ""}`}
     >
       <Taped
-        variant="houndstooth"
+        variant="washi-ochre-dots"
         placement="top-left"
         angle={seededAngle(follower.id, -5, 5)}
       >
         <Taped
-          variant="kraft"
+          variant="washi-terracotta"
           placement="right"
           angle={seededAngle(follower.id + ":r", -5, 5)}
         >
