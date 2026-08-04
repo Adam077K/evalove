@@ -650,3 +650,63 @@ This section is honest about scope. An agent who reaches into these areas withou
 | Washi patterns | 12 |
 | Mount variants | 3 polaroid + 4 corners + 8 torn + 1 deckle |
 | Sunflower | Eva's motif, always first |
+
+---
+
+## §9 — What Wave 0 proved (added 2026-08-04, after the build)
+
+Everything below was *measured*, not asserted, while building the material foundation. It is law now because it was earned, and because rediscovering any of it costs hours.
+
+### 9.1 The window is dramatic because the room cannot be
+
+**Keeping dark ink on paper (D1) puts a WCAG floor under how far paper may dim.** Measured at the accepted night values: ink ~8.5:1 on the night surface, `--mute` held at 4.6:1, `--danger` re-darkened to 4.5:1. Dim past this and text fails *before* atmosphere is gained.
+
+The consequence is the important half: **the true dark of night belongs exclusively to the DECO window.** This is not a compromise forced by accessibility — it is a structural proof that the D1 reversal was right. Paper cannot go dark, so the drama has to live in the window, which is exactly where the law already put it. Do not try to buy night-feeling by dimming the paper further; you will lose the text and gain nothing.
+
+### 9.2 Paper dims, it never inverts
+
+Night dims the PAPER scale (~×0.73, warm) with every relationship preserved: `--surface` stays lighter than `--canvas`, the well stays recessed, `--ink` stays dark ink on lit paper. The old night block that *inverted* the scale is deleted — ~140 lines of it, all inversion-management, which is the tell that the superseded law was fighting itself.
+
+**Testable gate: at night a note's mean luminance must be HIGHER than the table's.** Measured on the accepted build: notes 182, table 173. If a note is darker than the surface it sits on, the model has re-inverted.
+
+### 9.3 The lamp: one dimming amount for the whole table
+
+One light source dims the substrate and everything on it — tape, pins, torn mounts, seam strip, stickers — as a single surface under a lower lamp. **Photographs never carry it** (`.photo` stays `filter: none`), per the standing behavioural rule.
+
+Implement as a per-material filter driven off one token, **not** a blanket overlay div: an overlay also multiplies token-styled text and surfaces that already dim through the token change, so they dim twice and night text dies. Same physical model, one amount, applied once. Accepted value `0.27` against dimmed tokens — note that an earlier `0.78` was correct against the *inverted* baseline; when the baseline changed the number had to be re-derived from the principle rather than preserved.
+
+### 9.4 Substrates are generated as stocks, never derived from edges
+
+Mirror-stacking a narrow strip to fabricate a substrate turns its diagonal grain into **herringbone weave**. Substrates must be generated as full-bleed stocks.
+
+The converse also holds and is not a contradiction: mirroring a *square* stock with non-directional tooth is fine, and is how a non-seamless vertical wrap gets tiled (raw edge diff 10.6 vs 6.6 internal). Direction of grain decides, not the technique.
+
+### 9.5 Two papers never reconcile by scaling — match character, not density
+
+The join between substrate and seam strip is governed by **texture character**, measured as anisotropy — which is what "laid lines" means numerically:
+
+| | rgb | texture sd | anisotropy |
+|---|---|---|---|
+| cold-press stock (adopted) | 221,212,193 | 10.45 | **1.58** |
+| `seam-tear-coldpress` (strip) | 229,220,198 | 9.10 | 1.43 |
+| `paper-bone-laid` (rejected) | 235,227,212 | 7.31 | 1.82 |
+
+Scaling matches *density* and cannot fix *character*. Bone-laid was tuned to 134% and stalled at a 1.52 delta; the cold-press stock at 58% reached 1.02, and the join became invisible. **If a join will not close, change the paper, not the percentage.**
+
+### 9.6 Day and night disagree about a light falloff
+
+A slow, long falloff reads correctly at night and as **fog** by day, because the difference is what sits *behind* the transparency — over a bright canvas a long semi-transparent run leaks page-light under the torn edge. The accepted geometry is asymmetric: steep under the fibre (0→0.6 over ~15px), then a long deep end (~90px into `--night-sky`). Light stays on the torn lip; a lip that goes straight to dark reads as a mask rather than an object.
+
+### 9.7 Keying: luminance is wrong for pale objects
+
+`α = 1 − L/255` is correct **only** for the black-on-white city silhouettes. Applied to a white daisy, baby's breath, a cream ticket or a white polaroid frame it deletes the subject — luminance cannot distinguish a white petal from white paper. Use a **border-connected flood fill** so only background reaching the frame edge is removed, plus a soft edge and an unpremultiply so anti-aliased pixels carry no white fringe on a dark ground. Tooling: `docs/08-agents_work/tools/key_assets.py`, verified with `proof_sheet.py`, which composites every asset over both grounds at once — a halo is invisible on paper and obvious on midnight.
+
+### 9.8 Acceptance is measurable
+
+The seam was accepted on numbers, not opinion, and the same gates apply to any later boundary:
+
+- Luminance step across a join: **< 15** (accepted build: 0.2 day, 0.1 night)
+- Texture sd delta across a join: **≈ 1.0** (accepted: 1.02 day, 0.75 night)
+- A note at night is lighter than its table (accepted: 182 vs 173)
+
+Do not chase a proxy past the point the visual gate has passed. The day delta sat at 1.52 with the join already invisible to two independent observers and to an automated probe; that was worth one ten-minute A/B, not a fourth iteration.
