@@ -3,7 +3,7 @@
    their alpha, and none of these are content photographs. */
 import type { Metadata } from "next";
 
-import { Mounted, Pinned, Seam, Taped, Torn } from "@/components/materials";
+import { Mounted, Paper, Pinned, Seam, Taped, Torn } from "@/components/materials";
 
 /**
  * Materials bench — Wave 0 verification surface, not a product screen.
@@ -26,8 +26,10 @@ export const metadata: Metadata = {
 export default function MaterialsBench() {
   return (
     <main className="mx-auto max-w-[430px]">
-      {/* ---------------- PAPER — the table ---------------- */}
-      <section className="px-5 pb-14 pt-8">
+      {/* ---------------- PAPER — the table ----------------
+          A real stock as substrate (same coldpress as the Seam, so
+          the join cannot exist), dimming with the lamp at night. */}
+      <Paper stock="bone-laid" className="px-5 pb-14 pt-8">
         <p className="type-micro text-mute">materials bench · wave 0</p>
 
         {/* The two hands. Caveat flows; Patrick Hand stands. */}
@@ -69,7 +71,7 @@ export default function MaterialsBench() {
               <img
                 src="/materials/sticker-ticket-cinema.webp"
                 alt=""
-                className="block w-full"
+                className="under-lamp block w-full"
               />
             </Taped>
           </Taped>
@@ -78,13 +80,13 @@ export default function MaterialsBench() {
         {/* The sticker mass. Sunflower first — Eva's motif, always. */}
         <div className="mt-14 flex items-end gap-6">
           <Mounted id="bench-sticker-sunflower" context="sticker" elevation={1}>
-            <img src="/materials/sticker-sunflower-pressed-v3.webp" alt="" className="w-[120px]" />
+            <img src="/materials/sticker-sunflower-pressed-v3.webp" alt="" className="under-lamp w-[120px]" />
           </Mounted>
           <Mounted id="bench-sticker-rose" context="sticker" elevation={1}>
-            <img src="/materials/sticker-rose-red-pressed.webp" alt="" className="w-[84px]" />
+            <img src="/materials/sticker-rose-red-pressed.webp" alt="" className="under-lamp w-[84px]" />
           </Mounted>
           <Mounted id="bench-sticker-star" context="sticker" elevation={1}>
-            <img src="/materials/sticker-star-gold-foil.webp" alt="" className="w-[56px]" />
+            <img src="/materials/sticker-star-gold-foil.webp" alt="" className="under-lamp w-[56px]" />
           </Mounted>
         </div>
 
@@ -100,7 +102,7 @@ export default function MaterialsBench() {
             <p className="font-eva text-[19px] text-ink">just placed</p>
           </div>
         </Mounted>
-      </section>
+      </Paper>
 
       {/* ---------------- the Seam — no mode check, ever ---------------- */}
       <Seam />

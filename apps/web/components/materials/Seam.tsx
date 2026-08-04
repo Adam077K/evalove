@@ -57,9 +57,16 @@ export interface SeamProps {
   className?: string;
 }
 
-/** Natural dimensions ride along so the browser derives the aspect. */
+/**
+ * Natural dimensions ride along so the browser derives the aspect.
+ * The coldpress strip is the -graded derivative: its sheet tone is
+ * matched to paper-bone-laid's measured mean (mechanical per-channel
+ * gain, ×1.025/1.028/1.069), so the sheet tearing at the bottom of a
+ * bone-laid <Paper> reads as the same paper. The ungraded original
+ * stays in the library.
+ */
 const FIBRE: Record<SeamVariant, { src: string; width: number; height: number }> = {
-  coldpress: { src: "/materials/seam-tear-coldpress.webp", width: 1344, height: 497 },
+  coldpress: { src: "/materials/seam-tear-coldpress-graded.webp", width: 1344, height: 497 },
   bone: { src: "/materials/seam-tear-bone.webp", width: 1344, height: 507 },
 };
 
@@ -82,7 +89,7 @@ const FIBRE: Record<SeamVariant, { src: string; width: number; height: number }>
  * on the torn lip. Straight-to-dark read as a mask in every capture.
  */
 const FALLOFF =
-  "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 54%, rgb(13 18 32 / 0.6) 60%, rgb(13 18 32 / 0.8) 76%, var(--night-sky) 95%)";
+  "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 47%, rgb(13 18 32 / 0.55) 55%, rgb(13 18 32 / 0.8) 72%, var(--night-sky) 93%)";
 
 export function Seam({ variant = "coldpress", height = 256, className }: SeamProps) {
   const fibre = FIBRE[variant];
@@ -99,7 +106,11 @@ export function Seam({ variant = "coldpress", height = 256, className }: SeamPro
           greys out its midpoint. */}
       <div className="absolute inset-0" style={{ background: FALLOFF }} />
 
-      {/* The torn sheet itself, flush against the paper above. */}
+      {/* The torn sheet itself, flush against the paper above. It
+          carries .under-lamp so at night it dims with the substrate
+          it continues — same asset, same curve, so the join stays
+          invisible in the dark too. The falloff behind it is the
+          outside and never dims. */}
       {/* eslint-disable-next-line @next/next/no-img-element -- keyed
           material composite; the image optimizer adds nothing to a
           small webp and must never re-encode its alpha. */}
@@ -108,7 +119,7 @@ export function Seam({ variant = "coldpress", height = 256, className }: SeamPro
         alt=""
         width={fibre.width}
         height={fibre.height}
-        className="absolute inset-x-0 top-0 h-auto w-full"
+        className="under-lamp absolute inset-x-0 top-0 h-auto w-full"
       />
     </div>
   );

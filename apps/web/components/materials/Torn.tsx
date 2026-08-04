@@ -55,6 +55,8 @@ export function Torn({ variant, children, className }: TornProps) {
           src={src}
           alt=""
           aria-hidden="true"
+          /* A backing sheet is a material — it dims with the lamp. */
+          className="under-lamp"
           style={{
             position: "absolute",
             top: -OVERHANG_CLEAN,

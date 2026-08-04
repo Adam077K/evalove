@@ -118,6 +118,8 @@ export function Taped({
           aria-hidden="true"
           width={asset.width}
           height={asset.height}
+          /* Tape is a material on the table — it dims with the lamp. */
+          className="under-lamp"
           style={{
             position: "absolute",
             left: pos.left,

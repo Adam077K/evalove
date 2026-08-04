@@ -215,6 +215,22 @@
   --night-amber: #d4892a;
   --night-ink: #ede7e0;
   --night-mute: #a0968d;
+
+  /* --------------------------------------------------------
+     The lamp. CEO ruling 2026-08-04: the light in the room
+     dims, not the objects. Image materials (paper substrate,
+     tape, pins, torn edges, stickers) cannot respond to the
+     token swap the way a CSS colour can, so they dim through
+     `.under-lamp` (§6), driven by this single value: 0 = lamp
+     on (day); the night blocks set it to 1. One curve for
+     every material, so the table dims as one surface.
+
+     Photographs are the sole exception and are NEVER dimmed —
+     never give a photograph `.under-lamp`, per the standing
+     rule that at 11pm the brightest thing on the screen is
+     the other one's face.
+     -------------------------------------------------------- */
+  --lamp-dim: 0;
 }
 
 /* ------------------------------------------------------------
@@ -301,6 +317,9 @@
     0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
 
   --noise-opacity: 0.028;
+
+  /* The lamp goes off — image materials dim via .under-lamp. */
+  --lamp-dim: 1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -323,6 +342,9 @@
     --e-float: 0 1px 2px rgba(0, 0, 0, 0.44),
       0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
     --noise-opacity: 0.028;
+
+    /* The lamp goes off — image materials dim via .under-lamp. */
+    --lamp-dim: 1;
   }
 }
 
@@ -663,6 +685,32 @@ textarea[aria-invalid="true"] {
 @utility photo {
   filter: none;
   transition: filter var(--dur-2) var(--ease-out);
+}
+
+/* An image material sitting under the room's lamp — the paper
+   substrate, tape, pins, torn edges, stickers. CEO ruling
+   2026-08-04: the light in the room dims, not the objects. A
+   token flips at night but a webp cannot, so every material dims
+   through this one curve, driven by --lamp-dim, and the table
+   goes dark as one surface instead of a dark ground with day-lit
+   objects pasted on it. brightness is the lamp going off; the
+   small sepia keeps the darkness warm, matching the multiply
+   relationship between the day and night canvas tokens.
+
+   NEVER on a photograph — `.photo` above stays `filter: none`;
+   a photograph is the one thing on the table that keeps its own
+   light. And not on token-styled surfaces or text either: those
+   already dim through the night token swap, and .under-lamp on
+   top would dim them twice. */
+@utility under-lamp {
+  /* 0.78, not the 0.87 that would match the night canvas token
+     exactly: full token parity is "lights off" and the law's night
+     is a reading room — the lamp is low, not out. The materials sit
+     a step lighter than the page canvas, which is what a lit table
+     in a dark room does. */
+  filter: brightness(calc(1 - var(--lamp-dim) * 0.78))
+    sepia(calc(var(--lamp-dim) * 0.32));
+  transition: filter var(--dur-3) var(--ease-io);
 }
 
 /* ...except when nobody is looking.

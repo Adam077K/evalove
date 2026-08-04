@@ -11,6 +11,9 @@
  *   Seam → where the paper tears into the DECO sky — both modes,
  *          always; place, not time (revised §1)
  */
+export { Paper } from "./Paper";
+export type { PaperProps, PaperStock } from "./Paper";
+
 export { Mounted } from "./Mounted";
 export type { MountedProps, MountedContext } from "./Mounted";
 
