@@ -1,23 +1,22 @@
-"use client";
+import type { CSSProperties, ReactNode } from "react";
 
-import { ReactNode, CSSProperties } from "react";
-import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 /**
  * Pushpin composite wrapper.
  *
- * Places a pushpin PNG through the top edge of an object, fixing it
- * to the surface. The pushpin PNGs have contact shadows baked in —
- * do NOT add a CSS box-shadow on top of the image; the baked shadow
- * and a CSS shadow would compound to read as double.
+ * Drives a pushpin through the top edge of an object, fixing it to the
+ * surface. The pin is the real generated asset composited as an <img>.
  *
- * Eva's pushpin is brass. Adam's is cream. The pushpin variant carries
- * authorship without labelling it — you read who pinned something from
- * the object they used, not from a label.
+ * Eva's pushpin is brass — her colour, carried by the object she uses,
+ * not by a label. Adam's is cream; the shared pin is matte black. Only
+ * the brass pin exists in the keyed set so far; the other two variants
+ * render their children with no pin — never a broken img.
  *
- * When an asset is absent (Adam's cream and neutral black are not yet
- * generated), the component renders children unwrapped rather than
- * broken. Never throw on a missing material.
+ * The keyed asset is trimmed to the pin itself, so the grounding
+ * contact shadow is added here as a drop-shadow filter. That is
+ * compositing light around a real object, not drawing a material —
+ * and it follows the alpha silhouette, which a box-shadow cannot.
  */
 
 export type PinVariant = "eva" | "adam" | "neutral";
@@ -25,58 +24,70 @@ export type PinPlacement = "top-left" | "top-center" | "top-right";
 
 export interface PinnedProps {
   /**
-   * Eva's pin = brass (pushpin-brass-v2.png).
-   * Adam's pin = cream (asset pending — renders children unwrapped).
-   * Neutral = matte black (asset pending — renders children unwrapped).
+   * Eva = brass (pushpin-brass-v2). Adam = cream, neutral = matte
+   * black — both pending generation; they render children unpinned.
    */
   variant: PinVariant;
-  /** Where the pin penetrates the top edge of the child. */
+  /** Where the pin pierces the top edge of the child. */
   placement: PinPlacement;
   children: ReactNode;
   className?: string;
 }
 
-/** Asset registry. v2 is at a better angle (40° overhead) than v1. */
+/** Asset registry. v2 is the accepted brass pin; v1 was rejected. */
 const PIN_ASSETS: Partial<Record<PinVariant, string>> = {
   eva: "/materials/pushpin-brass-v2.webp",
-  // adam: "/materials/pushpin-cream.webp",   — pending generation
-  // neutral: "/materials/pushpin-black.webp", — pending generation
+  // adam: pending generation
+  // neutral: pending generation
 };
 
-const PIN_SIZE = { width: 28, height: 28 };
+/**
+ * Display size at the source's own aspect (751×1024) — the dome must
+ * not squash. Small on purpose: a pin is a fastener, not a subject.
+ */
+const PIN_WIDTH = 25;
+const PIN_HEIGHT = 34;
 
-/** Horizontal position per placement. Top edge is fixed at −12px overlap. */
-const PIN_LEFT: Record<PinPlacement, CSSProperties> = {
-  "top-left": { left: "16px", top: "-12px" },
-  "top-center": { left: "50%", top: "-12px", transform: "translateX(-50%)" },
-  "top-right": { right: "16px", top: "-12px" },
+/**
+ * The pin's tip (bottom of the image) lands ~14px inside the child's
+ * top edge — piercing the paper, not hovering over it.
+ */
+const PIN_TOP = -20;
+
+const PIN_X: Record<PinPlacement, CSSProperties> = {
+  "top-left": { left: 14 },
+  "top-center": { left: "50%", transform: "translateX(-50%)" },
+  "top-right": { right: 14 },
 };
 
 export function Pinned({ variant, placement, children, className }: PinnedProps) {
   const src = PIN_ASSETS[variant];
 
-  /* No asset for this variant yet — render children unwrapped. */
-  if (!src) {
-    return <div className={className}>{children}</div>;
-  }
-
   return (
-    <div className={className} style={{ position: "relative" }}>
+    <div className={cn("relative", className)} style={{ isolation: "isolate" }}>
       {children}
-      <Image
-        src={src}
-        alt=""
-        aria-hidden="true"
-        width={PIN_SIZE.width}
-        height={PIN_SIZE.height}
-        style={{
-          position: "absolute",
-          pointerEvents: "none",
-          zIndex: 60,
-          /* Contact shadow is baked into the PNG. No CSS shadow added. */
-          ...PIN_LEFT[placement],
-        }}
-      />
+      {src && (
+        /* eslint-disable-next-line @next/next/no-img-element -- keyed
+           material composite; must keep its own alpha untouched. */
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          width={PIN_WIDTH}
+          height={PIN_HEIGHT}
+          style={{
+            position: "absolute",
+            top: PIN_TOP,
+            width: PIN_WIDTH,
+            height: PIN_HEIGHT,
+            /* A pin pierces everything it holds — above tape (50). */
+            zIndex: 60,
+            pointerEvents: "none",
+            filter: "drop-shadow(0 2px 2px rgba(41, 32, 24, 0.3))",
+            ...PIN_X[placement],
+          }}
+        />
+      )}
     </div>
   );
 }

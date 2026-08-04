@@ -134,17 +134,27 @@ export function Mounted({
 }: MountedProps) {
   const reduced = useReducedMotion();
 
-  const rotation = useMemo(() => {
+  const { rotation, drift } = useMemo(() => {
     const [min, max] = ROTATION_RANGE[context];
     const rand = mulberry32(seedFromId(id));
-    return toRotation(rand(), min, max);
+    return {
+      rotation: toRotation(rand(), min, max),
+      /* Second draw: the small over-rotation a just-placed thing
+         settles back from. Seeded like the rotation, so the settle
+         is the same settle every time it is watched. */
+      drift: toRotation(rand(), -2, 2),
+    };
   }, [id, context]);
 
   const shadow = SHADOW[elevation];
   const zIndex = Z_INDEX[elevation];
 
+  /* Rotation is NOT in this style object. On the animated path,
+     motion/react owns the `transform` property outright — a rotate
+     passed via `style.transform` is silently discarded the moment
+     y/scale animate. The static path adds it back below; the motion
+     path carries it through initial/animate instead. */
   const baseStyle: CSSProperties = {
-    transform: `rotate(${rotation}deg)`,
     boxShadow: shadow,
     zIndex,
     position: "relative",
@@ -155,11 +165,19 @@ export function Mounted({
      No enter animation — the page someone composed yesterday is already
      settled when it opens. Physics activates on interaction, not on mount.
 
-     Freshly placed items (settled=false): animate from slightly above and
-     scaled-down to final position, then rest without bouncing. */
+     Reduced motion: full removal, never a degrade — SealedCard.tsx
+     pattern, Sonner's shipped behaviour. The item simply is where it
+     ends up, at its final rotation.
+
+     Freshly placed items (settled=false): drop in from slightly above,
+     a couple of degrees over-rotated, and settle. Paper does not
+     bounce — 300/30 rests inside ~400ms. */
   if (settled || reduced) {
     return (
-      <div className={className} style={baseStyle}>
+      <div
+        className={className}
+        style={{ ...baseStyle, transform: `rotate(${rotation}deg)` }}
+      >
         {children}
       </div>
     );
@@ -169,8 +187,8 @@ export function Mounted({
     <motion.div
       className={className}
       style={baseStyle}
-      initial={{ opacity: 0, scale: 0.96, y: -8 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
+      initial={{ opacity: 0, scale: 0.96, y: -8, rotate: rotation + drift }}
+      animate={{ opacity: 1, scale: 1, y: 0, rotate: rotation }}
       transition={SPRING}
     >
       {children}

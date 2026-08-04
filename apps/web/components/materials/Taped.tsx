@@ -1,26 +1,31 @@
-"use client";
+import type { CSSProperties, ReactNode } from "react";
 
-import { ReactNode, CSSProperties } from "react";
-import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 /**
  * Washi tape composite wrapper.
  *
- * Places a washi tape strip over an object, bridging it to the surface.
- * The tape PNG is composited as a real <Image> — it is never drawn in CSS.
- * Drawing tape as a gradient or background-image is precisely the "coal"
- * the founder rejected in the probe: every physical object must arrive
- * as a generated material, not a CSS approximation of one.
+ * Places a washi tape strip across an edge of an object, fastening it
+ * to the surface. The strip is the real generated asset composited as
+ * an <img> — never drawn in CSS. A gradient pretending to be tape is
+ * precisely the "made with coal" failure the founder rejected.
  *
- * Translucency: the tape PNGs are semi-transparent (65–75%) by their
- * asset. Do not set opacity on the img element — the translucency comes
- * from the PNG's own alpha, which varies naturally across the tape body.
- * A flat CSS opacity is uniform; real washi tape is not.
+ * ORIENTATION. §4: tape sits perpendicular to the edge it bridges —
+ * it crosses the edge, half on the object, half on the surface, the
+ * way a strip actually fastens. `angle` is the seeded deviation from
+ * that perpendicular (±5° per the composition law; the caller seeds
+ * it, usually from the same stable ID as the surrounding <Mounted>).
+ * Corner placements run diagonally across the corner at 45°, the
+ * classic scrapbook fastening.
  *
- * The asset map covers what is currently on disk. As the full 12-variant
- * set is generated and downloaded, add the paths to TAPE_ASSETS without
- * changing the API. Variants with no asset render children unwrapped
- * rather than breaking.
+ * Both available assets are horizontal strips; vertical and diagonal
+ * placements rotate the strip rather than distorting its box, so the
+ * pattern never stretches. Display sizes derive from each asset's own
+ * aspect ratio.
+ *
+ * Variants without an asset yet render their children in the same
+ * wrapper with no strip — never a broken img. As the 12-pattern set
+ * arrives, extend TAPE_ASSETS without changing the API.
  */
 
 export type TapeVariant =
@@ -47,77 +52,48 @@ export type TapePlacement =
 
 export interface TapedProps {
   /**
-   * Which of the 12 washi tape variants to composite.
-   * Currently available: 'houndstooth' (washi-ochre-dots.png),
-   * 'kraft' (washi-terracotta.png). Others render children unwrapped.
+   * Which of the 12 washi patterns to composite.
+   * Currently available: 'houndstooth' (washi-ochre-dots),
+   * 'kraft' (washi-terracotta). Others render children with no strip.
    */
   variant: TapeVariant;
-  /** Which edge of the child element the tape bridges. */
+  /** Which edge (or corner) of the child the tape bridges. */
   placement: TapePlacement;
   /**
-   * Tape rotation in degrees. Default: 0° (perpendicular to bridged edge).
-   * Caller should pass a seeded value ±5° from a Mounted-level PRNG.
-   * Tape bridges objects — it reads as placed with intent, not dropped,
-   * so larger rotations look wrong.
+   * Seeded deviation in degrees from perpendicular-to-the-edge.
+   * §4 allows ±5°; pass a value seeded from the item's stable ID.
+   * @default 0
    */
   angle?: number;
   children: ReactNode;
   className?: string;
 }
 
-/** Asset registry. Extend as new tape variants arrive from generation. */
-const TAPE_ASSETS: Partial<Record<TapeVariant, string>> = {
-  houndstooth: "/materials/washi-ochre-dots.webp",
-  kraft: "/materials/washi-terracotta.webp",
+interface TapeAsset {
+  src: string;
+  /** Display size at the strip's own aspect ratio — never distorted. */
+  width: number;
+  height: number;
+}
+
+/** Asset registry. Sizes follow each source's aspect (1024×240, 1024×336). */
+const TAPE_ASSETS: Partial<Record<TapeVariant, TapeAsset>> = {
+  houndstooth: { src: "/materials/washi-ochre-dots.webp", width: 84, height: 20 },
+  kraft: { src: "/materials/washi-terracotta.webp", width: 84, height: 28 },
 };
 
-/** How the tape strip is positioned per placement edge. */
-const TAPE_POSITION: Record<
-  TapePlacement,
-  { top?: string; bottom?: string; left?: string; right?: string; width?: string; height?: string; transformOrigin: string }
-> = {
-  top: {
-    top: "-14px",
-    left: "50%",
-    width: "80px",
-    height: "28px",
-    transformOrigin: "center center",
-  },
-  "top-left": {
-    top: "-14px",
-    left: "12px",
-    width: "72px",
-    height: "28px",
-    transformOrigin: "center center",
-  },
-  "top-right": {
-    top: "-14px",
-    right: "12px",
-    width: "72px",
-    height: "28px",
-    transformOrigin: "center center",
-  },
-  bottom: {
-    bottom: "-14px",
-    left: "50%",
-    width: "80px",
-    height: "28px",
-    transformOrigin: "center center",
-  },
-  left: {
-    top: "50%",
-    left: "-14px",
-    width: "28px",
-    height: "72px",
-    transformOrigin: "center center",
-  },
-  right: {
-    top: "50%",
-    right: "-14px",
-    width: "28px",
-    height: "72px",
-    transformOrigin: "center center",
-  },
+/**
+ * Where the strip's centre sits, and its base rotation.
+ * Base 90° = the horizontal strip stood upright, crossing a horizontal
+ * edge; 0° crosses a vertical edge; ±45° lies across a corner.
+ */
+const PLACEMENTS: Record<TapePlacement, { left: string; top: string; base: number }> = {
+  top: { left: "50%", top: "0%", base: 90 },
+  "top-left": { left: "0%", top: "0%", base: -45 },
+  "top-right": { left: "100%", top: "0%", base: 45 },
+  bottom: { left: "50%", top: "100%", base: 90 },
+  left: { left: "0%", top: "50%", base: 0 },
+  right: { left: "100%", top: "50%", base: 0 },
 };
 
 export function Taped({
@@ -127,36 +103,40 @@ export function Taped({
   children,
   className,
 }: TapedProps) {
-  const src = TAPE_ASSETS[variant];
-  const pos = TAPE_POSITION[placement];
-
-  /* Variant with no asset yet — render children unwrapped. */
-  if (!src) {
-    return <div className={className}>{children}</div>;
-  }
-
-  const tapeStyle: CSSProperties = {
-    position: "absolute",
-    pointerEvents: "none",
-    zIndex: 50,
-    transform: `rotate(${angle}deg) ${placement === "top" || placement === "bottom" ? "translateX(-50%)" : placement === "left" || placement === "right" ? "translateY(-50%)" : ""}`,
-    ...pos,
-  };
+  const asset = TAPE_ASSETS[variant];
+  const pos = PLACEMENTS[placement];
 
   return (
-    <div className={className} style={{ position: "relative" }}>
+    <div className={cn("relative", className)} style={{ isolation: "isolate" }}>
       {children}
-      <Image
-        src={src}
-        alt=""
-        aria-hidden="true"
-        fill={false}
-        width={parseInt(pos.width ?? "80")}
-        height={parseInt(pos.height ?? "28")}
-        style={tapeStyle}
-        /* NO opacity override — the PNG's natural translucency is the
-           translucency. Flat CSS opacity is uniform; real washi is not. */
-      />
+      {asset && (
+        /* eslint-disable-next-line @next/next/no-img-element -- keyed
+           material composite; must keep its own alpha untouched. */
+        <img
+          src={asset.src}
+          alt=""
+          aria-hidden="true"
+          width={asset.width}
+          height={asset.height}
+          style={{
+            position: "absolute",
+            left: pos.left,
+            top: pos.top,
+            width: asset.width,
+            height: asset.height,
+            maxWidth: "none",
+            /* Centre the strip on the anchor point, then rotate about
+               that point. Translate first: the rotation must happen
+               around the already-placed centre. */
+            transform: `translate(-50%, -50%) rotate(${pos.base + angle}deg)`,
+            /* Tape fastens: it renders above whatever it holds, above
+               even a Mounted elevation-4 photograph (z 40). Local to
+               this wrapper — the wrapper isolates. */
+            zIndex: 50,
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </div>
   );
 }

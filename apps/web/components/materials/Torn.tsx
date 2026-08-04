@@ -1,33 +1,30 @@
-"use client";
+import type { ReactNode } from "react";
 
-import { ReactNode } from "react";
-import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 /**
  * Torn-edge mount.
  *
- * Places a torn-edge backing paper (PNG with transparency) behind
- * a photograph or note. The photograph sits on top of the torn mount;
- * the mount peeks out at the torn edges, giving the composition depth.
+ * A backing sheet with a genuinely torn edge, on which a photograph or
+ * note sits. The mount peeks out around the content; the tear is the
+ * most handmade of the mounts. §3 specifies 8 tear characters; only
+ * variant 8 (cold-press, torn left edge) exists in the keyed set.
  *
- * 8 variants map to the style bible's torn-edge families:
- *   1 — cream writing paper, bottom edge torn
- *   2 — cream writing paper, right edge torn
- *   3 — cream writing paper, top + right edges torn
- *   4 — ledger paper, bottom edge torn
- *   5 — kraft paper, bottom + left edges torn
- *   6 — newsprint, top edge torn
- *   7 — cream writing paper, all four edges torn
- *   8 — cold-press watercolour, bottom edge deckle tear ← ONLY ONE WITH ASSET
+ * The asset is `torn-edge-coldpress-mount.webp` — a mechanical crop of
+ * torn-edge-coldpress.webp, measured from the alpha channel so the
+ * sheet runs edge-to-edge on its top, right and bottom, with the tear
+ * and its fibre on the left. object-fit: cover anchored to the left
+ * keeps the tear character intact at any content size: the sheet
+ * crops on its clean side, never stretches on its torn one.
  *
- * Variants 1–7 render children unwrapped until their assets arrive.
- * Variant 8 is the deckle tear — assets/torn-edge-coldpress.png.
+ * Variants 1–7 render children in the same wrapper with no mount —
+ * never a broken img — until their assets arrive.
  */
 
 export interface TornProps {
   /**
-   * Style bible variant 1–8. Only variant 8 (cold-press deckle) has
-   * a real asset. Others render children unwrapped without error.
+   * Tear character 1–8 per §3. Only 8 (cold-press, left tear) has an
+   * asset today; the rest render children unmounted without error.
    */
   variant: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   children: ReactNode;
@@ -36,45 +33,46 @@ export interface TornProps {
 
 /** Asset registry. Extend as torn-edge variants arrive from generation. */
 const TORN_ASSETS: Partial<Record<number, string>> = {
-  8: "/materials/torn-edge-coldpress.webp",
+  8: "/materials/torn-edge-coldpress-mount.webp",
 };
 
 /**
- * Mount dimensions for the backing paper.
- * The torn mount is wider and taller than the content so the torn
- * edges are visible around the photograph.
+ * How far the backing sheet extends past the content. The torn left
+ * edge gets more room than the clean sides — the tear is the point.
  */
-const MOUNT_OVERHANG = 24; /* px each side */
+const OVERHANG_TORN = 30; /* px, left — the fibre needs air */
+const OVERHANG_CLEAN = 14; /* px, the other three sides */
 
 export function Torn({ variant, children, className }: TornProps) {
   const src = TORN_ASSETS[variant];
 
-  /* No asset for this variant yet — render children unwrapped. */
-  if (!src) {
-    return <div className={className}>{children}</div>;
-  }
-
   return (
-    <div className={className} style={{ position: "relative" }}>
-      {/* The torn backing paper sits behind the photograph. */}
-      <Image
-        src={src}
-        alt=""
-        aria-hidden="true"
-        width={800}
-        height={240}
-        style={{
-          position: "absolute",
-          inset: `-${MOUNT_OVERHANG}px`,
-          width: `calc(100% + ${MOUNT_OVERHANG * 2}px)`,
-          height: `calc(100% + ${MOUNT_OVERHANG * 2}px)`,
-          objectFit: "cover",
-          objectPosition: "center bottom",
-          pointerEvents: "none",
-          zIndex: -1,
-        }}
-      />
-      {children}
+    <div className={cn("relative", className)} style={{ isolation: "isolate" }}>
+      {src && (
+        /* eslint-disable-next-line @next/next/no-img-element -- keyed
+           material composite; must keep its own alpha untouched. */
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: -OVERHANG_CLEAN,
+            right: -OVERHANG_CLEAN,
+            bottom: -OVERHANG_CLEAN,
+            left: -OVERHANG_TORN,
+            width: `calc(100% + ${OVERHANG_TORN + OVERHANG_CLEAN}px)`,
+            height: `calc(100% + ${OVERHANG_CLEAN * 2}px)`,
+            maxWidth: "none",
+            objectFit: "cover",
+            objectPosition: "left center",
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {/* Content above the mount, inside the isolated context. */}
+      <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
     </div>
   );
 }
