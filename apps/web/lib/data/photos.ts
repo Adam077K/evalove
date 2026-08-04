@@ -22,7 +22,14 @@
  *   3. Photo bytes never traverse a Vercel function on the way IN. The upload
  *      is a signed, write-only, single-path authorisation and the browser PUTs
  *      straight to Supabase Storage, which is what dodges the 4.5 MB request
- *      body limit on a serverless function.
+ *      body limit on a serverless function. That also means the client
+ *      pipeline that strips EXIF (`assertNoMetadata`, in `lib/photo/`) is a UX
+ *      affordance, not a boundary — a session valid enough to ask for signed
+ *      URLs can PUT anything to them. So `commitPhoto` downloads the display
+ *      and thumb objects back out and re-runs the same scan server-side,
+ *      before it ever writes `exif_stripped: true`. See
+ *      `verifyDerivativesAreClean` below for what happens when that scan
+ *      finds something.
  *
  *   4. A purge is not a bigger delete. It removes all three derivatives —
  *      display, thumb and original, not just the visible one — writes an audit
@@ -36,6 +43,7 @@ import {
   resolveTz,
   sharedDayOf,
 } from "@/lib/shared-day";
+import { findMetadataEvidence } from "@/lib/photo/guard";
 import {
   photoDisplayPath,
   photoOriginalPath,
@@ -202,6 +210,70 @@ export interface CommitPhotoInput {
   checksumSha256: string;
 }
 
+/**
+ * Re-run the client's own EXIF/GPS scan, server-side, against what storage
+ * actually holds.
+ *
+ * Nothing new is written here — `findMetadataEvidence` is the exact function
+ * `assertNoMetadata` calls on the device (`lib/photo/guard.ts`), a pure
+ * byte-segment scan with no image decode. This is the whole fix for the trust
+ * boundary described on `PhotoDeps`'s file header: the only place a claim
+ * about bytes can be trusted is where those bytes are actually looked at, and
+ * until this call that place did not exist.
+ *
+ * Scans `display` and `thumb` only. `original` is never claimed to be
+ * stripped — it is the untouched file, kept on purpose for the metadata (and
+ * quality) the derivatives give up — so there is nothing to verify there.
+ *
+ * WHAT HAPPENS ON FAILURE, AND WHY. This throws and the commit never reaches
+ * `insertPhotoIfAbsent`: no row is written, so `exif_stripped: true` is never
+ * asserted about bytes nobody checked. The two objects already sitting in
+ * storage at this photo id's paths are left exactly where they are — nothing
+ * here deletes them, and nothing in this codebase may (purges are the only
+ * operation that destroys bytes, they are audited, and this is not one).
+ * A "quarantine" row was considered and rejected: writing a row that has to
+ * carry a permanent "do not trust this" flag keeps a live reference to
+ * unverified, possibly GPS-bearing bytes in the one table every other query
+ * in this file reads from, which is more surface for the exact leak this
+ * function exists to stop, not less — every list/read/export path would need
+ * to remember to re-check the flag, forever. An orphaned object with no
+ * `photos` row pointing at it is already an ordinary, unremarkable state in
+ * this system: `issueUploadSlots` authorises three paths that a client can
+ * simply never commit, and nothing sweeps those either. This call reduces to
+ * that same, already-accepted shape rather than inventing a new one — and
+ * because this is two people uploading a handful of photographs a day, not a
+ * queue worth building.
+ */
+async function verifyDerivativesAreClean(
+  deps: PhotoDeps,
+  paths: { display: string; thumb: string },
+): Promise<void> {
+  const variants: ["display" | "thumb", string][] = [
+    ["display", paths.display],
+    ["thumb", paths.thumb],
+  ];
+
+  for (const [variant, path] of variants) {
+    const body = await deps.gateway.downloadObject(path);
+    if (body === null) {
+      throw new DataError(
+        "invalid",
+        `the ${variant} object this commit names is not in storage`,
+        { variant },
+      );
+    }
+
+    const evidence = findMetadataEvidence(new Uint8Array(body));
+    if (evidence.length > 0) {
+      throw new DataError(
+        "invalid",
+        `the uploaded ${variant} still carries metadata; refusing to commit`,
+        { variant, evidenceKinds: evidence.map((e) => e.kind) },
+      );
+    }
+  }
+}
+
 export interface CommitPhotoResult {
   photo: Photo;
   /**
@@ -223,10 +295,14 @@ export interface CommitPhotoResult {
  *      and before any prior daily is retired — a replayed flush must not have
  *      side effects.
  *   2. Resolve the author and their zone from the roster.
- *   3. Take ONE instant. It is both the derivation input and the row's
+ *   3. Verify, server-side, that the objects this commit names are actually
+ *      free of metadata — see `verifyDerivativesAreClean` above. Before
+ *      anything else happens, so a commit that is about to be refused cannot
+ *      first retire a photo it will never replace.
+ *   4. Take ONE instant. It is both the derivation input and the row's
  *      `created_at`; see the note on `createdAt` below.
- *   4. Retire the author's prior live daily for that day, if there is one.
- *   5. Insert, ignoring a duplicate key, and read back whoever holds it.
+ *   5. Retire the author's prior live daily for that day, if there is one.
+ *   6. Insert, ignoring a duplicate key, and read back whoever holds it.
  */
 export async function commitPhoto(
   deps: PhotoDeps,
@@ -239,6 +315,14 @@ export async function commitPhoto(
   }
 
   const member = await memberBySlug(deps, input.author);
+
+  const displayPath = photoDisplayPath(input.photoId);
+  const thumbPath = photoThumbPath(input.photoId);
+
+  // Before anything else happens — in particular, before the daily-supersede
+  // step below retires the author's prior live daily. A commit that is about
+  // to be refused must not cost them the photo it would have replaced.
+  await verifyDerivativesAreClean(deps, { display: displayPath, thumb: thumbPath });
 
   /*
    * ONE INSTANT, USED TWICE, AND SENT EXPLICITLY.
@@ -287,8 +371,8 @@ export async function commitPhoto(
     taken_at: input.takenAt ?? null,
     caption: input.caption ?? null,
 
-    storage_path_display: photoDisplayPath(input.photoId),
-    storage_path_thumb: photoThumbPath(input.photoId),
+    storage_path_display: displayPath,
+    storage_path_thumb: thumbPath,
     storage_path_original: photoOriginalPath(input.photoId),
     original_location: "supabase",
 
@@ -298,9 +382,11 @@ export async function commitPhoto(
     mime: "image/jpeg",
     color_space: input.colorSpace,
     checksum_sha256: input.checksumSha256,
-    // The client strips EXIF while it resizes; the server never sees the
-    // untouched file and so cannot re-verify this. Recorded as the claim it
-    // is, in the column the schema already defaults to true.
+    // The client strips EXIF while it resizes, but the upload is direct to
+    // storage and the client pipeline is not a boundary — see the file
+    // header, point 3. `verifyDerivativesAreClean`, above, has already
+    // downloaded these exact bytes and re-run the scan; this is a verified
+    // fact by the time it is written, not a forwarded claim.
     exif_stripped: true,
 
     created_at: createdAt.toISOString(),
