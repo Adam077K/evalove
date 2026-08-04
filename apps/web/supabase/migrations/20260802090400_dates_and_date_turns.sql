@@ -1,7 +1,12 @@
 -- =============================================================================
 -- Eva & Adam — migration 05 of 14 — dates and date_turns
 --
---   !! NEVER APPLIED. This file has not been run against any database. !!
+--   !! APPLICATION STATUS UNKNOWN. Do not assume this file is unapplied. !!
+--   The founder confirmed from the Supabase dashboard on 2026-08-04 that
+--   tables exist in project oqiyzzpcsdlqqcjlpmix. Nobody has verified which
+--   of these migrations are applied, or whether the live schema matches this
+--   file exactly — that check has not been done. Verify against the live
+--   schema before running anything here.
 --
 -- Down: ./down/20260802090400_dates_and_date_turns.down.sql
 -- Source of truth: docs/03-system-design/LDR-APP-ARCHITECTURE.md §2.1, §3A
