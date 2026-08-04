@@ -54,6 +54,7 @@ export function QuickSend() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [records, setRecords] = useState<OutboxRecord[]>([]);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* Constructed once, lazily. None of these touch OPFS/IndexedDB/fetch at
@@ -127,6 +128,7 @@ export function QuickSend() {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoFile(f);
     setPhotoUrl(URL.createObjectURL(f));
+    setSendError(null);
   };
 
   const clearPhoto = () => {
@@ -138,6 +140,7 @@ export function QuickSend() {
   const send = async () => {
     if (!photoFile || sending) return;
     setSending(true);
+    setSendError(null);
     try {
       // Durable the moment this resolves — before any network call. Closing
       // the app, losing signal, or iOS killing the tab costs nothing from
@@ -161,10 +164,29 @@ export function QuickSend() {
       if (result.rejected.length === 0) {
         setNote("");
         clearPhoto();
+      } else {
+        // Reported, not swallowed — the same rule as a thrown exception
+        // below, applied to the failure `enqueueAll` already caught for us.
+        setSendError(
+          result.rejected[0]?.reason ??
+            "The device would not store the photograph. Nothing was sent.",
+        );
       }
 
       await refresh();
       void drain();
+    } catch (error) {
+      // `enqueueAll` catches a per-file storage failure and reports it via
+      // `rejected`, above — but not every failure on this path is a per-file
+      // one (`crypto.randomUUID` missing, an OPFS directory handle that
+      // throws before the per-file loop even starts). Uncaught, this used to
+      // leave the button silently re-enabled with nothing queued and nothing
+      // said. Whatever it is, it is shown rather than lost.
+      setSendError(
+        error instanceof Error
+          ? error.message
+          : "That didn't go through. Try again.",
+      );
     } finally {
       setSending(false);
     }
@@ -248,6 +270,11 @@ export function QuickSend() {
           <Send size={17} strokeWidth={2} />
           Send to {partner.displayName}
         </PillButton>
+        {sendError ? (
+          <p role="alert" className="type-caption mt-2 text-center text-danger">
+            {sendError}
+          </p>
+        ) : null}
       </section>
 
       {/* The outbox. */}
