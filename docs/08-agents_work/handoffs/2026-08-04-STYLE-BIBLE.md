@@ -389,99 +389,136 @@ Output: 256×128px PNG. Seed: 451.
 
 ## Family 6 — Deco City Plates
 
-This is the most complex family. Read every word.
+This is the most complex family. Read every word before generating anything.
 
-### The layer architecture
+### Why the previous spec was wrong and what replaces it
 
-A complete night scene is composed of 5 layers per city. **These are separate files, always.** The composition system stacks them. A single flattened image cannot be accepted.
+The original spec said "generate five transparent PNG layers." Text-to-image models do not produce alpha channels. An agent handed that requirement would either produce flat colour scenes and call them layers, or stall. This revision gives the pipeline that can actually be executed.
+
+The fix comes from the reference art itself. Batman:TAS backgrounds are silhouette-driven — the buildings are shapes, and colour is laid over them in production. So:
+
+1. **Generate each architectural layer as a black silhouette on a pure white ground.** No colour, no transparency — just black ink on white paper.
+2. **Key white to alpha at build time** using luminance-to-alpha conversion. White → fully transparent. Black → fully opaque. Grey edge pixels → proportionally transparent. You get clean transparent PNG with naturally anti-aliased edges, at no extra generation cost.
+3. **Apply colour at runtime** using design law tokens (`--night-sky`, `--night-gold`, etc.), not baked into the image. Sky tone, window light, season and weather all stay live.
+4. **The sky layer is not generated at all.** It is drawn in code — a gradient + stars + moon + weather overlay. This is cheaper, sharper, more controllable, and eliminates 12 generation runs (the old 4 season × 3 weather variants).
+5. **Window lights are not painted into any image.** They are small coloured rectangles composited from a coordinate list. Individual windows can light and darken per awake/asleep status.
+
+This approach is more faithful to the reference art than a colour render would be, because it is how the source art is actually constructed.
+
+---
+
+### Layer architecture
 
 ```
-Layer 5 (top)    Foreground       — balcony rail, curtain edge, immediate objects
-Layer 4          Near buildings   — the street-level block you are looking at
-Layer 3          Mid skyline      — major architectural landmarks
-Layer 2          Far skyline      — the most distant buildings, darkest silhouettes
-Layer 1 (bottom) Sky              — the sky gradient, driven by real hour
+Layer 6 (top)    Foreground       — balcony rail, curtain, immediate objects
+Layer 5          Window lights    — coordinate-driven rect overlay, live
+Layer 4          Near buildings   — articulated facade silhouette
+Layer 3          Mid skyline      — landmark silhouettes
+Layer 2          Far skyline      — distant mass, simple
+Layer 1 (bottom) Sky              — code-drawn: gradient + stars + moon + weather
 ```
 
-The sky layer is driven by real hour and season. The far/mid/near layers are static (buildings don't move). Window lights on the near and mid layers are a separate transparent overlay driven by awake/asleep status.
+Layers 2–4 and 6 are generated assets (silhouette PNGs). Layer 5 is a code-composited overlay from a JSON coordinate list. Layer 1 is entirely code.
+
+---
 
 ### Reference images
 
-**Primary references (copy these into every city generation brief):**
-- `images (11).jpeg` — Batman:TAS night city from rooftop. The definitive style reference: flat vector, hard-edged, deep blue-black sky, yellow-green building windows. This image is the style target.
-- `images (12).jpeg` — Couple at window overlooking orange-red dusk city. The romantic register and the lit-window-as-stage metaphor.
-- `images (13).jpeg` — Art deco casino illustration. Limited palette per scene, flat vector shapes.
-- `65716ede74580268e6ec73cfeb5f5b00.jpg` — Batman:TAS interior. Hard-edged shadows, flat vector.
-- `images (14).jpeg` — Balcony scene in rain. Atmosphere, rain treatment, balcony foreground element.
-- `Screenshot 2026-08-04 at 7.38.59 AM.png` — SALON art deco poster. The palette register for interiors.
-- `Screenshot 2026-08-04 at 7.39.41 AM.png` — New Haven deco illustration. Warm interior vs. cold exterior contrast.
+Copy into every generation prompt as style anchors:
+- `images (11).jpeg` — Batman:TAS rooftop night city. **The discipline model.** Flat, hard-edged, strong silhouette, deep blue-black sky.
+- `images (12).jpeg` — Couple at window. Silhouette figures against orange-red dusk. Shows how the foreground + city relationship should read.
+- `images (13).jpeg` — Art deco casino illustration. Limited palette per scene, flat shapes.
+- `65716ede74580268e6ec73cfeb5f5b00.jpg` — Batman:TAS interior. Hard-edged shadow, flat vector.
+- `images (14).jpeg` — Balcony scene in rain. Foreground rail element.
 
 **Not in any city brief:** `Screenshot 2026-08-04 at 7.39.32 AM.png` (Sorriso New York halftone). Different register — park against cassette/record work.
 
-### Base style prompt for city illustration layers
+---
 
-```
-Art deco city illustration, [LAYER_DESCRIPTOR], flat vector graphic, hard-edged shadows, strong silhouettes, Batman The Animated Series background art visual style, limited 4-colour palette (stated per layer), no photorealism, no gradient mesh, sharp edges on all building shapes, professional illustration quality
-```
+### Layer 1 — Sky (code, not generated)
 
-### City A — New York (Eva's city)
+The sky is drawn entirely in code. It is not a generated image file. Specifying it here so the frontend-engineer who builds the compositing system knows exactly what it must produce.
 
-**Identifying landmarks to include:**
-- Mid skyline: Empire State Building silhouette (tall, stepped crown, antenna), Chrysler Building (distinctive eagle gargoyles and stainless steel crown visible even as silhouette)
-- Far skyline: general Manhattan density
-- Foreground: iron balcony railing with scroll detail, or heavy curtain edge suggesting an apartment interior
+**Parameters the code sky renderer takes:**
 
-**Per layer:**
-
-**Sky layer (12 variants: 4 seasons × 3 weather):**
-
-For each variant, use:
-```
-Art deco city illustration, [SEASON] night sky over New York, [WEATHER_DESCRIPTOR], gradient from deep navy-black (#0D1220) at top to slightly lighter blue at horizon, stars [STAR_DESCRIPTOR], no buildings in this layer — sky only, flat illustration quality
+```typescript
+type SkyParams = {
+  city: 'nyc' | 'tlv';
+  hour: number;          // 0–23, local to that person
+  season: 'spring' | 'summer' | 'autumn' | 'winter';
+  weather: 'clear' | 'rain' | 'snow' | 'fog' | 'storm';
+};
 ```
 
-| Season × Weather | `[SEASON]` | `[WEATHER_DESCRIPTOR]` | `[STAR_DESCRIPTOR]` | Sky seed |
-|---|---|---|---|---|
-| Spring clear | spring | clear night, crisp air | faint scattered stars | 501 |
-| Spring rain | spring | rain falling, heavy clouds obscuring sky | none visible | 502 |
-| Summer clear | summer | warm clear night, slight haze near horizon | scattered stars | 503 |
-| Summer rain | summer | summer storm, lightning in far clouds | none | 504 |
-| Autumn clear | autumn | crisp autumn night, strong star visibility | dense star field | 505 |
-| Autumn rain | autumn | autumn rain, fast-moving clouds | occasional star through gaps | 506 |
-| Winter clear | winter | cold clear winter night, brilliant stars, possible thin clouds | very bright dense stars | 507 |
-| Winter snow | winter | snow falling, low clouds, diffuse light from city glow below | none | 508 |
-| Winter rain | winter | cold rain, heavy clouds, dark | none | 509 |
-| Spring snow | spring | unusual late spring snow, soft flakes | none | 510 |
-| Summer lightning | summer | lightning storm, dramatic clouds | none | 511 |
-| Autumn fog | autumn | fog rolling in, soft diffuse sky, reduced visibility | none | 512 |
+**What it renders:**
 
-**Far skyline layer:**
+- **Gradient base:** `--night-sky` (#0D1220) at top, stepping slightly warmer and lighter toward the horizon (approximately #121A2C at 70% mark, #1A2540 at horizon). Tel Aviv is warmer at the horizon than New York: add ~10° hue warmth to the horizon stop for TLV.
+- **Stars:** seeded PRNG scatter (seed = city string hash), 80–200 dots at 1–2px, opacity 0.4–0.9, visible only when weather is `clear` or `storm` (storm: sparse, blinking). Denser in winter clear; invisible in rain, snow, fog.
+- **Moon:** white circle at fixed position per city per season, 20–28px diameter, slight warm tint (#F4EFE0), visible only in clear/storm.
+- **Weather overlays (Canvas animated):**
+  - `rain`: diagonal grey-white line scatter, 45°, animated downward, opacity 0.25
+  - `snow`: white dot scatter, gentle downward float, opacity 0.35
+  - `fog`: radial gradient overlay, #1C2840 at 50% opacity, spreading from lower thirds
+  - `storm`: rapid diagonal rain + occasional brightness flash at 0.08 opacity
+
+**Why code, not image:** The sky must track the real hour. A generated sky image cannot do that. A gradient in code matches `--night-sky` exactly and costs zero bytes at rest.
+
+---
+
+### Layers 2–4 and 6 — Silhouette generation
+
+#### Base style prompt (verbatim, copy exactly, append only the layer descriptor)
+
 ```
-Art deco city illustration, far distant Manhattan skyline at night, extreme distance, darkest silhouettes (#1A1F2E), minimal window detail (1–2 lit windows at most per building), flat vector, general Manhattan density profile, no specific landmark identification at this distance, 4-colour palette: #0D1220 (sky), #1A1F2E (buildings), #C49A1E (rare window), #243048 (mid-distance buildings)
+Pure black silhouette illustration on pure white (#FFFFFF) background. [LAYER_DESCRIPTOR]. Flat black shapes only — no shading, no grey values, no gradients inside shapes. Pure flat vector quality. Hard edge where every silhouette meets the white ground. Reference style: Batman The Animated Series background art. No colour except pure black on pure white.
+```
+
+The prompt is the same for every architectural layer. Only `[LAYER_DESCRIPTOR]` changes. This keeps the generative model's output family coherent across all layers.
+
+#### Depth cues that distinguish layers
+
+The generation model has no concept of parallax. Depth is encoded through these specific visual signals — state them in the `[LAYER_DESCRIPTOR]`:
+
+| Layer | Key depth signals to specify |
+|---|---|
+| Far (layer 2) | Small apparent building size. Rectangular massing with minimal roofline variation. No water towers, no setbacks visible. Dense but simple. Buildings occupy lower 15–20% of image height. |
+| Mid (layer 3) | Larger apparent buildings. Stepped setbacks visible. Landmark profiles specified by name. Water towers visible as small circles on rooftops. Buildings occupy lower 30–40% of image height. |
+| Near (layer 4) | Large buildings filling lower 50–65% of image. Articulated facades: parapet details, fire escape geometry, window grid visible as rectangular notches in the silhouette (do NOT punch through — see note). Individual building character visible. |
+| Foreground (layer 6) | Immediate foreground: balcony railing at bottom of frame, curtain edge or arch framing the sides. Silhouette reads as interior frame enclosing the city view. |
+
+**Note on near-building windows:** The near-buildings silhouette has NO window holes punched through it. The building is a solid black shape. Windows are a separate coordinate-driven layer (Layer 5). If the generated near-buildings image has white rectangular openings in the building facade, reject it.
+
+---
+
+### City A — New York City (Eva's city)
+
+#### Layer 2 — Far skyline (NYC)
+
+```
+[LAYER_DESCRIPTOR]: Far distant Manhattan skyline. Dense mass of rectangular buildings at extreme distance. Minimal roofline variation — mostly flat tops at varying heights. No specific landmark identification. Buildings are small, tightly packed, span the full width. Silhouette occupies lower 18% of image height.
 ```
 Seed: 520.
 
-**Mid skyline layer:**
+#### Layer 3 — Mid skyline (NYC)
+
 ```
-Art deco city illustration, mid-distance Manhattan skyline at night, Empire State Building clearly identifiable by silhouette and stepped crown at centre-left, Chrysler Building silhouette at right, warm amber-gold lit windows on both (#C49A1E), other surrounding mid-rise buildings as silhouettes, flat vector, hard-edged, 4-colour palette: transparent background, #283050 (building bodies), #C49A1E (lit windows), #1C2540 (shadow sides)
+[LAYER_DESCRIPTOR]: Mid-distance Manhattan skyline. Empire State Building clearly identifiable by silhouette at left-centre: tall, stepped crown tapering to a radio antenna. Chrysler Building clearly identifiable to the right: pointed art deco crown with distinctive eagle gargoyles and stainless steel arched windows visible as silhouette detail. Surrounding mid-rise buildings fill in between with varied stepped setbacks. Water towers visible as small circles on several rooftops. Silhouette occupies lower 38% of image height.
 ```
 Seed: 521.
 
-**Near buildings layer:**
+**Landmark test:** Cover everything except the mid-skyline layer. Ask: is that the Empire State Building? Is that the Chrysler Building? If uncertain, regenerate. Silhouette identifiability is the minimum bar.
+
+#### Layer 4 — Near buildings (NYC)
+
 ```
-Art deco city illustration, close foreground Manhattan buildings at night, detailed brick or stone facade visible as flat geometry, multiple lit windows (#C49A1E warm, #D4892A intimate), street-level detail at bottom edge, flat vector, hard-edged shadows, 4-colour palette: transparent background, #1E2438 (building facade), #C49A1E (standard window light), #D4892A (warm interior light), #141926 (shadow/recess)
+[LAYER_DESCRIPTOR]: Close Manhattan apartment building facades. Large buildings filling lower 58% of image height. Brick facade geometry visible as flat horizontal and vertical rectangular detail. Parapet caps along roofline. Fire escape geometry as thin rectangular outlines on the building face. Window grid present as shallow indentations in the silhouette face — NOT punched through, the silhouette remains solid. Street-level detail at bottom edge.
 ```
 Seed: 522.
 
-**Window light overlay (separate transparent layer, driven by awake/asleep):**
-```
-Transparent overlay layer, sparse amber-gold lit window shapes (#C49A1E, 85% opacity) on transparent background, window shapes match the near-buildings layer geometry exactly, approximately 40% of windows lit, photorealistic placement
-```
-Seed: 523. This layer is toggled/faded based on awake status.
+#### Layer 6 — Foreground (NYC)
 
-**Foreground layer:**
 ```
-Art deco city illustration, apartment balcony foreground, iron railing with art deco scroll detail at bottom of frame, warm amber interior light spilling from behind viewer (suggesting the lit room), foreground objects optional (small table, coffee cup), transparent sky area above railing shows the city layers behind, flat vector, warm interior vs cold exterior contrast
+[LAYER_DESCRIPTOR]: New York apartment interior foreground. Cast iron balcony railing with art deco scroll pattern spanning the bottom 20% of the frame. Curtain edges framing the left and right sides (heavy drapes, partially drawn). Silhouette reads as a frame enclosing the city view. No city buildings in this layer — the layer is transparent except for the railing and curtain edges. Interior light suggestion at the very bottom edge.
 ```
 Seed: 524.
 
@@ -489,35 +526,226 @@ Seed: 524.
 
 ### City B — Tel Aviv (Adam's city)
 
-**Identifying landmarks to include:**
-- Mid skyline: Azrieli towers (three towers, distinctive — circular, triangular, square), Moshe Aviv Tower (tallest in Tel Aviv, with distinctive antenna)
-- Character: lower density than Manhattan, wider spacing between tall buildings, Mediterranean warmth even at night (warmer ambient light than New York)
-- Foreground: open balcony with Mediterranean influence — possibly arched opening, climbing plants in a pot, view more open than the enclosed New York apartment
+Prompt structure identical to NYC. `[LAYER_DESCRIPTOR]` values adjusted for Tel Aviv's character.
 
-The prompt structure is identical to New York but with Tel Aviv landmark descriptors. Seeds begin at 601 (sky variants) through 624 (foreground). The style prompt base is identical — same Batman:TAS discipline, same colour palette anchors.
+**Character differences from NYC:**
+- Lower overall density — buildings are more widely spaced, more sky visible between them
+- Mediterranean: slightly lower building heights, more variety in roofline shape
+- Warmer ambient character
 
-**Key difference from New York:** Tel Aviv's night is warmer (less cool blue in the sky layer, more amber warmth in the mid sky). Adjust the sky layer prompt: "warm deep navy, slight amber warmth at the horizon from city heat, not as cold as a northern city."
+#### Layer 2 — Far skyline (TLV)
+
+```
+[LAYER_DESCRIPTOR]: Far distant Tel Aviv skyline. Less dense than Manhattan — wider spacing between buildings with sky gaps visible. Buildings are smaller apparent size. Lower overall height profile. Silhouette occupies lower 15% of image height.
+```
+Seed: 620.
+
+#### Layer 3 — Mid skyline (TLV)
+
+```
+[LAYER_DESCRIPTOR]: Mid-distance Tel Aviv skyline. Three Azrieli towers clearly identifiable by their distinctive plan shapes: one circular tower (tallest of the three, stepped crown), one triangular tower (triangular plan visible in silhouette as a tapered form), one square tower. Moshe Aviv Tower is the tallest single structure — rectangular with a distinctive antenna spire. Surrounding buildings at lower heights with varied rooflines. Silhouette occupies lower 35% of image height.
+```
+Seed: 621.
+
+**Landmark test:** The Azrieli trio is the identifiability test — the circular, triangular, and square towers together are unlike any other skyline in the world. If the trio is not readable from the silhouette, regenerate.
+
+#### Layer 4 — Near buildings (TLV)
+
+```
+[LAYER_DESCRIPTOR]: Close Tel Aviv building facades. Mediterranean-influenced — mix of flat-roofed apartment buildings and older Bauhaus-style structures. Some buildings show rounded balcony projections along their faces as slight curved protrusions in the silhouette. Window grid as shallow rectangular detail, NOT punched through. Buildings fill lower 55% of image height.
+```
+Seed: 622.
+
+#### Layer 6 — Foreground (TLV)
+
+```
+[LAYER_DESCRIPTOR]: Tel Aviv apartment balcony foreground. Open balcony railing, more slender than the NYC version — thin horizontal and vertical rails. A terracotta pot with trailing plant at one side (leaves as simple rounded silhouette forms). Wider field of view than NYC foreground — more sky visible, more open feel. Railing spans bottom 18% of frame. Left and right edges open rather than curtain-framed.
+```
+Seed: 624.
 
 ---
 
-### Output spec for all city plates
+### Layer 5 — Window lights (coordinate list, not generated)
 
-- Format: PNG with transparency (except sky layer which is fully opaque)
-- Sky layer: 1170×2532px (full iPhone screen at 3×)
-- Far/mid/near/foreground layers: same dimensions, transparent outside their content area
-- Colour space: sRGB, no ICC profile embedding
-- No anti-aliasing blur at hard edges — this is flat vector illustration; edges must be crisp
-- The near-buildings layer and mid-skyline layer deliver two versions: windows-lit and windows-unlit (or the window overlay is a separate file — preferred, since it allows partial-opacity states)
+Window lights are **not painted into any image**. They are small coloured rectangles composited by the runtime system from a JSON coordinate list per city.
+
+**Why not generate them:** A model cannot be told exactly which pixel positions to place lit windows. And the windows need to change dynamically — Eva's building lights up when she is awake; Adam's lights up when he is awake. Baked images cannot do this.
+
+**Coordinate file schema:**
+
+```json
+{
+  "city": "nyc",
+  "reference_size": { "w": 1170, "h": 2532 },
+  "layers": {
+    "mid": [
+      {
+        "id": "m001",
+        "x": 0.423,
+        "y": 0.512,
+        "w": 18,
+        "h": 22,
+        "token": "night-gold",
+        "person": null
+      },
+      {
+        "id": "m002",
+        "x": 0.387,
+        "y": 0.489,
+        "w": 14,
+        "h": 18,
+        "token": "night-amber",
+        "person": "eva"
+      }
+    ],
+    "near": [
+      {
+        "id": "n001",
+        "x": 0.156,
+        "y": 0.634,
+        "w": 20,
+        "h": 24,
+        "token": "night-gold",
+        "person": null
+      }
+    ]
+  }
+}
+```
+
+**Field definitions:**
+
+| Field | Type | Meaning |
+|---|---|---|
+| `x`, `y` | `number` (0–1) | Position as fraction of `reference_size`, from top-left |
+| `w`, `h` | `number` (px) | Window size at `reference_size` resolution |
+| `token` | `"night-gold"` \| `"night-amber"` | Which design law colour token to use for this window |
+| `person` | `"eva"` \| `"adam"` \| `null` | `null` = ambient city window, always lit at 70% opacity. `"eva"` or `"adam"` = their specific building's window, lit when that person is marked awake. |
+
+**Coordinate list production:** The coordinate lists for NYC and TLV are hand-authored by the product-designer by overlaying a grid on the rendered near/mid layers and marking window positions. They are not generated. This is the one manual step in the pipeline — it takes 30 minutes per city and never needs redoing unless the silhouette layers change.
+
+---
+
+### Keying technique — white to alpha
+
+After generation, each silhouette PNG (layers 2, 3, 4, 6) is processed to produce transparent PNGs. **This is a build-time operation**, not runtime.
+
+**Method: luminance-to-alpha**
+
+```
+alpha = 1.0 - (luminance / 255)
+```
+
+Where luminance = 0.299R + 0.587G + 0.114B (standard luma).
+
+- Pure white (#FFFFFF, luminance 255) → alpha 0.0 (fully transparent)
+- Pure black (#000000, luminance 0) → alpha 1.0 (fully opaque)
+- Edge pixel with luminance 180 → alpha 0.29 (semi-transparent)
+
+**Why this handles the diagonal-roofline anti-aliasing problem:** The generation model naturally produces slightly grey pixels along diagonal edges (its own anti-aliasing). Luminance-to-alpha converts those grey pixels to semi-transparent pixels automatically — the edge is smooth without any additional processing step.
+
+**Hard-threshold keying is banned.** A hard threshold (all pixels above luminance 200 → transparent, all below → opaque) produces jagged stairstepping on any diagonal or curved edge. The luminance-to-alpha method handles this for free.
+
+**Implementation:** `sharp` (Node.js) can do this in one pipeline step:
+```js
+sharp(input)
+  .toColorspace('b-w')              // convert to greyscale
+  .raw()                             // get pixel buffer
+  // invert: dark → high alpha
+  .then(buf => /* luma-to-alpha */ )
+  .png({ compressionLevel: 9 })
+```
+Or with ImageMagick: `convert input.png -alpha copy -channel alpha -negate -evaluate multiply 0.999 output.png` (approximately — the frontend-engineer will confirm the exact flags).
+
+**After keying:** The PNG contains only the building silhouette as a black shape with natural anti-aliased edges on a transparent background. Colour is applied at runtime by the composition system using CSS `mix-blend-mode: multiply` or equivalent Canvas compositing, filling the opaque areas with the appropriate design law token colour.
+
+---
+
+### Colour application at runtime
+
+The keyed silhouette PNGs have no colour — they are monochrome alpha masks. The composition system paints each layer with design law tokens at render time.
+
+| Layer | Runtime fill colour |
+|---|---|
+| Far silhouette | `--night-sky` tinted 15% lighter: approximately `#1A2540` |
+| Mid silhouette | `--night-sky` tinted 25% lighter: approximately `#1E2D50` |
+| Near silhouette | `#1E2438` (same as original near-building token) |
+| Foreground silhouette | Near-black: `#0D1018` (darker than the buildings behind it) |
+
+This means changing the night palette in the design law automatically repaints all silhouettes — no asset regeneration needed.
+
+---
+
+### Output spec
+
+**Generated silhouette files (pre-keying):**
+- Format: PNG, no transparency, pure black silhouette on pure white
+- Resolution: 1170×2532px (full iPhone 3× screen)
+- Colour space: sRGB
+- Compression: maximum (these are 2-colour images, they compress extremely well)
+
+**After keying (shipped assets):**
+- Format: PNG with alpha
+- Same resolution
+- No ICC profile embedding
+- These are the files that go into `public/assets/city/`
+
+**Coordinate JSON files:**
+- `public/assets/city/nyc/windows.json`
+- `public/assets/city/tlv/windows.json`
+
+**No sky image files.** The sky is code-drawn.
+
+**Directory structure (revised for silhouette approach):**
+```
+public/
+  assets/
+    city/
+      nyc/
+        far.png           ← keyed silhouette
+        mid.png           ← keyed silhouette
+        near.png          ← keyed silhouette
+        foreground.png    ← keyed silhouette
+        windows.json      ← coordinate list for window overlay
+      tlv/
+        far.png
+        mid.png
+        near.png
+        foreground.png
+        windows.json
+      sky.ts              ← or sky.tsx: the code sky renderer
+```
+
+Total generated assets for city: **8 PNG files** (4 per city × 2 cities). Down from 28 files in the old spec (12 sky variants × 2 cities + 4 architectural layers × 2 cities). The sky and window lights have no file footprint.
+
+---
+
+### Seeds — city plates
+
+| Asset | City | Seed |
+|---|---|---|
+| Far silhouette | NYC | 520 |
+| Mid silhouette | NYC | 521 |
+| Near silhouette | NYC | 522 |
+| Foreground | NYC | 524 |
+| Far silhouette | TLV | 620 |
+| Mid silhouette | TLV | 621 |
+| Near silhouette | TLV | 622 |
+| Foreground | TLV | 624 |
+
+Seeds 523 and 623 (the old window-overlay generation) are retired. Window lights are now coordinate-driven, not generated.
+
+---
 
 ### What "wrong" looks like for city plates — reject on sight
 
-- **A single flattened image:** the layer stack is the deliverable. A flattened PNG, however beautiful, cannot be used.
-- **Photorealistic style:** must be flat vector illustration. If it looks like a photograph or like 3D-rendered architecture, regenerate.
-- **Gradients inside building shapes:** buildings are flat silhouettes. A gradient-filled building is not Batman:TAS style.
-- **More than 5 colours per layer:** the limited palette per scene is the discipline. Count the colours; if more than 5, identify which to remove.
-- **Unrecognizable silhouette:** the mid skyline must be identifiable as New York or Tel Aviv from the silhouette alone, without labels. If a neutral viewer cannot name the city, the landmark indicators are not strong enough.
-- **City plates that are generic:** "a night city" is not acceptable. "Manhattan seen from a Midtown apartment at 11pm in autumn" is the target specificity.
-- **Lit windows that do not match layer geometry:** the window overlay must align precisely with the windows in the near-buildings layer. Misalignment breaks the compositing.
+- **Any colour in the silhouette file:** the generated image must be pure black shapes on pure white. A grey building, a coloured sky, any shadow gradient — reject and regenerate.
+- **Grey pixels in the middle of a building body:** edge pixels may be grey (this is correct — luminance-to-alpha needs them). Grey pixels in the flat centre of a building indicate the model produced shading. Reject.
+- **A single flattened image delivered as "the layer stack":** still a failed deliverable under the revised spec. The four architectural layers (far, mid, near, foreground) are four separate files.
+- **Unidentifiable mid skyline:** the mid-skyline silhouette must pass the landmark test. Cover everything else. Ask: Empire State Building? Chrysler Building? (NYC). Azrieli trio? Moshe Aviv? (TLV). If uncertain: regenerate.
+- **Window holes punched through the near-buildings silhouette:** the near-buildings image must be a solid building shape. Windows are Layer 5 (coordinate-driven). A near-buildings image with white rectangular holes in it means the model mis-interpreted the brief.
+- **Sky file delivered:** there is no sky file. If a sky image was generated, it is a misunderstanding of the spec. The sky is code.
+- **Flat foreground:** the foreground silhouette should clearly read as "inside a room looking out." A foreground that is just a strip of black at the bottom is not sufficient — the railing detail and curtain/arch framing must be present.
 
 ---
 
