@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import type { Photo, SharedDay } from "@/lib/types";
 import { Spread } from "@/components/spread/Spread";
+import { BookSheet } from "@/components/book/BookSheet";
 import { SHARED_DAYS } from "@/lib/fixtures/book";
 import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
 import { ADAM, EVA } from "@/lib/fixtures/members";
@@ -65,7 +66,9 @@ export default function DaysPage() {
       </header>
 
       {pages.length === 0 ? (
-        <p className="type-body text-mute">No days yet.</p>
+        /* Unreachable in practice — the door here suppresses when the
+           archive is empty. Bare paper: no "yet", no waiting copy. */
+        <div aria-hidden="true" />
       ) : (
         <div>
           <div
@@ -78,11 +81,15 @@ export default function DaysPage() {
                 key={leaf.day.date}
                 className="w-[88%] shrink-0 snap-center sm:w-full"
               >
-                <Spread
-                  day={leaf.day}
-                  evaPhoto={leaf.evaPhoto}
-                  adamPhoto={leaf.adamPhoto}
-                />
+                {/* Each day is a leaf of the book — bone stock, free
+                    composition inside (the evolved Spread). */}
+                <BookSheet>
+                  <Spread
+                    day={leaf.day}
+                    evaPhoto={leaf.evaPhoto}
+                    adamPhoto={leaf.adamPhoto}
+                  />
+                </BookSheet>
               </div>
             ))}
           </div>

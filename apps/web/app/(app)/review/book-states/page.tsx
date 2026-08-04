@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Lock } from "lucide-react";
 import type { Return } from "@/lib/resurface";
-import type { Photo } from "@/lib/types";
-import { BEGUN } from "@/lib/fixtures/book";
-import { longDate } from "@/lib/time";
+import type { Photo, SharedDay } from "@/lib/types";
 import { PHOTOS } from "@/lib/fixtures/photos";
+import { SHARED_DAYS } from "@/lib/fixtures/book";
+import { BookCover } from "@/components/book/BookCover";
+import { BookSheet } from "@/components/book/BookSheet";
 import { ResurfacedItem } from "@/components/book/ResurfacedItem";
+import { Spread } from "@/components/spread/Spread";
 
 export const metadata: Metadata = {
   title: "Review: book states — dev",
@@ -15,21 +15,25 @@ export const metadata: Metadata = {
 /**
  * Development review surface — not reachable from the dock.
  *
- * Renders all four states of The Book page so they can be captured by
- * shoot.mjs without modifying any production route or fixture.
+ * Renders every state of The Book so they can be captured without
+ * modifying any production route or fixture. `?mode=day|night`
+ * previews both rooms; night here must read as the amber-lit reading
+ * lamp, never the city sky.
  *
  * States:
- *   1. Title page — archive is empty (day one, before first post)
- *   2. Resurfaced photo — date match ("A year ago today")
- *   3. Resurfaced photo — hour match ("Left at this hour, in July")
- *   4. Resurfaced text — no photo, caption only (text-quote path)
+ *   1  The closed book — day one (thin), current, and year-three
+ *      (thick): the fore-edge is the anti-counter and its growth is
+ *      the thing to look at. No number may appear in any of them.
+ *   2  The opening — resurfaced photo, date match
+ *   3  The opening — resurfaced photo, hour match (different mount)
+ *   4  The opening — text only (no photograph anywhere: the Tuesday
+ *      test's hardest case, an ordinary afternoon)
+ *   5  The opening — day one, bare paper (clear table, no copy)
+ *   6  A finished pair spread (unequal, tucked, taped)
+ *   7  A single-photograph day (a full page, no empty twin)
  *
- * `?mode=day|night` previews both colour rooms.
- *
- * This is a development tool only. Do not link to it from product surfaces.
+ * This is a development tool only. Never link it from product surfaces.
  */
-
-const colophon = `Begun ${longDate(BEGUN)}`;
 
 // ── Forced states for review ──────────────────────────────────────────
 
@@ -45,8 +49,8 @@ const HOUR_MATCH: Return = {
   photo: PHOTOS["d0730-adam"],
 };
 
-// Text-only entry: width/height 0 so ResurfacedItem uses the text-quote path.
-// The caption is what came back; no photograph exists.
+// Text-only entry: width/height 0 so ResurfacedItem takes the
+// written-line path. The caption is what came back; no photograph.
 const TEXT_ONLY_PHOTO: Photo = {
   ...PHOTOS["d0729-eva"],
   id: "review-text-only",
@@ -63,6 +67,17 @@ const TEXT_MATCH: Return = {
   label: "Left in the evening, in July",
   photo: TEXT_ONLY_PHOTO,
 };
+
+const PAIR_DAY: SharedDay = SHARED_DAYS.find((d) => d.date === "2026-07-30")!;
+const SINGLE_DAY: SharedDay = SHARED_DAYS.find((d) => d.date === "2026-07-31")!;
+
+function Label({ id, children }: { id: string; children: string }) {
+  return (
+    <h2 id={id} className="type-micro mb-4 text-mute">
+      {children}
+    </h2>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────
 
@@ -87,74 +102,73 @@ export default function ReviewBookStatesPage() {
         </nav>
       </header>
 
-      <div className="space-y-20">
-
-        {/* ── State 1: Title page (day one, empty archive) ────────────────
-         *  The masthead anchors the top, blank paper fills the viewport,
-         *  imprint anchors the foot. Rendered in a 100dvh-tall container
-         *  so the composition reads as a page rather than a void.
-         * ────────────────────────────────────────────────────────────── */}
-        <section aria-labelledby="state-title">
-          <h2 id="state-title" className="type-micro mb-4 text-mute">
-            State 1 — title page (day one, empty archive)
-          </h2>
-          <div
-            className="flex flex-col border border-line rounded"
-            style={{
-              minHeight: "calc(100dvh - var(--dock-footprint) - 2rem)",
-            }}
-          >
-            <h3
-              className="type-masthead text-ink"
-              style={{ fontSize: "clamp(3.5rem, 19.3vw, 6.5rem)" }}
-            >
-              The book
-            </h3>
-            <div className="flex-1" aria-hidden="true" />
-            <div>
-              <hr className="border-t border-line" />
-              <Link
-                href="/pocket"
-                className="flex items-center justify-between py-5 press"
-                aria-label="The pocket"
-              >
-                <span className="type-title text-ink">Eva &amp; Adam</span>
-                <Lock
-                  size={18}
-                  strokeWidth={1.9}
-                  className="text-mute"
-                  aria-hidden="true"
-                />
-              </Link>
-              <p className="type-micro text-mute pb-2">{colophon}</p>
-            </div>
+      <div className="space-y-24">
+        <section aria-labelledby="s-cover-day-one" className="overflow-x-clip">
+          <Label id="s-cover-day-one">State 1a — the closed book, day one (thin)</Label>
+          <div className="pr-6">
+            <BookCover leafCount={0} begun="2026-08-02" />
           </div>
         </section>
 
-        {/* ── State 2: Resurfaced photo — date match ───────────────────── */}
-        <section aria-labelledby="state-date">
-          <h2 id="state-date" className="type-micro mb-4 text-mute">
-            State 2 — resurfaced photo, date match ("A year ago today")
-          </h2>
-          <ResurfacedItem returned={DATE_MATCH} />
+        <section aria-labelledby="s-cover-now" className="overflow-x-clip">
+          <Label id="s-cover-now">State 1b — the closed book, current archive</Label>
+          <div className="pr-6">
+            <BookCover leafCount={6} begun="2026-08-02" />
+          </div>
         </section>
 
-        {/* ── State 3: Resurfaced photo — hour match ───────────────────── */}
-        <section aria-labelledby="state-hour">
-          <h2 id="state-hour" className="type-micro mb-4 text-mute">
-            State 3 — resurfaced photo, hour match ("Left at this hour, in July")
-          </h2>
-          <ResurfacedItem returned={HOUR_MATCH} />
+        <section aria-labelledby="s-cover-year3" className="overflow-x-clip">
+          <Label id="s-cover-year3">State 1c — the closed book, year three (thick)</Label>
+          <div className="pr-6">
+            <BookCover leafCount={200} begun="2026-08-02" />
+          </div>
         </section>
 
-        {/* ── State 4: Text-only (no photograph, caption only) ─────────── */}
-        <section aria-labelledby="state-text">
-          <h2 id="state-text" className="type-micro mb-4 text-mute">
-            State 4 — text-only (no photograph, caption as the resurfaced item)
-          </h2>
-          <ResurfacedItem returned={TEXT_MATCH} />
+        <section aria-labelledby="s-date">
+          <Label id="s-date">State 2 — the opening, date match</Label>
+          <BookSheet ribbon>
+            <ResurfacedItem returned={DATE_MATCH} />
+          </BookSheet>
         </section>
 
+        <section aria-labelledby="s-hour">
+          <Label id="s-hour">State 3 — the opening, hour match</Label>
+          <BookSheet ribbon>
+            <ResurfacedItem returned={HOUR_MATCH} />
+          </BookSheet>
+        </section>
+
+        <section aria-labelledby="s-text">
+          <Label id="s-text">State 4 — the opening, text only (no photograph anywhere)</Label>
+          <BookSheet ribbon>
+            <ResurfacedItem returned={TEXT_MATCH} />
+          </BookSheet>
+        </section>
+
+        <section aria-labelledby="s-empty">
+          <Label id="s-empty">State 5 — the opening, day one (bare paper)</Label>
+          <BookSheet>
+            <div className="h-[42dvh]" aria-hidden="true" />
+          </BookSheet>
+        </section>
+
+        <section aria-labelledby="s-pair">
+          <Label id="s-pair">State 6 — a finished pair (unequal, tucked, taped)</Label>
+          <BookSheet>
+            <Spread
+              day={PAIR_DAY}
+              evaPhoto={PHOTOS["d0730-eva"]}
+              adamPhoto={PHOTOS["d0730-adam"]}
+            />
+          </BookSheet>
+        </section>
+
+        <section aria-labelledby="s-single">
+          <Label id="s-single">State 7 — a single-photograph day (a full page)</Label>
+          <BookSheet>
+            <Spread day={SINGLE_DAY} evaPhoto={PHOTOS["d0731-eva"]} />
+          </BookSheet>
+        </section>
       </div>
     </div>
   );
