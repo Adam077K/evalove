@@ -133,12 +133,12 @@ describe("Mutation D: handleSignOut purges all personal-content stores", () => {
     const deletedCaches: string[] = [];
     return {
       stub: {
-        keys: vi.fn<[], Promise<string[]>>().mockResolvedValue([
+        keys: vi.fn<() => Promise<string[]>>().mockResolvedValue([
           "photo-display-v1",
           "photo-thumb-v1",
           "nav-v1",
         ]),
-        delete: vi.fn<[string], Promise<boolean>>().mockImplementation((name) => {
+        delete: vi.fn<(name: string) => Promise<boolean>>().mockImplementation((name) => {
           deletedCaches.push(name);
           return Promise.resolve(true);
         }),
@@ -181,7 +181,7 @@ describe("Mutation D: handleSignOut purges all personal-content stores", () => {
     return {
       stub: {
         storage: {
-          getDirectory: vi.fn<[], Promise<FileSystemDirectoryHandle>>().mockResolvedValue({
+          getDirectory: vi.fn<() => Promise<FileSystemDirectoryHandle>>().mockResolvedValue({
             removeEntry,
           } as unknown as FileSystemDirectoryHandle),
         },
@@ -198,7 +198,7 @@ describe("Mutation D: handleSignOut purges all personal-content stores", () => {
     vi.stubGlobal("caches", cacheStub);
     vi.stubGlobal("indexedDB", idbMock.stub);
     vi.stubGlobal("navigator", storageMock.stub);
-    vi.stubGlobal("fetch", vi.fn<[Request], Promise<Response>>().mockResolvedValue(
+    vi.stubGlobal("fetch", vi.fn<(request: Request) => Promise<Response>>().mockResolvedValue(
       new Response(null, { status: 204 }),
     ));
 
@@ -222,7 +222,7 @@ describe("Mutation D: handleSignOut purges all personal-content stores", () => {
     vi.stubGlobal("navigator", storageMock.stub);
     vi.stubGlobal(
       "fetch",
-      vi.fn<[Request], Promise<Response>>().mockRejectedValue(
+      vi.fn<(request: Request) => Promise<Response>>().mockRejectedValue(
         new TypeError("Failed to fetch"),
       ),
     );
@@ -246,7 +246,7 @@ describe("Mutation D: handleSignOut purges all personal-content stores", () => {
     vi.stubGlobal("navigator", storageMock.stub);
     vi.stubGlobal(
       "fetch",
-      vi.fn<[Request], Promise<Response>>().mockRejectedValue(
+      vi.fn<(request: Request) => Promise<Response>>().mockRejectedValue(
         new TypeError("Failed to fetch"),
       ),
     );
@@ -267,7 +267,7 @@ describe("Mutation D: handleSignOut purges all personal-content stores", () => {
     vi.stubGlobal("caches", cacheStub);
     vi.stubGlobal("indexedDB", idbMock.stub);
     vi.stubGlobal("navigator", storageMock.stub);
-    vi.stubGlobal("fetch", vi.fn<[Request], Promise<Response>>().mockResolvedValue(
+    vi.stubGlobal("fetch", vi.fn<(request: Request) => Promise<Response>>().mockResolvedValue(
       new Response(null, { status: 204 }),
     ));
 
@@ -287,7 +287,7 @@ describe("Mutation D: handleSignOut purges all personal-content stores", () => {
     vi.stubGlobal("caches", cacheStub);
     vi.stubGlobal("indexedDB", idbMock.stub);
     vi.stubGlobal("navigator", storageMock.stub);
-    vi.stubGlobal("fetch", vi.fn<[Request], Promise<Response>>().mockResolvedValue(
+    vi.stubGlobal("fetch", vi.fn<(request: Request) => Promise<Response>>().mockResolvedValue(
       new Response(null, { status: 204 }),
     ));
 

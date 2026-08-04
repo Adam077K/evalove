@@ -19,7 +19,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { softDeletePhoto, type PhotoDeps } from "../photos";
 import { DataError } from "../errors";
-import type { PhotoRow } from "../rows";
+import type { BookEntryRow, PhotoRow } from "../rows";
+import type {
+  DataGateway,
+  MemberRow,
+  PhotoPatch,
+  PhotoPageQuery,
+  BookEntryPatch,
+  PurgeAuditInsert,
+} from "../gateway";
 
 /* ------------------------------------------------------------------ *
  * In-Memory Gateway
@@ -31,10 +39,12 @@ import type { PhotoRow } from "../rows";
  * 2. Spy on calls to updatePhoto
  * 3. Isolate the softDeletePhoto logic from Supabase
  *
- * The shape matches `DataGateway` interface from gateway.ts, exposing
- * only the two methods softDeletePhoto actually calls.
+ * `PhotoDeps.gateway` is typed as the full `DataGateway` port, so this class
+ * implements every member of it. softDeletePhoto only calls findPhotoById and
+ * updatePhoto — the rest exist solely to satisfy the interface and throw if a
+ * future test accidentally exercises a path this suite does not cover.
  */
-class FakeGateway {
+class FakeGateway implements DataGateway {
   // Photo store: id -> row, or null to simulate "not found"
   private store = new Map<string, PhotoRow | null>();
 
@@ -61,7 +71,7 @@ class FakeGateway {
    */
   async updatePhoto(
     photoId: string,
-    patch: Record<string, string>,
+    patch: PhotoPatch,
   ): Promise<PhotoRow | null> {
     this.updatePhotoMock(photoId, patch);
     const updated = this.store.get(photoId);
@@ -74,6 +84,83 @@ class FakeGateway {
    */
   getUpdatePhotoMock() {
     return this.updatePhotoMock;
+  }
+
+  /* -- unused by softDeletePhoto — present only to satisfy DataGateway -- */
+
+  private notImplemented(method: string): never {
+    throw new Error(
+      `FakeGateway.${method} is not implemented — softDeletePhoto does not call it. ` +
+        `If a new test needs it, implement it for real rather than stubbing the return value.`,
+    );
+  }
+
+  listMembers(): Promise<MemberRow[]> {
+    return this.notImplemented("listMembers");
+  }
+
+  insertPhotoIfAbsent(_row: PhotoRow): Promise<PhotoRow> {
+    return this.notImplemented("insertPhotoIfAbsent");
+  }
+
+  findPhotoByClientUuid(_clientUuid: string): Promise<PhotoRow | null> {
+    return this.notImplemented("findPhotoByClientUuid");
+  }
+
+  listPhotos(_query: PhotoPageQuery): Promise<PhotoRow[]> {
+    return this.notImplemented("listPhotos");
+  }
+
+  dailyPhotosForDay(_sharedDay: string): Promise<PhotoRow[]> {
+    return this.notImplemented("dailyPhotosForDay");
+  }
+
+  supersedePriorDaily(_args: {
+    authorMemberId: string;
+    sharedDay: string;
+    exceptClientUuid: string;
+    at: string;
+  }): Promise<number> {
+    return this.notImplemented("supersedePriorDaily");
+  }
+
+  countDaysTogether(): Promise<number> {
+    return this.notImplemented("countDaysTogether");
+  }
+
+  countPurgeRequestsSince(_since: string): Promise<number> {
+    return this.notImplemented("countPurgeRequestsSince");
+  }
+
+  insertPurgeAudit(_row: PurgeAuditInsert): Promise<number> {
+    return this.notImplemented("insertPurgeAudit");
+  }
+
+  markPurgeAuditStoragePurged(_auditId: number, _at: string): Promise<void> {
+    return this.notImplemented("markPurgeAuditStoragePurged");
+  }
+
+  listBookEntries(): Promise<BookEntryRow[]> {
+    return this.notImplemented("listBookEntries");
+  }
+
+  updateBookEntry(
+    _id: string,
+    _patch: BookEntryPatch,
+  ): Promise<BookEntryRow | null> {
+    return this.notImplemented("updateBookEntry");
+  }
+
+  createSignedUploadUrl(_path: string): Promise<{ url: string; token: string }> {
+    return this.notImplemented("createSignedUploadUrl");
+  }
+
+  downloadObject(_path: string): Promise<ArrayBuffer | null> {
+    return this.notImplemented("downloadObject");
+  }
+
+  removeObjects(_paths: readonly string[]): Promise<string[]> {
+    return this.notImplemented("removeObjects");
   }
 }
 
@@ -91,7 +178,7 @@ function createMockPhotoRow(overrides?: Partial<PhotoRow>): PhotoRow {
     client_uuid: "client-abc",
     kind: "daily",
     author_member_id: "author-eva",
-    attribution_source: "camera",
+    attribution_source: "authenticated",
     shared_day: "2026-08-03",
     shared_day_tz: "America/New_York",
     client_reported_tz: null,

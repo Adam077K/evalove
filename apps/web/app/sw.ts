@@ -73,6 +73,7 @@ import {
   ROUTE_DESCRIPTORS,
   type PluginName,
   type RouteDescriptor,
+  type RouteDescriptorMethod,
 } from "./sw-runtime-caching";
 
 // ---- TypeScript — augment the SW global scope ------------------------------
@@ -135,14 +136,27 @@ const pluginByName: Record<PluginName, object> = {
   redirectPlugin,
 };
 
+// The concrete handler types buildRuntimeCachingEntry can produce — one per
+// StrategyTag branch below. Serwist's RuntimeCaching["handler"] accepts a
+// RouteHandlerCallback (handleSignOut's shape) or a RouteHandlerObject
+// (Strategy subclasses implement `handle()`, satisfying that shape), so this
+// union is what actually flows into the Serwist config, unlike `unknown`
+// which erases the switch's exhaustiveness and is never assignable to
+// RuntimeCaching["handler"].
+type RuntimeCachingHandler =
+  | typeof handleSignOut
+  | NetworkOnly
+  | CacheFirst
+  | NetworkFirst;
+
 function buildRuntimeCachingEntry(desc: RouteDescriptor): {
   matcher: RouteDescriptor["matcher"];
-  handler: unknown;
-  method?: string;
+  handler: RuntimeCachingHandler;
+  method?: RouteDescriptorMethod;
 } {
   const plugins = (desc.pluginNames ?? []).map((name) => pluginByName[name]);
 
-  let handler: unknown;
+  let handler: RuntimeCachingHandler;
   switch (desc.strategyTag) {
     case "handleSignOut":
       handler = handleSignOut;

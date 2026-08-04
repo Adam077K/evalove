@@ -185,6 +185,23 @@ export type StrategyTag =
   | "CacheFirst"
   | "NetworkFirst";
 
+/**
+ * The HTTP methods Serwist's RuntimeCaching["method"] accepts. Spelled out
+ * locally (rather than imported from "serwist") so this module stays free of
+ * Serwist imports per the file-level doc comment above; sw.ts's
+ * buildRuntimeCachingEntry() assigns desc.method straight into a Serwist
+ * RuntimeCaching entry, so this union must stay structurally identical to
+ * Serwist's HTTPMethod type.
+ */
+export type RouteDescriptorMethod =
+  | "DELETE"
+  | "GET"
+  | "HEAD"
+  | "PATCH"
+  | "POST"
+  | "PUT"
+  | "OPTIONS";
+
 /** One routing rule — matcher + strategy description, free of Serwist imports. */
 export interface RouteDescriptor {
   /** Unique label used in test assertions. */
@@ -195,7 +212,7 @@ export interface RouteDescriptor {
    * `method: "DELETE"` is the load-bearing field for the sign-out rule —
    * without it the rule registers on GET and never fires for sign-out.
    */
-  readonly method?: string;
+  readonly method?: RouteDescriptorMethod;
   /** Strategy the matched request is handled by. */
   readonly strategyTag: StrategyTag;
   /**
