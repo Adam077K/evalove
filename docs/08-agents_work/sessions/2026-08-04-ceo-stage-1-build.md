@@ -2,9 +2,9 @@
 date: 2026-08-04
 role: ceo
 task: stage-1-build
-status: IN PROGRESS — Wave 0 built and visually accepted; QA-Lead BLOCK on one P1, fix in flight
+status: CLOSED — Wave 0 merged to main at 6c3ed85; handed off at 2026-08-04-HANDOFF-BUILD-PHASE.md
 tier: full (1150 insertions / 138 deletions, night CSS rewritten, blast radius on existing surfaces)
-qa_verdict: BLOCK (revised from PASS) — awaiting re-submission
+qa_verdict: PASS (after one BLOCK cycle on the lamp-curve hardcoding)
 branch: feat/wave-0-foundation
 supersedes: nothing; continues 2026-08-04-ceo-scrapbook-deco-redesign.md
 ---
