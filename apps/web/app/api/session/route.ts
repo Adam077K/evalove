@@ -29,7 +29,12 @@
 import { z } from "zod";
 
 import { verifySecret } from "@/lib/auth/password";
-import { checkRateLimit } from "@/lib/auth/rate-limit";
+import {
+  checkDegradedSessionRateLimit,
+  checkRateLimit,
+  refundDegradedAttempt,
+  type RateLimitDecision,
+} from "@/lib/auth/rate-limit";
 import { holdUntilFloor, startClock } from "@/lib/auth/timing";
 import { recordAuthAttempt } from "@/lib/data/auth-attempts";
 import { env, parseScryptHash } from "@/lib/env";
@@ -107,24 +112,41 @@ export async function POST(request: Request): Promise<Response> {
 
   /* --- limiter, before any expensive work ----------------------- */
 
-  let limit;
+  let limit: RateLimitDecision;
+  let degradedPath = false;
   try {
     limit = await checkRateLimit("session", ip);
   } catch (error) {
-    // The limiter could not see the history. FAIL CLOSED. A limiter that lets
-    // everything through when its storage is unreachable is a limiter an
-    // attacker can switch off by making the storage unreachable — and the two
-    // people who use this app can wait for the database to come back, because
-    // nothing else in the app works without it either.
-    console.error("rate-limit read failed; refusing the attempt", {
+    // scope='session': degrade to the in-process counter rather than fail
+    // closed. A correct password + Supabase unavailable = 503 was the only
+    // path to the archive, and being locked out at 3am because a free-tier
+    // project paused is the precise failure mode we are preventing.
+    //
+    // scope='vault' never enters this branch: vault has its own route and its
+    // own catch block, which MUST keep failing closed. That split — session
+    // degrades, vault does not — is the whole design. See the argument in
+    // lib/auth/rate-limit.ts's file header for why each door is different.
+    console.error("rate-limit read failed; degrading to in-process counter", {
       scope: "session",
       message: error instanceof Error ? error.message : String(error),
     });
-    await holdUntilFloor(clock);
-    return json(
-      { ok: false, message: "Something's wrong on our end. Try again shortly." },
-      { status: 503, headers: { "Retry-After": "30" } },
-    );
+    const degraded = checkDegradedSessionRateLimit(ip);
+    if (!degraded.allowed) {
+      // Response is byte-identical to the ordinary 429: no banner, no extra
+      // header, no different sentence. Telling the caller "the limiter is
+      // degraded" is an oracle for the one attacker who can make storage
+      // unreachable on demand.
+      await holdUntilFloor(clock);
+      return json(
+        { ok: false, message: "Too many tries. Give it a few minutes." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(degraded.retryAfterSeconds) },
+        },
+      );
+    }
+    degradedPath = true;
+    limit = { allowed: true };
   }
 
   if (!limit.allowed) {
@@ -160,6 +182,13 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   /* --- in ------------------------------------------------------- */
+
+  // Refund the pessimistic charge from the degraded counter. A correct password
+  // must not count against the per-instance budget: repeated successful logins
+  // during an outage (troubleshooting, device switching) would otherwise exhaust
+  // it and lock the door for fifteen minutes — the exact scenario this whole
+  // change exists to prevent.
+  if (degradedPath) refundDegradedAttempt(ip);
 
   // No `mid`. One password, two people, and the door cannot tell them apart —
   // saying otherwise in the token would be inventing identity. The "who's

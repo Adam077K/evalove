@@ -29,7 +29,7 @@ import { test, expect } from "@playwright/test";
  * the reserve is made of) while every glyph in it stays clear.
  */
 
-const ROUTES = ["/home", "/book", "/today", "/dates", "/send", "/echo", "/pocket"] as const;
+const ROUTES = ["/today", "/book", "/dates", "/send", "/echo", "/pocket"] as const;
 
 type Hit = { text: string; top: number; bottom: number };
 

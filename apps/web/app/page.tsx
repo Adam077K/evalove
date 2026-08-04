@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** The app opens on Home. There is no marketing surface — two users, forever. */
+/** The app opens on Today. There is no marketing surface — two users, forever. */
 export default function Root() {
-  redirect("/home");
+  redirect("/today");
 }

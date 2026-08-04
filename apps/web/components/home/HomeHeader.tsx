@@ -44,7 +44,7 @@ export function HomeHeader() {
       <Link
         href="/pocket"
         aria-label="The pocket — private, opens with a passphrase"
-        className="glass press mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-mute"
+        className="card press mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink"
       >
         <Lock size={18} strokeWidth={1.9} />
       </Link>

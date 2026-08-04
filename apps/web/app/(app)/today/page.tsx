@@ -1,70 +1,71 @@
 import type { Metadata } from "next";
-import type { SharedDay } from "@/lib/types";
-import { Spread } from "@/components/spread/Spread";
-import { SHARED_DAYS } from "@/lib/fixtures/book";
-import { PHOTOS } from "@/lib/fixtures/photos";
+import type { CSSProperties } from "react";
+import { TodayPair } from "@/components/home/TodayPair";
+import { TodayDoorway } from "@/components/home/TodayDoorway";
+import { WINDOW_STRINGS } from "@/lib/fixtures/members";
+import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
+import { currentWindow } from "@/lib/shared-day";
+import { offsetNote } from "@/lib/stamp";
 
 export const metadata: Metadata = {
   title: "Today — Eva & Adam",
 };
 
 /**
- * Review surface: the three states of the daily spread, side by side,
- * rendered from fixtures. `?mode=day|night` previews both rooms.
+ * Today — the room the app opens into.
+ *
+ * Composition (pair → sentence → doorway, nothing else):
+ *   The pair leads at y=0 when photographs exist. No header, no masthead, no navigation above it.
+ *   Two sections below, separated by hairlines with widening gaps.
+ *
+ * No card on this surface. No Echo tile (belongs in The Book). No pocket lock
+ * (Brief B placed it in The Book; two signposts to the private drawer is one
+ * too many on the surface opened most often). No SealedCard, no TonightCard.
+ *
+ * Rhythm — explicit per-section, not a uniform utility:
+ *   The gap expresses distance of relation.
+ *   caption → window sentence : 2rem gap + hairline + 1rem padding
+ *   window sentence → doorway : 2.5rem gap + hairline + 1.125rem padding
+ *
+ * Layout opt-out: the (app) layout adds pt-[max(1.5rem,env(safe-area-inset-top))].
+ * TodayPairContent cancels it on the grid, gated on hasAny, so photographs
+ * reach y=0. When neither has posted the pair sits at the normal layout position.
  */
 
-function dayOf(date: string): SharedDay {
-  const d = SHARED_DAYS.find((s) => s.date === date);
-  if (!d) throw new Error(`fixture day missing from SHARED_DAYS: ${date}`);
-  return d;
-}
+const stagger = (i: number): CSSProperties =>
+  ({ "--i": i }) as CSSProperties;
 
 export default function TodayPage() {
+  const now = new Date();
+  const windowId = currentWindow(now);
+  const windowLine = windowId !== null ? (WINDOW_STRINGS[windowId] ?? null) : null;
+  const dst = offsetNote(FIXTURE_TODAY);
+
   return (
     <div>
-      <header className="mb-10 flex items-baseline justify-between gap-4">
-        <h1 className="type-hero text-ink">Today</h1>
-        <nav aria-label="Mode" className="flex gap-1.5">
-          <a
-            className="type-label glass press rounded-full px-3.5 py-1.5 text-mute"
-            href="?mode=day"
-          >
-            day
-          </a>
-          <a
-            className="type-label glass press rounded-full px-3.5 py-1.5 text-mute"
-            href="?mode=night"
-          >
-            night
-          </a>
-        </nav>
-      </header>
+      {/* The pair — y=0 when photographs exist, normal layout padding otherwise.
+          The bleed-up is conditional: see TodayPairContent, gated on hasAny. */}
+      <TodayPair />
 
-      <div className="space-y-16">
-        <section aria-labelledby="state-half">
-          <h2 id="state-half" className="type-micro mb-4 text-mute">
-            The half pair — the day is still open
-          </h2>
-          <Spread day={dayOf("2026-08-02")} adamPhoto={PHOTOS["d0802-adam"]} live />
-        </section>
+      {/* Window sentence — 2rem gap + hairline + 1rem padding. */}
+      {windowLine !== null && (
+        <div
+          className="stagger-child mt-8 border-t border-line pt-4"
+          style={stagger(0)}
+        >
+          <p className="type-title text-ink">{windowLine}</p>
+          {dst !== null && (
+            <p className="type-micro mt-1 text-mute">{dst}</p>
+          )}
+        </div>
+      )}
 
-        <section aria-labelledby="state-pair">
-          <h2 id="state-pair" className="type-micro mb-4 text-mute">
-            The completed pair
-          </h2>
-          <Spread
-            day={dayOf("2026-07-30")}
-            evaPhoto={PHOTOS["d0730-eva"]}
-            adamPhoto={PHOTOS["d0730-adam"]}
-          />
-        </section>
-
-        <section aria-labelledby="state-plate">
-          <h2 id="state-plate" className="type-micro mb-4 text-mute">
-            The single plate — a day that closed half-finished
-          </h2>
-          <Spread day={dayOf("2026-07-31")} evaPhoto={PHOTOS["d0731-eva"]} />
-        </section>
+      {/* Doorway — 2.5rem gap + hairline + 1.125rem padding. */}
+      <div
+        className="stagger-child mt-10 border-t border-line pt-[1.125rem]"
+        style={stagger(1)}
+      >
+        <TodayDoorway now={now} />
       </div>
     </div>
   );

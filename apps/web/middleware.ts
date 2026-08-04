@@ -48,6 +48,14 @@ const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   "/favicon.ico",
   "/apple-touch-icon.png",
   "/robots.txt",
+  // Offline shell. Must be reachable without a session so the service worker
+  // can precache it during install. The SW fetches /offline at install time;
+  // if it hits this middleware unauthenticated and /offline is not on the
+  // allowlist, the 307 redirect is followed and the login page is cached
+  // under /offline — the one route whose job is to work offline becomes a
+  // login wall. The page contains no personal content: no photograph, no
+  // name, no caption.
+  "/offline",
 ]);
 
 /**
@@ -80,7 +88,7 @@ export async function middleware(request: NextRequest) {
       const session = await verifySessionToken(
         request.cookies.get(SESSION_COOKIE)?.value,
       );
-      if (session) return NextResponse.redirect(new URL("/home", request.url));
+      if (session) return NextResponse.redirect(new URL("/today", request.url));
     }
     return NextResponse.next();
   }

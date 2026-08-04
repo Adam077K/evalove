@@ -21,6 +21,8 @@ export type DataErrorKind =
   | "conflict"
   /** The caller has done this too many times. */
   | "rate_limited"
+  /** The caller is authenticated but not permitted to act on this resource. */
+  | "forbidden"
   /** The database, or storage, did not co-operate. */
   | "upstream";
 
@@ -49,6 +51,8 @@ export function statusOf(kind: DataErrorKind): number {
       return 409;
     case "rate_limited":
       return 429;
+    case "forbidden":
+      return 403;
     case "upstream":
       return 502;
   }

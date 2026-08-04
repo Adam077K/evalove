@@ -54,15 +54,19 @@ function SessionCard({
 }) {
   const Icon = KIND_ICON[session.kind];
   const writer = nextWriter(session, turns);
-  const isEva = writer?.slug === "eva";
-  const writerCls = isEva ? "text-eva-deep" : "text-adam-deep";
-  const writerSoft = isEva ? "bg-eva-soft" : "bg-adam-soft";
+  /* No ink on this chip.
+     Whose turn it is next is an intention, and the mark attaches to
+     artefacts: a thing that exists and that someone made. This was
+     the strongest surviving argument for spending the ink on
+     something unauthored, which is exactly why it goes — accept a
+     pending turn and every element *about* a person becomes eligible,
+     and a mark becomes a label one defensible step at a time. */
   const last = turns[turns.length - 1];
 
   return (
-    <li className="card hover-lift rounded-[1.5rem] p-5">
+    <li className="card hover-lift rounded-[1.125rem] p-5">
       <div className="flex items-start gap-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-us-soft text-us-deep">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center well rounded-full text-ink">
           <Icon size={17} strokeWidth={1.8} />
         </span>
         <div className="min-w-0 flex-1">
@@ -78,9 +82,7 @@ function SessionCard({
           )}
         </div>
         {writer ? (
-          <span
-            className={`type-label shrink-0 rounded-full px-3 py-1.5 ${writerSoft} ${writerCls}`}
-          >
+          <span className="type-label pill-quiet shrink-0 rounded-full px-3 py-1.5">
             {writer.displayName} writes next
           </span>
         ) : null}

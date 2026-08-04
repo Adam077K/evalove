@@ -1,0 +1,336 @@
+/**
+ * Composition candidates, written against the REAL custom properties from
+ * apps/web/app/globals.css. Nothing here invents a token.
+ */
+
+export const STUDY_CSS = `
+  main { padding-left: 0 !important; padding-right: 0 !important; }
+  .col { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .bleed { margin-left: 0; margin-right: 0; }
+
+  .t-masthead { font-family: var(--font-sans); font-size: clamp(3rem,15vw,5rem);
+    line-height:.9; font-weight:500; letter-spacing:-.045em; text-transform:uppercase; }
+  .t-hero { font-family: var(--font-display); font-size: clamp(2.5rem,12vw,3.25rem);
+    line-height:1.1; font-weight:500; letter-spacing:-.02em;
+    font-variation-settings:"opsz" 96,"SOFT" 0,"WONK" 0; }
+  .t-title { font-family: var(--font-display); font-size:1.375rem; line-height:1.7rem;
+    font-weight:500; letter-spacing:-.012em; font-variation-settings:"opsz" 60,"SOFT" 0,"WONK" 0; }
+  .t-quote { font-family: var(--font-display); font-style:italic; font-size:1.0625rem;
+    line-height:1.55; font-weight:400; font-variation-settings:"opsz" 24,"SOFT" 0,"WONK" 0; }
+  .t-quote-lg { font-family: var(--font-display); font-style:italic; font-size:1.75rem;
+    line-height:1.35; font-weight:400; font-variation-settings:"opsz" 60,"SOFT" 0,"WONK" 0;
+    letter-spacing:-.01em; }
+  .t-card { font-family: var(--font-sans); font-size:1.0625rem; line-height:1.4375rem; font-weight:550; letter-spacing:-.01em; }
+  .t-body { font-family: var(--font-sans); font-size:.9375rem; line-height:1.4375rem; font-weight:400; }
+  .t-caption { font-family: var(--font-sans); font-size:.8125rem; line-height:1.1875rem; font-weight:400; }
+  .t-micro { font-family: var(--font-sans); font-size:.6875rem; line-height:1rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:.1em; }
+  .t-micro-n { text-transform:none; letter-spacing:.06em; }
+  .t-clock { font-family: var(--font-sans); font-size:2.375rem; line-height:1; font-weight:500;
+    letter-spacing:-.03em; font-variant-numeric: tabular-nums lining-nums; }
+
+  .ink { color: var(--ink); } .mute { color: var(--mute); }
+  .card { background: var(--surface); border:1px solid var(--line); box-shadow: var(--e1); }
+  .well { background: var(--surface-2); border:1px solid var(--line); }
+  .rule { border-top:1px solid var(--line); }
+  .rule-b { border-bottom:1px solid var(--line); }
+  .edge-eva { border-left:2px solid var(--eva); }
+  .edge-adam { border-left:2px solid var(--adam); }
+  .photo { filter:none; display:block; object-fit:cover; width:100%; }
+  .r-md{border-radius:.625rem}.r-lg{border-radius:.875rem}.r-xl{border-radius:1.25rem}
+  .pillink { background: var(--pill-fill); color: var(--on-ink); border:1px solid var(--pill-fill);
+    border-radius:9999px; }
+  body { -webkit-font-smoothing:antialiased; }
+`;
+
+const P = (seed, w, h) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
+
+/* The stamp — the Gap as a caption, on every item. Absolute, never relative. */
+const stamp = (line) =>
+  `<p class="t-micro t-micro-n mute" style="margin-top:.5rem">${line}</p>`;
+
+const DOCK_CLEAR = `<div style="height:8rem"></div>`;
+
+/* ------------------------------------------------------------------ *
+ * TODAY
+ * ------------------------------------------------------------------ */
+
+const todayHead = `
+  <header class="col" style="padding-top:.25rem">
+    <p class="t-micro mute">Monday 3 August</p>
+    <h1 class="t-hero ink" style="margin-top:.375rem">Eva&#8217;s in bed,<br>Adam&#8217;s awake</h1>
+  </header>`;
+
+/** T-A — control: the pair as it ships today, inside one card. */
+const T_A = `
+  ${todayHead}
+  <section class="col" style="margin-top:1.5rem">
+    <div class="card r-xl" style="padding:1.25rem">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h2 class="t-title ink">Today</h2><span class="t-micro mute">Open &#8599;</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1rem">
+        <div>
+          <div class="well r-lg" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center">
+            <span class="mute" style="font-size:20px">+</span></div>
+          <p class="t-micro t-micro-n mute" style="margin-top:.5rem">Eva</p>
+        </div>
+        <div>
+          <div class="edge-adam r-lg" style="aspect-ratio:4/5;overflow:hidden">
+            <img class="photo" style="height:100%" src="${P("ea-staircat", 900, 1125)}" alt="">
+          </div>
+          <p class="t-micro t-micro-n mute" style="margin-top:.5rem">Adam &#183; 6:20 am</p>
+        </div>
+      </div>
+      <p class="t-caption mute" style="margin-top:.875rem">A place is ready for Eva &#183; Adam has posted</p>
+    </div>
+  </section>
+  ${DOCK_CLEAR}`;
+
+/** T-B1 — the §5 idea, side by side, equal AREA, different shape. */
+const T_B1 = `
+  ${todayHead}
+  <section class="col" style="margin-top:1.75rem">
+    <div style="display:flex;gap:.75rem;align-items:flex-start">
+      <figure class="edge-adam" style="width:137px;flex:none;overflow:hidden;border-radius:.875rem">
+        <img class="photo" style="aspect-ratio:4/5" src="${P("ea-staircat", 900, 1125)}" alt="">
+      </figure>
+      <div style="flex:1">
+        <div class="well r-lg" style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center">
+          <span class="mute" style="font-size:20px">+</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:.625rem">
+      <p class="t-micro t-micro-n mute" style="width:137px;flex:none">Adam &#183; 6:20 am</p>
+      <p class="t-micro t-micro-n mute" style="flex:1">Eva</p>
+    </div>
+    ${stamp("left while Eva was asleep &#183; 6:20 his morning &#183; 11:20 pm her night")}
+  </section>
+  ${DOCK_CLEAR}`;
+
+/** T-B2 — the §5 idea, stacked: portrait, then a wide short field. */
+const T_B2 = `
+  ${todayHead}
+  <section class="col" style="margin-top:1.75rem">
+    <figure class="edge-adam" style="width:62%;overflow:hidden;border-radius:.875rem">
+      <img class="photo" style="aspect-ratio:4/5" src="${P("ea-staircat", 900, 1125)}" alt="">
+    </figure>
+    <p class="t-micro t-micro-n mute" style="margin-top:.625rem">Adam &#183; 6:20 am</p>
+    ${stamp("left while Eva was asleep &#183; 6:20 his morning &#183; 11:20 pm her night")}
+    <div class="well r-lg" style="margin-top:1.75rem;aspect-ratio:24/7;display:flex;align-items:center;justify-content:center">
+      <span class="mute" style="font-size:20px">+</span>
+    </div>
+    <p class="t-micro t-micro-n mute" style="margin-top:.5rem">Eva</p>
+  </section>
+  ${DOCK_CLEAR}`;
+
+/** T-C — the single lamp. Full bleed, no slot for what is absent. */
+const T_C = `
+  ${todayHead}
+  <figure style="margin-top:1.5rem">
+    <img class="photo" style="aspect-ratio:4/5" src="${P("ea-staircat", 1200, 1500)}" alt="">
+    <figcaption class="col" style="margin-top:.875rem">
+      <p class="t-quote ink" style="border-left:2px solid var(--adam);padding-left:.75rem">The cat that owns our stairwell</p>
+      ${stamp("left while Eva was asleep &#183; 6:20 his morning &#183; 11:20 pm her night")}
+    </figcaption>
+  </figure>
+  <section class="col rule" style="margin-top:2.5rem;padding-top:1rem">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <p class="t-micro t-micro-n mute">Eva</p>
+      <p class="t-micro mute">New York &#183; 4:44 am</p>
+    </div>
+  </section>
+  <section class="col rule-b" style="padding-bottom:1rem">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <p class="t-micro t-micro-n mute">Adam</p>
+      <p class="t-micro mute">Tel Aviv &#183; 11:44 am</p>
+    </div>
+  </section>
+  ${DOCK_CLEAR}`;
+
+/** T-C-tuesday — the same surface, no photograph anywhere. A line, kept. */
+const T_C_TUE = `
+  ${todayHead}
+  <section class="col" style="margin-top:2.25rem">
+    <p class="t-quote-lg ink" style="border-left:2px solid var(--adam);padding-left:1rem">
+      Walked the long way back so I could stay on the phone with you.
+    </p>
+    ${stamp("left while Eva was asleep &#183; 5:12 his morning &#183; 10:12 pm her night")}
+  </section>
+  <section class="col rule" style="margin-top:3rem;padding-top:1rem">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <p class="t-micro t-micro-n mute">Eva</p><p class="t-micro mute">New York &#183; 4:44 am</p>
+    </div>
+  </section>
+  <section class="col rule-b" style="padding-bottom:1rem">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <p class="t-micro t-micro-n mute">Adam</p><p class="t-micro mute">Tel Aviv &#183; 11:44 am</p>
+    </div>
+  </section>
+  ${DOCK_CLEAR}`;
+
+/** T-B1-tuesday — the §5 pair when NEITHER has posted. The real Tuesday. */
+const T_B1_TUE = `
+  ${todayHead}
+  <section class="col" style="margin-top:1.75rem">
+    <div style="display:flex;gap:.75rem;align-items:flex-start">
+      <div class="well r-lg" style="width:137px;flex:none;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center">
+        <span class="mute" style="font-size:20px">+</span></div>
+      <div class="well r-lg" style="flex:1;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center">
+        <span class="mute" style="font-size:20px">+</span></div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:.625rem">
+      <p class="t-micro t-micro-n mute" style="width:137px;flex:none">Adam</p>
+      <p class="t-micro t-micro-n mute" style="flex:1">Eva</p>
+    </div>
+  </section>
+  ${DOCK_CLEAR}`;
+
+/* ------------------------------------------------------------------ *
+ * THE BOOK
+ * ------------------------------------------------------------------ */
+
+/** B-B — resurfacing leads. Masthead edge to edge, then a full-bleed return. */
+const B_B = `
+  <header class="col" style="padding-top:.25rem">
+    <h1 class="t-masthead ink">The book</h1>
+    <p class="t-micro mute" style="margin-top:.75rem">Begun 2 August 2026</p>
+  </header>
+
+  <section style="margin-top:1.75rem">
+    <p class="col t-micro mute" style="margin-bottom:.75rem">A year ago today</p>
+    <img class="photo" style="aspect-ratio:5/4" src="${P("ea-tram", 1200, 960)}" alt="">
+    <div class="col" style="margin-top:.875rem">
+      <p class="t-quote ink" style="border-left:2px solid var(--eva);padding-left:.75rem">Roosevelt Island tram, the loud sunset</p>
+      ${stamp("left while Adam was asleep &#183; 6:10 pm her evening &#183; 1:10 his night")}
+    </div>
+  </section>
+
+  <section class="col" style="margin-top:2.75rem">
+    <div class="rule" style="padding-top:1.125rem">
+      <p class="t-title ink">Ask for something</p>
+      <p class="t-body mute" style="margin-top:.25rem">Their own words and their own photographs, with dates. Never a sentence neither of them wrote.</p>
+    </div>
+  </section>
+
+  <section style="margin-top:1.5rem">
+    <div class="col rule" style="padding-top:1.125rem;display:flex;align-items:baseline;justify-content:space-between;gap:1rem">
+      <div><p class="t-title ink">The days in order</p>
+      <p class="t-caption mute" style="margin-top:.125rem">July, and everything before it</p></div>
+      <span class="t-micro mute">&#8599;</span>
+    </div>
+    <div class="col rule rule-b" style="padding-top:1.125rem;padding-bottom:1.125rem;margin-top:1.25rem;display:flex;align-items:baseline;justify-content:space-between;gap:1rem">
+      <div><p class="t-title ink">The pocket</p>
+      <p class="t-caption mute" style="margin-top:.125rem">Opens with a passphrase</p></div>
+      <span class="t-micro mute">&#128274;</span>
+    </div>
+  </section>
+  ${DOCK_CLEAR}`;
+
+/** B-B-tuesday — the book with no photograph on it at all. */
+const B_B_TUE = `
+  <header class="col" style="padding-top:.25rem">
+    <h1 class="t-masthead ink">The book</h1>
+    <p class="t-micro mute" style="margin-top:.75rem">Begun 2 August 2026</p>
+  </header>
+
+  <section class="col" style="margin-top:2rem">
+    <p class="t-micro mute">Left at this hour, in June</p>
+    <p class="t-quote-lg ink" style="margin-top:1rem;border-left:2px solid var(--eva);padding-left:1rem">
+      Your jacket is still on my chair and I am not moving it.
+    </p>
+    ${stamp("left while Adam was asleep &#183; 11:40 pm her night &#183; 6:40 his morning")}
+  </section>
+
+  <section class="col" style="margin-top:2.75rem">
+    <div class="rule" style="padding-top:1.125rem">
+      <p class="t-title ink">Ask for something</p>
+      <p class="t-body mute" style="margin-top:.25rem">Their own words and their own photographs, with dates.</p>
+    </div>
+  </section>
+
+  <section style="margin-top:1.5rem">
+    <div class="col rule" style="padding-top:1.125rem;display:flex;align-items:baseline;justify-content:space-between;gap:1rem">
+      <div><p class="t-title ink">The days in order</p>
+      <p class="t-caption mute" style="margin-top:.125rem">July, and everything before it</p></div>
+      <span class="t-micro mute">&#8599;</span>
+    </div>
+    <div class="col rule rule-b" style="padding-top:1.125rem;padding-bottom:1.125rem;margin-top:1.25rem;display:flex;align-items:baseline;justify-content:space-between;gap:1rem">
+      <div><p class="t-title ink">The pocket</p>
+      <p class="t-caption mute" style="margin-top:.125rem">Opens with a passphrase</p></div>
+      <span class="t-micro mute">&#128274;</span>
+    </div>
+  </section>
+  ${DOCK_CLEAR}`;
+
+export const CANDIDATES = {
+  "T-A": { html: T_A },
+  "T-B1": { html: T_B1 },
+  "T-B2": { html: T_B2 },
+  "T-B1-tue": { html: T_B1_TUE },
+  "T-C": { html: T_C },
+  "T-C-tue": { html: T_C_TUE },
+  "B-B": { html: B_B },
+  "B-B-tue": { html: B_B_TUE },
+};
+
+/* ------------------------------------------------------------------ *
+ * REVISION after the CEO's verified finding: iOS Safari web push cannot
+ * carry an image, so the open is the ONLY arrival path and §4.2's
+ * "lands directly on the newest thing, zero navigation" is the entire
+ * mitigation. Nothing may sit above the thing she came for.
+ * ------------------------------------------------------------------ */
+
+const closingLines = `
+  <section class="col rule" style="margin-top:2rem;padding-top:1rem">
+    <p class="t-micro mute">Monday 3 August</p>
+    <p class="t-title ink" style="margin-top:.125rem">Eva&#8217;s in bed, Adam&#8217;s awake</p>
+  </section>`;
+
+const doorway = (inner) => `
+  <section style="margin-top:2.5rem">
+    <div class="col rule" style="padding-top:1.125rem">
+      <p class="t-micro mute">A year ago today</p>
+    </div>
+    ${inner}
+    <div class="col" style="margin-top:1.25rem;display:flex;align-items:baseline;justify-content:space-between">
+      <p class="t-title ink">The book</p>
+      <span class="t-micro mute">&#8599;</span>
+    </div>
+  </section>`;
+
+/** T-D — the open IS the ceremony. Photograph from y=0. */
+const T_D = `
+  <figure>
+    <img class="photo" style="aspect-ratio:4/5;max-height:70dvh" src="${P("ea-staircat", 1200, 1500)}" alt="">
+    <figcaption class="col" style="margin-top:.875rem">
+      <p class="t-quote ink" style="border-left:2px solid var(--adam);padding-left:.75rem">The cat that owns our stairwell</p>
+      <p class="t-micro t-micro-n mute" style="margin-top:.625rem">left while Eva was asleep</p>
+      <p class="t-micro t-micro-n mute">Adam 6:20 am &#183; Eva 11:20 pm</p>
+    </figcaption>
+  </figure>
+  ${closingLines}
+  ${doorway(`
+    <div class="col" style="margin-top:1rem;display:flex;gap:1rem;align-items:flex-start">
+      <img class="photo" style="width:44%;flex:none;aspect-ratio:5/4;border-radius:.625rem" src="${P("ea-tram", 800, 640)}" alt="">
+      <p class="t-quote ink" style="flex:1;font-size:.9375rem;border-left:2px solid var(--eva);padding-left:.625rem">Roosevelt Island tram, the loud sunset</p>
+    </div>`)}
+  ${DOCK_CLEAR}`;
+
+/** T-D-tue — the hardest case: no photograph anywhere on the surface. */
+const T_D_TUE = `
+  <section class="col" style="padding-top:1.5rem">
+    <p class="t-quote-lg ink" style="border-left:2px solid var(--adam);padding-left:1rem">
+      Walked the long way back so I could stay on the phone with you.
+    </p>
+    <p class="t-micro t-micro-n mute" style="margin-top:.875rem">left while Eva was asleep</p>
+    <p class="t-micro t-micro-n mute">Adam 5:12 am &#183; Eva 10:12 pm</p>
+  </section>
+  ${closingLines}
+  ${doorway(`
+    <p class="col t-quote ink" style="margin-top:1rem;border-left:2px solid var(--eva);padding-left:.75rem">Your jacket is still on my chair and I am not moving it.</p>`)}
+  ${DOCK_CLEAR}`;
+
+CANDIDATES["T-D"] = { html: T_D };
+CANDIDATES["T-D-tue"] = { html: T_D_TUE };

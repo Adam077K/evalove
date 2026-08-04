@@ -24,6 +24,102 @@
 
 <!-- Entries below this line, most-recent first. -->
 
+## 2026-08-03 — Canonical workflow file ownership: archive-export-mirror OWNS nightly-archive.yml
+
+Decision-maker: CTO. Tier: irreversible (workflow ownership determines rebase order).
+
+**Decision:** `feat/archive-export-mirror` is the authoritative branch for
+`.github/workflows/nightly-archive.yml`. apps/web here uses npm
+(package-lock.json); only tools/ uses pnpm (pnpm-lock.yaml). The
+pnpm/action-setup step therefore caches only `tools/pnpm-lock.yaml`.
+
+**Merge order enforced:** archive-export-mirror merges first.
+`feat/ci-floor` rebases onto archive-export-mirror's tip. ci-floor's
+workflow patch carries the apps/web pnpm migration (flipping `npm ci` to
+`pnpm install` there and extending cache-dependency-path with
+`apps/web/pnpm-lock.yaml`) — that migration is exclusively ci-floor's scope.
+
+**Reversibility:** irreversible (rebase ordering once established)
+**Owner:** CTO, recorded by devops-engineer `devops-archive-pnpm-visibility`
+**Affects:** feat/ci-floor (must rebase onto this tip before merge)
+
+### 2026-08-03 — Fail-loud on missing keep-alive secret (delta on 837efd3)
+
+Decision-maker: CTO (routed by CEO delta finding). Tier: irreversible (workflow).
+
+The nightly keep-alive step's missing-secret branch was fail-open — exit 0
+on "did nothing." Now exits 1. Under continue-on-error: true this renders
+amber in Actions UI (archive still runs), aligning with the 5xx path which
+already exit-1'd. Direct application of the DECISIONS.md rule: "A check
+whose absence means 'all clear' is fail-open — require a positive artifact."
+
+This is the sixth incidence of the fail-open class today; the previous five
+are the entries above. Fixing it inside the very step built to fix the
+fourth is why CEO caught it in the delta review.
+
+## 2026-08-03 — Lockfile ownership + independent keep-alive design
+
+**Context:** CTO brief 2026-08-03. The merge of feat/export-invocation-fix into feat/archive-export-mirror establishes tools/pnpm-lock.yaml as the canonical lockfile for the tools/ CLI. Separately, the export step's dual role as keep-alive was identified as a single point of failure: any export failure (broken invocation, empty schema, mid-refactor) silently armed the 7-day Supabase free-tier pause timer.
+**Options considered:**
+- A) Keep the export step as the only keep-alive (current state, brittle)
+- B) Add a separate keep-alive step using the service-role key (rejected: bypasses RLS, reads every photograph, doubly pointless with empty schema)
+- C) Add a separate keep-alive step using the anon key via PostgREST /rest/v1/ introspection (chosen)
+**Decision (1 — lockfile):** feat/archive-export-mirror post-merge owns tools/pnpm-lock.yaml canonically. feat/ci-floor and feat/vault-encrypted-copy must rebase onto this tip before merging.
+**Decision (2 — keep-alive):** The independent keep-alive step: (a) uses SUPABASE_ANON_KEY only, (b) curls /rest/v1/ to trigger PostgREST schema introspection (SQL executes on Postgres), (c) treats 2xx/4xx as activity registered, (d) logs a warning on 5xx/timeout without failing the workflow, (e) runs with if: always() positioned after the export step, (f) has continue-on-error: true.
+**Open question (surfaced to founder):** Does a 5xx or timeout response to /rest/v1/ still register as activity in Supabase's internal metrics? The docs do not specify. We have not measured it. If the anon-key step returns 5xx/timeout, the activity status is UNKNOWN — the workflow logs the outcome for founder review.
+**Reversibility:** irreversible (lockfile rename affects dependents; keep-alive step is additive and reversible)
+**Owner:** CTO
+**Affects:** feat/ci-floor (must rebase), feat/vault-encrypted-copy (must rebase), GitHub Actions (SUPABASE_ANON_KEY must be added to repo secrets)
+
+## 2026-08-03 — Founder: nothing is ever permanently deleted, and the vault is in the automatic copy
+
+**Context:** CTO's archive-survival packet routed two decisions to the founder rather than absorbing them: whether the private vault belongs in the nightly automatic copy to Eva's storage, and how to resolve a direct conflict between `PRODUCT-VISION-V2.md` §6 item 5 (a copy lands in storage Eva owns) and `LDR-APP-ARCHITECTURE.md` §5.7 (a permanent delete propagates everywhere within 24 hours). A copy in an account Adam does not control cannot receive his purges.
+**Options considered:** For the conflict — A) survivability wins, drop the propagation promise / B) keep the promise, copy stays in Adam's account / C) both, which would ship a false UI claim.
+**Decision — both founder-set:**
+1. **The vault IS included in the automatic nightly copy.** CEO recommended excluding it; the founder chose inclusion. The recommendation and its risk are recorded below rather than relitigated.
+2. **Nothing is ever permanently deleted. Everything stays in storage.** Founder verbatim: *"no deleting photos. keep all in storage."* This dissolves the conflict rather than trading it off — if no photograph is ever destroyed, ARCH §5.7's propagation promise has nothing to propagate and the copy in Eva's account can never fall out of sync on a delete.
+**Rationale:** The founder's resolution is better than any of the three options offered. All three assumed permanent deletion existed and argued about its blast radius; removing permanent deletion removes the conflict at its root. It is also consistent with the product's own physics — vision §4.4 already says nothing is ever consumed, marked read, cleared or archived-on-open, and "the archive keeps everything" is the same rule extended to storage.
+**Consequences, so the next reader does not have to derive them:**
+- `purgePhoto` (`lib/data/photos.ts:527`) is never exposed by any route, and the 30-day sweep over soft-deleted rows is never wired. `original_location: 'purged'` becomes a state the system never reaches.
+- B4 ships **soft delete only** — hidden from every view, fully recoverable, bytes always retained. Read as "remove from view," never "destroy." This still satisfies vision §6.4's autonomy property: either of them can take a thing out of sight without asking the other.
+- The delete UI must not promise propagation, because there is no purge to propagate.
+- B2's nightly job passes `--include-vault`, so B1's vault path becomes load-bearing rather than optional and must be tested as a primary path.
+**The risk the founder accepted knowingly, stated once:** intimate vault content will sit in a synced third-party account, written nightly. Four independent privacy layers were built around keeping it separate — separate table, separate storage prefix, no thumbnail ever generated (migration 04), a storage trigger enforcing the split (migration 11), a second independent secret (ARCH §6.4). The nightly copy is now the one path that crosses all four. **CTO should specify the safest mechanism that still delivers what was asked** — a complete, automatic copy — rather than treating inclusion as a reason to relax handling.
+**Reversibility:** decision 1 is hard-to-reverse once copies exist in a third-party account; decision 2 is reversible and cheap to hold
+**Owner:** founder (both), routed by ceo, surfaced by cto
+**Affects:** be-unilateral-remove (soft delete only, never destroys bytes — no behaviour change from its brief, but the rule is now permanent rather than a scope boundary), B1 export engine (vault path is primary, not optional), B2 mirror (passes `--include-vault`; specify safe handling), cto (mechanism), qa-lead (any diff exposing `purgePhoto` or wiring a sweep is an automatic BLOCK), cpo (delete UI copy must not promise propagation).
+
+## 2026-08-03 — Ambient arrival is not available to this product. The price of "no app store" is now known, not estimated
+
+**Context:** `PRODUCT-VISION-V2.md` §9 named one open technical question — whether iOS Safari web push can carry an **image** — and §4.5 called it "the one unverified lever worth a single check." It decides whether an arriving photograph reaches the lock screen, or whether the app can only announce that something exists and withhold it. Neither CPO nor R4 could verify it. CTO could not either (no WebSearch in its toolset), predicted "no" from model knowledge, and correctly flagged rather than asserted.
+**Options considered:** A) Design arrival around a hoped-for yes / B) Verify against primary sources first / C) Leave it open and design defensively forever.
+**Decision:** B, and the answer is **NO**, HIGH confidence. WebKit has never implemented `NotificationOptions.image` (caniuse: no support, Safari iOS 3.2–26.5). The Declarative Web Push payload schema carries only `web_push`, `title`, `lang`, `dir`, `body`, `navigate`, `silent`, `app_badge` — no image, no per-notification icon. APNs `attachment` is native-only and unreachable from web push. The distinction matters and was checked: the small icon that does appear is the manifest icon, not a per-notification one.
+**Rationale:** Primary sources (WebKit blog for 18.4/18.5/26.0, the WebKit explainer, caniuse, the Notifications spec) all agree, and the direction of travel across five releases shows no movement. This is a hard WebKit constraint, not a workaround-shaped one. CTO's prediction was confirmed rather than assumed — worth recording, because the cheap path here was to accept the prediction and skip the check.
+**Consequence, stated plainly:** P4's FATAL 1 is now **confirmed unmitigable within the PWA constraint**. Locket's mechanic — the one with proven multi-year two-person retention at n=2 — is unavailable. Every arrival costs a decision. Vision §4.5 asked that "no app store" be "priced out loud rather than absorbed silently"; this is the price, and it is no longer speculative. **The immovable is not being relitigated here** — that is the founder's call and nobody has asked to move it. What changes is that the compensation in §4.2 (open lands directly on the newest thing, full bleed, zero navigation) is now the *entire* mitigation rather than one of two, and must be built as such.
+**Reversibility:** irreversible as a fact; the design response is reversible
+**Owner:** ceo (routed), researcher `researcher-ios-push-image` (verified), cto (predicted)
+**Affects:** design-lead (the open is the only arrival — Today must pay off instantly, zero navigation, no interstitial), cto (do not design lock-screen image delivery; the text-only dot stands, and vision §6.7 availability work matters more now that the tap is the only path in), cpo (§4.5's four listed losses are all confirmed, not three of four), founder (the priced cost of `no app store`).
+
+## 2026-08-03 — The research outranks the build brief, on five named points
+
+**Context:** Founder directed the build of Today and The Book against `2026-08-03-BUILD-THE-TWO-PLACES.md`, with the standing instruction to start from the research the brief points at rather than the brief itself, and to say so where they disagree. Five disagreements were found and verified against the code.
+**Options considered:** A) Build the brief as written, log the gaps for later / B) Treat the research as authority on the disagreements and adjust scope now / C) Hold the wave until every gap is closed.
+**Decision:** B. (1) Export + unilateral delete are a build-order rule (`PRODUCT-VISION-V2.md` §6.1), not a backlog item — they run as a parallel CTO track this wave; The Book composes against fixtures and no real photograph is imported until a tested export exists. (2) Eva needs her own credential — verified that `apps/web/app/api/session/route.ts:148` validates one shared `APP_PASSWORD_HASH` and the door deliberately cannot tell them apart, so she cannot run an export alone. (3) The Book's default view must **not** be reverse-chronological — P4's withdrawal condition requires resurfacing by association so absences are not addressable positions; the current snap rail is the exact shape named. (4) A live rule violation ships today: `book/page.tsx:54` counts `completeDays()` (both-posted) and renders "N days, kept" at `:63` while the rail below shows every day *either* posted — the page displays more leaves than it counts, which is the counter removed and the ledger kept. (5) The ~300-photo backlog import and the iOS web-push image check were dropped by the brief; both are cheap and both change what The Book is on day one.
+**Rationale:** The brief is an accurate compression on everything else — the two-places cut, Gap-as-stamp, Saturday cut, the five composition moves, the four hard-won rules, the three tests, night-as-primary all check out against vision §3, DESIGN-DIRECTION §7 and the design-lead note. The five gaps are omissions, not contradictions, and four of the five are cheap now and expensive later. Option C was rejected because composition is what the founder asked for today and none of the gaps block it.
+**Reversibility:** reversible (scope decision; no code or schema committed by this entry)
+**Owner:** ceo
+**Affects:** design-lead (Book default view + the `kept` count fix are in the composition packet), cto (owns the export/credential/delete/availability track and its risk tiering), qa-lead (auth + migration work is `risk:irreversible` — Full + 2-of-3 multi-judge + founder sign-off), cpo (any Eva answer that contradicts the vision routes here for an argued revision, not a silent edit).
+
+## 2026-08-03 — Build in parallel with Eva's five questions outstanding, rather than holding for them
+
+**Context:** P4's FATAL 3 states that zero Eva-sourced inputs exist in the entire repo — every persona, including the five that argued with each other, is downstream of one person's account of what the other one feels. Its withdrawal condition is five questions answered in her own words, verbatim, in the repo, *before another surface is designed*.
+**Options considered:** A) Hold the wave until she answers / B) Write the questions into the repo as an open item and build in parallel / C) Proceed without tracking it.
+**Decision:** B, founder-approved. Questions written to `docs/08-agents_work/research/2026-08-03-EVA-FIVE-QUESTIONS.md`, each annotated with the assumption it can falsify. Build proceeds.
+**Rationale:** The research is right that this is the cheapest of the three fatal flaws to fix, but holding an entire wave on a founder action of unknown latency trades a certain cost for an uncertain one. Building in parallel means her answers **revise rather than rebuild** — which is only true while the surfaces are young, so the value of this file decays and it should not sit open long. C was rejected outright: an untracked gap here is how the product ends up fitted to one member of a two-person user base.
+**Reversibility:** reversible, with a decaying window — cheap to absorb now, expensive once the surfaces harden
+**Owner:** ceo
+**Affects:** founder (only he can run it), cpo (owns contradictions), cmo + cpo (sole authorised writers of `USER-INSIGHTS.md`, where her rows belong), design-lead (anything her answers contradict gets revised, so prefer decisions that are cheap to reverse).
+
 ## 2026-08-02 — Scope expands: from a photo book to a long-distance companion app. AI-partner non-goal reversed
 
 **Context:** Founder, immediately after rejecting the first build — *"it should be like an app that we, as long distance, can do things … the dates and the book and the daily interactions and send small images and pictures of each other … a place where we can go and look at pictures of us together or see cute stuff or get date ideas or talk to an AI that represents the other partner. Think big."*

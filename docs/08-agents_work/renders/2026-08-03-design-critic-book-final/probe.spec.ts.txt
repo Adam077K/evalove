@@ -1,0 +1,70 @@
+/**
+ * design-critic probe — read-only interrogation of the resurfacing rule and
+ * the colophon's relationship to the archive it sits above.
+ *
+ * Runs against a SCRATCHPAD COPY of apps/web/lib. The reviewed worktree is
+ * never touched.
+ */
+import { test } from "vitest";
+import { whatCameBack } from "@/lib/resurface";
+import { PHOTOS } from "@/lib/fixtures/photos";
+import { BEGUN } from "@/lib/fixtures/book";
+import type { Photo } from "@/lib/types";
+
+test("probe", () => {
+  const photos = Object.values(PHOTOS) as Photo[];
+
+  console.log("=== ARCHIVE vs BEGUN ===");
+  console.log("BEGUN =", BEGUN);
+  const days = [...new Set(photos.map((p) => p.sharedDay))].sort();
+  console.log("distinct sharedDays in archive:", days.join(", "));
+  const before = photos.filter((p) => p.sharedDay < BEGUN);
+  console.log(
+    `photos with sharedDay < BEGUN: ${before.length} of ${photos.length}`,
+  );
+  console.log(
+    "  their days:",
+    [...new Set(before.map((p) => p.sharedDay))].sort().join(", "),
+  );
+
+  console.log("\n=== whatCameBack() across 24 hours of 2026-08-03 (UTC) ===");
+  let nulls = 0;
+  let contradicts = 0;
+  for (let h = 0; h < 24; h += 1) {
+    const now = new Date(Date.UTC(2026, 7, 3, h, 0, 0));
+    const r = whatCameBack(now, photos);
+    if (r === null) {
+      nulls += 1;
+      console.log(`${String(h).padStart(2, "0")}:00Z  NULL -> title page`);
+    } else {
+      const older = r.photo.sharedDay < BEGUN;
+      if (older) contradicts += 1;
+      console.log(
+        `${String(h).padStart(2, "0")}:00Z  ${r.reason.padEnd(4)} "${r.label}"  day=${r.photo.sharedDay}${older ? "   <-- PREDATES BEGUN" : ""}`,
+      );
+    }
+  }
+  console.log(
+    `\nnull hours: ${nulls}/24   hours resurfacing an item older than BEGUN: ${contradicts}/24`,
+  );
+
+  console.log("\n=== empty archive ===");
+  console.log("whatCameBack(now, []) =", whatCameBack(new Date(), []));
+
+  console.log("\n=== hasImage: is the text-only branch reachable in prod? ===");
+  const noDims = photos.filter((p) => !(p.width > 0 && p.height > 0));
+  console.log(
+    `photos with width/height 0 (text branch): ${noDims.length} of ${photos.length}`,
+  );
+  const dims = [...new Set(photos.map((p) => `${p.width}x${p.height}`))];
+  console.log("distinct dimensions in archive:", dims.join(", "));
+
+  console.log("\n=== 10 days forward, noon UTC ===");
+  for (let d = 0; d < 10; d += 1) {
+    const now = new Date(Date.UTC(2026, 7, 3 + d, 12, 0, 0));
+    const r = whatCameBack(now, photos);
+    console.log(
+      `2026-08-${String(3 + d).padStart(2, "0")}  ${r ? `"${r.label}" day=${r.photo.sharedDay}${r.photo.sharedDay < BEGUN ? "  <-- PREDATES BEGUN" : ""}` : "NULL"}`,
+    );
+  }
+});

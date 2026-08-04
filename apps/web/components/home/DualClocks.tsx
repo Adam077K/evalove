@@ -6,15 +6,45 @@ import { CITY, MEMBERS } from "@/lib/fixtures/members";
 import type { Member } from "@/lib/types";
 
 /**
- * The two clocks — Home's signature. Eva's first.
+ * The two clocks — Home's masthead. Eva's first.
  *
- * Each card is glass with that person's aura bleeding in from a
- * corner, their local time in large tabular digits, and an honest
- * guess at what they're doing — inferred from the wall clock and
- * their working week, never from the device. The presence dot
- * breathes; it does not blink.
+ * This is the single most identifying object in the product: two
+ * cities side by side, one of them showing a person asleep. Nobody
+ * else has it. It was rendered as two 50/50 rounded cards, which is
+ * the most templated shape in the kit, with the hours at 38px — large
+ * enough to be accidentally the biggest type in the app, not large
+ * enough to be the point.
  *
- * Before the first client tick the cards render as shimmering
+ * So it is a rail: two full-width rows on hairline rules, the hour
+ * sitting directly on the paper with no card around it, the city and
+ * the presence guess as 11px meta beside it.
+ *
+ * It is not the largest thing on the page, and that is a correction.
+ * The first version set the hour at masthead scale, which quietly
+ * rebuilt the surface PRODUCT-VISION-V2 §3.1 deleted: the gap was cut
+ * as a room precisely because a clock is correct on day one and on day
+ * four hundred, and 59px is a claim that something is the most
+ * important object present. What is large on Home now is the live
+ * window sentence above this rail — the thing that changes. The hours
+ * are the evidence underneath it.
+ *
+ * Both rows are identical in weight. The hour is the only thing
+ * allowed to be large and both of them get it; this product must never
+ * render one partner larger than the other.
+ *
+ * The presence guess is inferred from the wall clock and their working
+ * week, never from the device. The dot is `--mute`, not either
+ * person's ink: nobody *made* a clock, and the authorship inks are
+ * reserved for authored things. It breathes; it does not blink.
+ *
+ * The name is an <h3> and must stay one. The rail rebuild briefly
+ * demoted it to a <p>, which took Eva and Adam out of the heading
+ * outline and cost a screen-reader user their navigation stop. The
+ * section's aria-label still announced the content, so nothing was
+ * unreachable — it was the *structure* that went. Of every string in
+ * this product, theirs are the ones that should be navigable.
+ *
+ * Before the first client tick the rows render as shimmering
  * skeletons — the digits never hydrate wrong.
  */
 
@@ -35,33 +65,26 @@ export function DualClocks() {
   }, []);
 
   return (
-    <section aria-label="Where Eva and Adam are in their days" className="grid grid-cols-2 gap-3">
+    <section
+      aria-label="Where Eva and Adam are in their days"
+      className="border-t border-line"
+    >
       {MEMBERS.map((m) => (
-        <ClockCard key={m.slug} member={m} now={now} />
+        <ClockRow key={m.slug} member={m} now={now} />
       ))}
     </section>
   );
 }
 
-function ClockCard({ member, now }: { member: Member; now: Date | null }) {
-  const isEva = member.slug === "eva";
-  const auraClass = isEva ? "bg-eva/25" : "bg-adam/25";
-  const nameClass = isEva ? "text-eva-deep" : "text-adam-deep";
-  const dotClass = isEva ? "bg-eva" : "bg-adam";
-
+function ClockRow({ member, now }: { member: Member; now: Date | null }) {
   if (now === null) {
     return (
-      <div className="glass relative overflow-hidden rounded-[1.5rem] p-4">
-        <div className="relative space-y-3">
-          <div className="well h-4 w-16 overflow-hidden rounded-full">
-            <Shimmer />
-          </div>
-          <div className="well h-9 w-24 overflow-hidden rounded-xl">
-            <Shimmer />
-          </div>
-          <div className="well h-3.5 w-28 overflow-hidden rounded-full">
-            <Shimmer />
-          </div>
+      <div className="border-b border-line py-3.5">
+        <div className="well relative h-3 w-14 overflow-hidden rounded-full">
+          <Shimmer />
+        </div>
+        <div className="well relative mt-2 h-12 w-40 overflow-hidden rounded-[0.625rem]">
+          <Shimmer />
         </div>
       </div>
     );
@@ -71,29 +94,21 @@ function ClockCard({ member, now }: { member: Member; now: Date | null }) {
   const [time, meridiem] = splitClock(p.localTime, member.homeTimezone, now);
 
   return (
-    <article className="glass relative overflow-hidden rounded-[1.5rem] p-4">
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute -top-10 ${isEva ? "-left-10" : "-right-10"} h-32 w-32 rounded-full blur-2xl ${auraClass}`}
-      />
-      <div className="relative">
-        <header className="flex items-center justify-between">
-          <h3 className={`type-label ${nameClass}`}>{member.displayName}</h3>
-          <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+    <article className="border-b border-line py-3.5">
+      <h3 className="type-micro normal-case text-mute">{member.displayName}</h3>
+      <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="flex items-baseline gap-1.5">
+          <span className="type-clock">{time}</span>
+          <span className="type-micro text-mute">{meridiem}</span>
+        </p>
+        <p className="type-micro flex items-center gap-1.5 pb-1 text-mute">
+          <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
             <span
-              className={`absolute inset-0 rounded-full ${dotClass}`}
+              className="absolute top-0 left-0 h-1.5 w-1.5 rounded-full bg-mute"
               style={{ animation: "breathe 3.2s var(--ease-io) infinite" }}
             />
-            <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${dotClass}`} />
+            <span className="relative h-1.5 w-1.5 rounded-full bg-mute" />
           </span>
-        </header>
-
-        <p className="mt-2.5 flex items-baseline gap-1">
-          <span className="type-clock">{time}</span>
-          <span className="type-label text-mute">{meridiem}</span>
-        </p>
-
-        <p className="type-caption mt-1.5 text-mute">
           {CITY[member.slug]} · {PRESENCE_COPY[p.presence]}
         </p>
       </div>
@@ -123,7 +138,7 @@ function Shimmer() {
       className="absolute inset-0 block"
       style={{
         background:
-          "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+          "linear-gradient(90deg, transparent, var(--shimmer), transparent)",
         animation: "shimmer 1.6s var(--ease-io) infinite",
       }}
     />

@@ -1,0 +1,208 @@
+/**
+ * design-critic render rig — The Book, feat/book-what-came-back.
+ *
+ * Renders the REAL built code. No DOM replacement, no candidate injection.
+ * Viewport captures only (393x852) — full-page captures lie about
+ * position: fixed and have already produced two false alarms on this project.
+ *
+ * node shoot.mjs <outdir> <suffix>
+ */
+import pw from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/@playwright/test/index.js";
+const { chromium } = pw;
+import { SignJWT } from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/jose/dist/webapi/index.js";
+import { readFileSync, mkdirSync } from "node:fs";
+
+const SCRATCH =
+  "/private/tmp/claude-501/-Users-adamks-VibeCoding-evalove--worktrees-ceo-3-1785631504/5cf8e0ee-2e9e-4a8f-94f8-5a8a5794b97f/scratchpad";
+const CREDS = JSON.parse(readFileSync(`${SCRATCH}/creds.json`, "utf8"));
+const BASE = process.env.BASE ?? "http://localhost:3399";
+
+function keyBytes() {
+  const binary = atob(CREDS.secret);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+const iat = Math.floor(Date.now() / 1000);
+const token = await new SignJWT({
+  sid: "3f1c0d2e-1111-4222-8333-444455556666",
+  v: 1,
+})
+  .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+  .setIssuedAt(iat)
+  .setExpirationTime(iat + 15552000)
+  .sign(keyBytes());
+
+const [outdir, suffix = ""] = process.argv.slice(2);
+mkdirSync(outdir, { recursive: true });
+
+const browser = await chromium.launch();
+const ctx = await browser.newContext({
+  viewport: { width: 393, height: 852 },
+  deviceScaleFactor: 2,
+  isMobile: true,
+  hasTouch: true,
+});
+await ctx.addCookies([
+  {
+    name: "ea_session",
+    value: token,
+    domain: "localhost",
+    path: "/",
+    httpOnly: true,
+    secure: false,
+    sameSite: "Lax",
+  },
+]);
+const page = await ctx.newPage();
+
+const TARGETS = [
+  { id: "book", url: "/book" },
+  { id: "book-days", url: "/book/days" },
+];
+
+const report = [];
+
+for (const t of TARGETS) {
+  for (const mode of ["day", "night"]) {
+    await page.goto(`${BASE}${t.url}?mode=${mode}`, {
+      waitUntil: "networkidle",
+    });
+    // Let React hydrate and settle before touching or measuring the DOM.
+    await page.waitForTimeout(2600);
+    // Next's dev overlay renders a dark circular badge at the dock's left
+    // edge. It is impossible in production; hide it so it is not mistaken
+    // for a defect in the composition.
+    await page.addStyleTag({
+      content: "nextjs-portal{display:none !important}",
+    });
+    await page.waitForTimeout(300);
+
+    const name = `${t.id}-${mode}${suffix}`;
+    await page.screenshot({ path: `${outdir}/${name}.png` });
+
+    const metrics = await page.evaluate(() => {
+      const px = (el, prop) =>
+        el ? parseFloat(getComputedStyle(el).getPropertyValue(prop)) : null;
+      const r = (el) => {
+        if (!el) return null;
+        const b = el.getBoundingClientRect();
+        return {
+          t: +b.top.toFixed(1),
+          l: +b.left.toFixed(1),
+          w: +b.width.toFixed(1),
+          h: +b.height.toFixed(1),
+        };
+      };
+      const cs = (el) => (el ? getComputedStyle(el) : null);
+      const h1 = document.querySelector("h1");
+      const img = document.querySelector("main img");
+      const quote = document.querySelector(".type-quote");
+      const micro = [...document.querySelectorAll(".type-micro")].map((e) => ({
+        text: e.textContent.trim().slice(0, 48),
+        size: cs(e).fontSize,
+        transform: cs(e).textTransform,
+        color: cs(e).color,
+      }));
+      const rules = [...document.querySelectorAll("main hr")].map((e) => ({
+        ...r(e),
+        border: cs(e).borderTopWidth + " " + cs(e).borderTopColor,
+      }));
+      const links = [...document.querySelectorAll("main a")].map((e) => ({
+        href: e.getAttribute("href"),
+        label: e.getAttribute("aria-label"),
+        text: e.textContent.trim().slice(0, 40),
+        ...r(e),
+      }));
+      const main = document.querySelector("main");
+      const body = document.body;
+      const dock = document.querySelector("[class*='dock'], nav");
+      const edges = [...document.querySelectorAll("[class*='edge-']")].map(
+        (e) => ({
+          cls: e.className,
+          bl: cs(e).borderLeft,
+          bs: cs(e).boxShadow,
+          before: null,
+          ...r(e),
+        }),
+      );
+      // The 2px author edge may be a ::before; read it explicitly.
+      const edgeBefore = [...document.querySelectorAll("[class*='edge-']")].map(
+        (e) => {
+          const b = getComputedStyle(e, "::before");
+          return {
+            content: b.content,
+            width: b.width,
+            bg: b.backgroundColor,
+            left: b.left,
+            pos: b.position,
+          };
+        },
+      );
+      return {
+        scrollHeight: document.documentElement.scrollHeight,
+        viewport: window.innerHeight,
+        canvas: cs(body).backgroundColor,
+        ink: cs(body).color,
+        h1: h1
+          ? {
+              text: h1.textContent.trim(),
+              size: cs(h1).fontSize,
+              weight: cs(h1).fontWeight,
+              family: cs(h1).fontFamily.split(",")[0],
+              transform: cs(h1).textTransform,
+              tracking: cs(h1).letterSpacing,
+              ...r(h1),
+            }
+          : null,
+        img: img
+          ? {
+              natural: `${img.naturalWidth}x${img.naturalHeight}`,
+              complete: img.complete,
+              filter: cs(img).filter,
+              opacity: cs(img).opacity,
+              radius: cs(img).borderRadius,
+              ...r(img),
+            }
+          : null,
+        quote: quote
+          ? {
+              text: quote.textContent.trim().slice(0, 60),
+              size: cs(quote).fontSize,
+              family: cs(quote).fontFamily.split(",")[0],
+              style: cs(quote).fontStyle,
+              ...r(quote),
+            }
+          : null,
+        micro,
+        rules,
+        links,
+        edges,
+        edgeBefore,
+        mainPad: main
+          ? {
+              pt: cs(main).paddingTop,
+              pb: cs(main).paddingBottom,
+              pl: cs(main).paddingLeft,
+              maxW: cs(main).maxWidth,
+            }
+          : null,
+        dockRect: r(dock),
+        // Any emoji in rendered text?
+        emoji: (document.body.innerText.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu) || []).join(""),
+        bodyText: document.body.innerText.replace(/\n+/g, " | ").slice(0, 600),
+      };
+    });
+
+    report.push({ target: t.id, mode, capture: `${name}.png`, ...metrics });
+
+    // Foot of the page, at rest.
+    await page.evaluate(() => window.scrollTo(0, 99999));
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${outdir}/${name}-foot.png` });
+  }
+}
+
+console.log(JSON.stringify(report, null, 2));
+await browser.close();

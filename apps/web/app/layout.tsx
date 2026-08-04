@@ -5,6 +5,8 @@ import "@fontsource-variable/fraunces/full.css";
 import "@fontsource-variable/fraunces/full-italic.css";
 import "./globals.css";
 import { NoiseLayer } from "@/components/chrome/NoiseLayer";
+import { PrivacyVeil } from "@/components/chrome/PrivacyVeil";
+import { ServiceWorkerRegistration } from "@/components/chrome/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
   title: "Eva & Adam",
@@ -16,8 +18,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FAF6FB" },
-    { media: "(prefers-color-scheme: dark)", color: "#140E1E" },
+    { media: "(prefers-color-scheme: light)", color: "#F8F5F1" },
+    { media: "(prefers-color-scheme: dark)", color: "#1E1A17" },
   ],
 };
 
@@ -74,6 +76,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-[100dvh]">
         {children}
         <NoiseLayer />
+        <PrivacyVeil />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

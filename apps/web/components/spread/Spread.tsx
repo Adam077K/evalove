@@ -9,17 +9,17 @@ import { LiveLocalTime } from "./LiveLocalTime";
  * The daily spread — the most-repeated page in the product.
  *
  * Eva's plate first, always — including in the DOM. No avatars, no
- * name badges on finished plates: the colour says who. Each plate is
- * a double-bezel card — an outer tray tinted with its author's soft
- * colour holding the photograph — with the caption in the author's
- * hue and the hour in their own city beneath. The gap between the
- * two plates is the time difference, and nothing here says so.
+ * name badges on finished plates: two pixels of ink down the left
+ * edge say who. Each plate is a double-bezel card — white stock
+ * holding the photograph — with the caption in their own voice and
+ * the hour in their own city beneath. The gap between the two plates
+ * is the time difference, and nothing here says so.
  *
  * Three states, unchanged from the day model:
  *   completed pair   both plates, side by side
- *   half pair (live) one plate and one prepared place — dashed ring,
- *                    name, that person's own hour ticking. A clock,
- *                    never a counter.
+ *   half pair (live) one plate and one prepared place — an empty
+ *                    plate the same size, name, that person's own
+ *                    hour ticking. A clock, never a counter.
  *   single plate     a day that closed half-finished keeps its one
  *                    photograph as a full, legitimate page.
  */
@@ -68,7 +68,7 @@ function DateChip({ head }: { head: string }) {
   return (
     <p
       aria-hidden="true"
-      className="type-label glass mx-auto mb-4 w-fit rounded-full px-4 py-1.5 text-mute"
+      className="type-micro card mx-auto mb-4 w-fit rounded-full px-4 py-1.5 text-mute"
     >
       {head}
     </p>
@@ -110,16 +110,20 @@ function Plate({
 }) {
   const author = memberById(photo.authorMemberId);
   const isEva = author.slug === "eva";
-  const tray = isEva ? "bg-eva-soft" : "bg-adam-soft";
-  const inkCls = isEva ? "text-eva-deep" : "text-adam-deep";
+  /* The tray used to be a wash of that person's colour behind the
+     photograph. A tinted mat competes with the thing it is framing,
+     and the whole point of this product is that the photograph is
+     the only saturated thing on the page. White stock, and the
+     author's ink down the left edge instead. */
+  const edge = isEva ? "edge-eva" : "edge-adam";
 
   return (
     <figure
-      className={`rounded-[1.75rem] p-1.5 shadow-e2 ring-1 ring-line ${tray} ${
+      className={`card ${edge} rounded-[1.25rem] p-1.5 shadow-e2 ${
         drop ? "[animation:photo-drop_var(--dur-3)_var(--ease-out)_both]" : ""
       }`}
     >
-      <div className="overflow-hidden rounded-[1.375rem]">
+      <div className="overflow-hidden rounded-[1rem]">
         {/* eslint-disable-next-line @next/next/no-img-element -- fixture
             sources are remote seeds; the wired app swaps resolve.ts only. */}
         <img
@@ -133,16 +137,7 @@ function Plate({
       </div>
       <figcaption className="min-h-[3.4rem] px-3 pt-2.5 pb-2">
         {photo.caption ? (
-          <p
-            className={`${inkCls}`}
-            style={{
-              fontFamily: "var(--font-display)",
-              fontStyle: "italic",
-              fontSize: "0.9375rem",
-              lineHeight: 1.4,
-              fontVariationSettings: '"opsz" 20, "SOFT" 70',
-            }}
-          >
+          <p className="type-quote text-[0.9375rem] text-ink">
             {photo.caption}
           </p>
         ) : null}
@@ -155,34 +150,35 @@ function Plate({
 /* ------------------------------------------------------------------ *
  * The prepared place — one has posted, the other hasn't yet.
  *
- * A dashed ring in that person's colour around a soft field, their
- * name, and the hour in their own city, live. No spinner, no elapsed
- * anything — a clock, never a counter. The breathing dot is the only
+ * An empty plate the same size as a full one, their name, and the
+ * hour in their own city, live. No spinner, no elapsed anything — a
+ * clock, never a counter. The dot in that person's ink is the only
  * thing that moves, and it moves like breathing.
+ *
+ * This is Tuesday afternoon: for most of the day one of these two
+ * places is empty, so it has to read as a place set at a table, not
+ * as a slot waiting to be filled.
  * ------------------------------------------------------------------ */
 
 function PreparedPlace({ member }: { member: Member }) {
-  const isEva = member.slug === "eva";
-  const tray = isEva ? "bg-eva-soft" : "bg-adam-soft";
-  const ring = isEva ? "border-eva/45" : "border-adam/45";
-  const inkCls = isEva ? "text-eva-deep" : "text-adam-deep";
-  const dot = isEva ? "bg-eva" : "bg-adam";
-
+  /* No edge and no dot. A prepared place is by definition the one
+     thing on the page nobody has made yet, and the ink means "made
+     by". The name and the live hour carry the identity here. */
   return (
-    <div className={`rounded-[1.75rem] p-1.5 ring-1 ring-line ${tray}`}>
+    <div className="card rounded-[1.25rem] p-1.5">
       <div
         role="img"
         aria-label={`A place prepared for ${member.displayName}'s photograph`}
-        className={`flex aspect-[3/4] flex-col items-center justify-center gap-3 rounded-[1.375rem] border-2 border-dashed ${ring}`}
+        className="well flex aspect-[3/4] flex-col items-center justify-center gap-3 rounded-[1rem]"
       >
-        <span className="relative flex h-3 w-3" aria-hidden="true">
+        <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
           <span
-            className={`absolute inset-0 rounded-full ${dot}`}
+            className="absolute top-0 left-0 h-1.5 w-1.5 rounded-full bg-mute"
             style={{ animation: "breathe 3.2s var(--ease-io) infinite" }}
           />
-          <span className={`relative inline-flex h-3 w-3 rounded-full ${dot}`} />
+          <span className="relative h-1.5 w-1.5 rounded-full bg-mute" />
         </span>
-        <p className={`type-label ${inkCls}`}>{member.displayName}</p>
+        <p className="type-micro normal-case text-mute">{member.displayName}</p>
         <p className="type-caption -mt-2 text-mute">
           <LiveLocalTime tz={member.homeTimezone} />
         </p>

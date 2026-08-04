@@ -1,0 +1,11 @@
+{
+  "name": "eva-adam-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI tools for the Eva & Adam archive. @aws-sdk/client-s3 lives here — never in apps/web — so the archive's upload path does not pollute the Next.js bundle.",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.800.0",
+    "@supabase/supabase-js": "^2.111.0"
+  }
+}

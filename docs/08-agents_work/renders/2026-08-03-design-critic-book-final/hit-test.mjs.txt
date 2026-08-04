@@ -1,0 +1,78 @@
+/**
+ * Does a tap on the pocket lock, at rest at the top of /book, reach the link?
+ * Read-only: navigates and taps, mutates nothing on disk.
+ */
+import pw from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/@playwright/test/index.js";
+const { chromium } = pw;
+import { SignJWT } from "/Users/adamks/VibeCoding/evalove/.worktrees/book-what-came-back/apps/web/node_modules/jose/dist/webapi/index.js";
+import { readFileSync } from "node:fs";
+
+const SCRATCH =
+  "/private/tmp/claude-501/-Users-adamks-VibeCoding-evalove--worktrees-ceo-3-1785631504/5cf8e0ee-2e9e-4a8f-94f8-5a8a5794b97f/scratchpad";
+const CREDS = JSON.parse(readFileSync(`${SCRATCH}/creds.json`, "utf8"));
+const BASE = "http://localhost:3111";
+
+function keyBytes() {
+  const b = atob(CREDS.secret);
+  const a = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i += 1) a[i] = b.charCodeAt(i);
+  return a;
+}
+const iat = Math.floor(Date.now() / 1000);
+const token = await new SignJWT({ sid: "3f1c0d2e-1111-4222-8333-444455556666", v: 1 })
+  .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+  .setIssuedAt(iat)
+  .setExpirationTime(iat + 15552000)
+  .sign(keyBytes());
+
+const browser = await chromium.launch();
+const ctx = await browser.newContext({
+  viewport: { width: 393, height: 852 },
+  deviceScaleFactor: 2,
+  isMobile: true,
+  hasTouch: true,
+});
+await ctx.addCookies([
+  { name: "ea_session", value: token, domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax" },
+]);
+const page = await ctx.newPage();
+await page.goto(`${BASE}/book?mode=day`, { waitUntil: "networkidle" });
+await page.waitForTimeout(2400);
+await page.addStyleTag({ content: "nextjs-portal{display:none !important}" });
+await page.waitForTimeout(300);
+
+const geom = await page.evaluate(() => {
+  const nav = [...document.querySelectorAll("body *")].find(
+    (e) => getComputedStyle(e).position === "fixed" && e.tagName === "NAV",
+  );
+  const link = document.querySelector('main a[href="/pocket"]');
+  const icon = link.querySelector("svg");
+  const ib = icon.getBoundingClientRect();
+  const nb = nav.getBoundingClientRect();
+  const cx = (ib.left + ib.right) / 2;
+  const cy = (ib.top + ib.bottom) / 2;
+  const hit = document.elementFromPoint(cx, cy);
+  // walk up to find whether the pocket link is in the hit path
+  let n = hit, inLink = false;
+  while (n) { if (n === link) { inLink = true; break; } n = n.parentElement; }
+  return {
+    scrollY: window.scrollY,
+    lockIcon: { l: +ib.left.toFixed(1), t: +ib.top.toFixed(1), r: +ib.right.toFixed(1), b: +ib.bottom.toFixed(1) },
+    navRect: { t: +nb.top.toFixed(1), b: +nb.bottom.toFixed(1), l: +nb.left.toFixed(1), r: +nb.right.toFixed(1) },
+    navPointerEvents: getComputedStyle(nav).pointerEvents,
+    navBg: getComputedStyle(nav).backgroundColor,
+    tapPoint: { x: +cx.toFixed(1), y: +cy.toFixed(1) },
+    hitTag: hit ? hit.tagName : null,
+    hitCls: hit ? (hit.className || "").toString().slice(0, 80) : null,
+    tapReachesPocketLink: inLink,
+  };
+});
+console.log(JSON.stringify(geom, null, 2));
+
+// Now actually tap the lock's visual centre and see where we end up.
+await page.mouse.click(geom.tapPoint.x, geom.tapPoint.y);
+await page.waitForTimeout(1800);
+console.log("URL after tapping the lock's visual centre:", page.url());
+
+await page.screenshot({ path: `${SCRATCH}/final-renders/book-day-after-lock-tap.png` });
+await browser.close();

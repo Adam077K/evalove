@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Lock } from "lucide-react";
 import { Field } from "@/components/ui/Field";
 import { PillButton } from "@/components/ui/PillButton";
-import { useViewer } from "@/lib/viewer";
 
 /**
  * The gate. It asks every time — there is no "remember this device"
@@ -17,7 +16,6 @@ import { useViewer } from "@/lib/viewer";
  * says so honestly — the real check arrives with the backend seam.
  */
 export function PocketGate() {
-  const { member } = useViewer();
   const [phrase, setPhrase] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
   const [checking, setChecking] = useState(false);
@@ -41,7 +39,7 @@ export function PocketGate() {
     // actually be seen, not the middle of the area the dock covers.
     <div className="flex min-h-[calc(100dvh-var(--dock-footprint)-11rem)] flex-col items-center justify-center text-center">
       <span
-        className="glass flex h-20 w-20 items-center justify-center rounded-full text-us-deep"
+        className="card flex h-20 w-20 items-center justify-center rounded-full text-ink"
         aria-hidden="true"
       >
         <Lock size={30} strokeWidth={1.6} />
@@ -76,10 +74,9 @@ export function PocketGate() {
           }}
         />
         <PillButton
-          ink={member.slug}
           type="submit"
           disabled={phrase.trim() === "" || checking}
-          className="mt-5 w-full disabled:opacity-50"
+          className="mt-5 w-full"
         >
           {checking ? "Checking…" : "Open the pocket"}
         </PillButton>
