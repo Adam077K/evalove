@@ -51,7 +51,9 @@ One new behavioural rule: **composing is never solicited.** Edit mode is found, 
 
 ## Pipeline
 
-RunPod public endpoints, no auth handshake: FLUX dev/schnell/Kontext, Seedream 4, Nano Banana Pro, Qwen. Verified end to end at **$0.003/image, ~15s**. **`curl` is denied**, so results cannot land on disk — this blocks Phase 0b asset generation and needs founder approval.
+RunPod public endpoints, no auth handshake: FLUX dev/schnell/Kontext, Seedream 4, Nano Banana Pro, Qwen. Verified end to end at **$0.003/image, ~15s**.
+
+**Asset transport settled.** The project's shell-download tools stay unavailable and unchanged. The founder was asked how to proceed and chose a different tool: Playwright's `download.saveAs()`, which writes files on the server side. Sixteen assets are now on disk and committed (`e78c3b3`, `a2c63bc`). The recipe and its two traps are recorded in handoff §3.
 
 ## Founder verdict on the probe
 
@@ -63,9 +65,11 @@ Also founder-set after the probe: Eva's sunflower is the **Nano Banana** version
 
 ## Open
 
-- **`curl` is denied in the committed `.claude/settings.json`**, and the auto-mode classifier blocks network egress by any other route. Generated assets cannot reach disk without a config change. Recommended fix: drop the blanket deny, allow only the asset CDN host in `settings.local.json`.
-- Reference-image conditioning (founder-requested) is blocked on the same permission.
-- The ribbon-bow asset was rate-limited (429) and never submitted.
+- ~~Asset transport~~ — **closed.** Sixteen stickers/materials downloaded, verified and committed. `.claude/settings.json` was not modified.
+- ~~Ribbon bow (429, never submitted)~~ — **closed.** Submitted and landed, in two colourways: burgundy `#6B1E30` and ochre `#C4A673`.
+- **Every asset in the library still needs luminance keying.** The six `nano_banana_2` files declare RGBA but measure 0.0% transparent — the alpha channel is entirely opaque. Nothing ships pre-cut; the header is misleading.
+- Reference-image conditioning (founder-requested) is still not done. It needs an *upload* (`media_upload` → PUT → `media_confirm`), which the download route does not cover.
+- Two assets failed on background purity and were regenerated: the gold star blew half to white, the cinema ticket had a corner at luminance 165. Checker committed at `docs/08-agents_work/tools/alphacheck.py` — measure corners before accepting a batch.
 - Ink: probe proposes Adam `#2E2822` (fine-liner, denser) / Eva `#3B342B` (ballpoint, lighter) — same warm near-black, differing in density not hue, so authorship stays in the letterform. CEO concurs; founder to confirm.
 - Patrick Hand could not be fetched (network denied); Adam's caption in the probe is a flagged stand-in. The agent correctly did not route around the denial.
 - Carried forward, unresolved: Eva has never been asked a question; the printed book; Echo has no home in the two-place structure; Spotify catalogues differ 15–40% IL/US.
