@@ -37,3 +37,9 @@ apps/web/eva-and-adam-archive/
 
 # Regenerable from the source PNGs via docs/08-agents_work/tools/key_assets.py
 docs/08-agents_work/screens/*/keyed/
+
+# Python bytecode (committed once by mistake from docs tooling)
+__pycache__/
+
+# Node — the repo root is not an install target; apps manage their own
+node_modules/
