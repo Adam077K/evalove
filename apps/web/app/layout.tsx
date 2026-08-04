@@ -25,7 +25,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F8F5F1" },
-    { media: "(prefers-color-scheme: dark)", color: "#1E1A17" },
+    /* Night canvas per D1: the paper dims, it does not invert. */
+    { media: "(prefers-color-scheme: dark)", color: "#BAB1A2" },
   ],
 };
 

@@ -234,116 +234,66 @@
 }
 
 /* ------------------------------------------------------------
-   2 · Night — the same paper, unlit.
+   2 · Night — the lamp is low, the paper is still paper.
 
-   Night is not a theme toggle and not an inverted day. w1 in
-   `library.json` — "She's in bed, he's awake", IL 05:00–09:00 /
-   NYC 22:00–02:00 — is the biggest overlap window in their week,
-   and Eva spends it in bed with the lights off. This is the
-   highest-traffic surface in the product.
+   REWRITTEN under the revised §1 and the 2026-08-04 lamp ruling.
+   The previous night was an inversion — dark canvas, dark
+   plates, light ink: "night meant dark-everything," and D1
+   killed that. PAPER stays paper in both modes; only DECO
+   sections carry the dark palette. Dark mode is the lamp going
+   low over the same table, and a white note under a dim lamp is
+   a dimmer white note — still the lightest thing on the table
+   after a photograph. It never becomes a dark plate with light
+   text: that is the note *inverting* while the paper around it
+   *dims*, two different physics on one surface, and it is
+   exactly the defect the first night capture showed.
 
-   That single fact sets every value below:
+   So the night PAPER scale is the day scale multiplied down
+   warmly (~×0.73 — the same single dim the .under-lamp material
+   curve uses), with every relationship preserved: the surface
+   stays lighter than the canvas, the well stays recessed, and
+   --ink stays dark ink on lit paper. Most of the old night
+   block is deleted rather than retuned, because it existed to
+   manage the inversion — lightened authorship inks, a dimmed
+   pill, black-weighted shadows, screen-blended grain. Paper
+   that stays paper inherits its :root values.
 
-   Warm, because the screen is the only light source in a dark
-   bedroom. #1E1A17 is hue 26° — the day canvas taken down to
-   11.8% value, not swapped for a different material. v6's
-   #140E1E was plum, which is a colour choice pretending to be a
-   dark mode.
-
-   Not black, because a true black page makes every white plate
-   on it a lightbulb. #1E1A17 keeps plates and page in the same
-   family so the contrast between them stays a paper contrast.
-
-   Wells go *darker* than the surface at night, inverting the day
-   relationship. Light comes from above; at night a recess is in
-   shadow rather than in light. It is a small thing and it is the
-   difference between a dark mode that was designed and one that
-   was generated.
-
-   And photographs are still never dimmed — so at 11pm the
-   brightest thing on Eva's screen is Adam's face. That is the
-   correct hierarchy for this window and it costs nothing to get
-   right; it only required not writing `--photo-dim`.
+   The floor on how far this dims is WCAG AA with dark ink:
+   ink carries ~8.5:1 on the night surface and --mute is held at
+   ≥4.5:1. Darker than this and text fails before atmosphere is
+   gained — the true dark of night belongs to the DECO window,
+   which is precisely what makes it read as a window. And
+   photographs are still never dimmed: at 11pm the brightest
+   thing on Eva's screen is Adam's face.
    ------------------------------------------------------------ */
 
 [data-mode="night"] {
-  --canvas: #1e1a17;
-  --surface: #272220;
-  --surface-2: #171412;
+  --canvas: #bab1a2; /* the day canvas × ~0.73, warmed */
+  --surface: #bfb6a8; /* a white note under the low lamp — still lighter than the canvas */
+  --surface-2: #b2a999; /* the recess, dimmer than both */
 
-  --ink: #ede7e0; /* 14.08:1 on canvas — warm off-white, not #fff */
-  --mute: #a0968d; /* 5.96:1 on canvas, 5.42:1 on surface */
-  --line: rgba(237, 231, 224, 0.11);
-  --on-ink: #1e1a17;
+  --mute: #48423a; /* 4.6:1 on surface — the AA floor sets this */
+  --line: rgba(37, 29, 22, 0.16);
+  --danger: #7e211d; /* 4.5:1 on the dimmed canvas */
+  --shimmer: rgba(255, 255, 255, 0.5);
 
-  /* Night is where the solid control stops being `--ink`.
-     `pill-ink` inverting to the full #EDE7E0 put the dock's send
-     button and active tab — a continuous ~150px band — at 14:1
-     against the page, on every authenticated surface, in the window
-     §2 calls the highest-traffic in the product. The brightest thing
-     on Eva's screen at 11pm was a navigation button, which is the
-     exact inversion of the hierarchy this file argues for two
-     sections earlier: the brightest thing should be Adam's face.
-
-     `tile-ink` already established this for a 140px block. Two
-     50px controls sitting next to each other are the same problem
-     wearing a different shape, so the fill comes down rather than
-     the rule being scoped by size. #C9BFB6 still carries 9.55:1
-     against its own text and reads unmistakably as the one solid
-     control — it just stops being a light source. */
-  --pill-fill: #c9bfb6;
-
-  /* The same two inks, lifted to stay legible at 2px on a dark
-     page. Hue is held exactly — 218° and 15°, unchanged — so a
-     person's mark is the same mark in both modes. Saturation
-     falls (24.6% / 32.6%) because a hue at night reads more
-     saturated than the same hue by day. Luminance parity holds:
-     0.337 and 0.325. */
-  --eva: #8d9ebb;
-  --adam: #be9080;
-
-  --danger: #ea9189; /* 7.33:1 on canvas */
-
-  --shimmer: rgba(237, 231, 224, 0.08);
-
-  --e1: 0 1px 1px rgba(0, 0, 0, 0.28), 0 3px 8px -2px rgba(0, 0, 0, 0.32);
-  --e2: 0 1px 2px rgba(0, 0, 0, 0.34), 0 10px 24px -8px rgba(0, 0, 0, 0.46);
-  --e3: 0 2px 4px rgba(0, 0, 0, 0.38), 0 24px 48px -16px rgba(0, 0, 0, 0.56);
-
-  /* Night needs it harder: the dock's surface is only 3% lighter
-     than the canvas behind it, so value alone cannot separate them
-     and the shadow is doing all of the work. */
-  --e-float: 0 1px 2px rgba(0, 0, 0, 0.44),
-    0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
-
-  --noise-opacity: 0.028;
-
-  /* The lamp goes off — image materials dim via .under-lamp. */
+  /* The lamp goes low — image materials dim via .under-lamp by
+     the same fraction as the tokens above. Everything absent from
+     this block (--ink, the authorship inks, the pill, shadows,
+     grain) inherits :root, because paper that stays paper needs
+     no night double. */
   --lamp-dim: 1;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-mode]) {
-    --canvas: #1e1a17;
-    --surface: #272220;
-    --surface-2: #171412;
-    --ink: #ede7e0;
-    --mute: #a0968d;
-    --line: rgba(237, 231, 224, 0.11);
-    --on-ink: #1e1a17;
-    --pill-fill: #c9bfb6;
-    --eva: #8d9ebb;
-    --adam: #be9080;
-    --danger: #ea9189;
-    --shimmer: rgba(237, 231, 224, 0.08);
-    --e1: 0 1px 1px rgba(0, 0, 0, 0.28), 0 3px 8px -2px rgba(0, 0, 0, 0.32);
-    --e2: 0 1px 2px rgba(0, 0, 0, 0.34), 0 10px 24px -8px rgba(0, 0, 0, 0.46);
-    --e3: 0 2px 4px rgba(0, 0, 0, 0.38), 0 24px 48px -16px rgba(0, 0, 0, 0.56);
-    --e-float: 0 1px 2px rgba(0, 0, 0, 0.44),
-      0 8px 16px -4px rgba(0, 0, 0, 0.52), 0 20px 40px -8px rgba(0, 0, 0, 0.62);
-    --noise-opacity: 0.028;
-
-    /* The lamp goes off — image materials dim via .under-lamp. */
+    --canvas: #bab1a2;
+    --surface: #bfb6a8;
+    --surface-2: #b2a999;
+    --mute: #48423a;
+    --line: rgba(37, 29, 22, 0.16);
+    --danger: #7e211d;
+    --shimmer: rgba(255, 255, 255, 0.5);
     --lamp-dim: 1;
   }
 }
@@ -446,11 +396,10 @@ body {
     color var(--dur-3) var(--ease-io);
 }
 
+/* One selection for both modes: night paper is still light paper,
+   so the dark-ink wash works everywhere. */
 ::selection {
   background: rgba(37, 29, 22, 0.12);
-}
-[data-mode="night"] ::selection {
-  background: rgba(237, 231, 224, 0.18);
 }
 
 /* With no accent colour in the system, the focus ring is ink.
@@ -703,13 +652,16 @@ textarea[aria-invalid="true"] {
    already dim through the night token swap, and .under-lamp on
    top would dim them twice. */
 @utility under-lamp {
-  /* 0.78, not the 0.87 that would match the night canvas token
-     exactly: full token parity is "lights off" and the law's night
-     is a reading room — the lamp is low, not out. The materials sit
-     a step lighter than the page canvas, which is what a lit table
-     in a dark room does. */
-  filter: brightness(calc(1 - var(--lamp-dim) * 0.78))
-    sepia(calc(var(--lamp-dim) * 0.32));
+  /* ×0.73 — the same fraction the night PAPER tokens dim by
+     (§2), so the image substrate, the seam strip and the token
+     surfaces all sit under one lamp. The history of this number:
+     0.87 (token parity with the old inverted night) was
+     lights-off; 0.78 was right against that dark baseline; under
+     D1's dim-not-invert tokens the one-dim-for-the-whole-table
+     principle lands here. If night depth changes, change §2 and
+     this together — they are the same lamp. */
+  filter: brightness(calc(1 - var(--lamp-dim) * 0.27))
+    sepia(calc(var(--lamp-dim) * 0.22));
   transition: filter var(--dur-3) var(--ease-io);
 }
 
@@ -995,24 +947,12 @@ textarea[aria-invalid="true"] {
    The grain stays, at 2.2%. It earns its place by being the only
    thing that makes a flat colour read as a material: paper is
    warm because of what it is made of, and this is the cheapest
-   honest way to say so. Multiply by day, because grain in paper
-   absorbs light; screen at night, because in a dark room the
-   grain is the light the page is scattering rather than eating.
-   ------------------------------------------------------------ */
-/* The night half of `tile-ink` — see §7. Declared here rather than
-   inside the utility because it needs the mode selector's specificity. */
-[data-mode="night"] .tile-ink {
-  background: var(--surface);
-  color: var(--ink);
-  border-color: var(--line);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-mode]) .tile-ink {
-    background: var(--surface);
-    color: var(--ink);
-    border-color: var(--line);
-  }
-}
+   honest way to say so. Multiply in both modes — night paper is
+   still lit paper (§2), and grain in paper absorbs light. The
+   screen-blend night variant left with the inversion it served;
+   so did the tile-ink night double, which existed so a solid ink
+   block would not become a lamp on a dark page. On dimmed light
+   paper, solid ink is simply solid ink. */
 
 .noise-layer {
   position: fixed;
@@ -1021,12 +961,4 @@ textarea[aria-invalid="true"] {
   z-index: 40;
   opacity: var(--noise-opacity);
   mix-blend-mode: multiply;
-}
-[data-mode="night"] .noise-layer {
-  mix-blend-mode: screen;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-mode]) .noise-layer {
-    mix-blend-mode: screen;
-  }
 }
