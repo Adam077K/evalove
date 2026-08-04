@@ -36,7 +36,7 @@ export interface TornProps {
 
 /** Asset registry. Extend as torn-edge variants arrive from generation. */
 const TORN_ASSETS: Partial<Record<number, string>> = {
-  8: "/materials/torn-edge-coldpress.png",
+  8: "/materials/torn-edge-coldpress.webp",
 };
 
 /**

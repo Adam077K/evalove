@@ -72,7 +72,7 @@ export function Seam({ height = 80, className }: SeamProps) {
        * height without distorting the fibre detail.
        */}
       <Image
-        src="/materials/torn-edge-coldpress.png"
+        src="/materials/torn-edge-coldpress.webp"
         alt=""
         fill={false}
         width={1170}

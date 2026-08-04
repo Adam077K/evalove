@@ -67,8 +67,8 @@ export interface TapedProps {
 
 /** Asset registry. Extend as new tape variants arrive from generation. */
 const TAPE_ASSETS: Partial<Record<TapeVariant, string>> = {
-  houndstooth: "/materials/washi-ochre-dots.png",
-  kraft: "/materials/washi-terracotta.png",
+  houndstooth: "/materials/washi-ochre-dots.webp",
+  kraft: "/materials/washi-terracotta.webp",
 };
 
 /** How the tape strip is positioned per placement edge. */

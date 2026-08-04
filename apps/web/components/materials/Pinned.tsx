@@ -38,9 +38,9 @@ export interface PinnedProps {
 
 /** Asset registry. v2 is at a better angle (40° overhead) than v1. */
 const PIN_ASSETS: Partial<Record<PinVariant, string>> = {
-  eva: "/materials/pushpin-brass-v2.png",
-  // adam: "/materials/pushpin-cream.png",   — pending generation
-  // neutral: "/materials/pushpin-black.png", — pending generation
+  eva: "/materials/pushpin-brass-v2.webp",
+  // adam: "/materials/pushpin-cream.webp",   — pending generation
+  // neutral: "/materials/pushpin-black.webp", — pending generation
 };
 
 const PIN_SIZE = { width: 28, height: 28 };
