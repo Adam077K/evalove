@@ -36,10 +36,12 @@ import { longDate } from "@/lib/time";
  * shade above — pressure, not ink. The highlight rides the lamp so at
  * night the stamping dims with the cloth it is pressed into.
  *
- * All three materials are -standin assets derived mechanically from
- * the committed stocks (see tools/book_standins.py); swap the three
- * URLs when generated assets arrive. Cloth, pages and ribbon all
- * carry the lamp; nothing here is a photograph.
+ * Materials: the cloth and ribbon are the real generated assets
+ * (book-cloth-burgundy, book-ribbon-sage — an olive colourway is on
+ * disk for the founder to pick on sight). The fore-edge is chosen
+ * between the generated asset and the stock-derived stand-in by
+ * looking at both in situ. Cloth, pages and ribbon all carry the
+ * lamp; nothing here is a photograph.
  */
 
 interface BookCoverProps {
@@ -86,7 +88,7 @@ export function BookCover({ leafCount, begun }: BookCoverProps) {
         <div
           className="under-lamp relative z-10 -ml-9 h-[min(540px,58dvh)] flex-1 rounded-[3px] rounded-r-none bg-cover bg-center"
           style={{
-            backgroundImage: "url(/materials/book-cover-burgundy-standin.webp)",
+            backgroundImage: "url(/materials/book-cloth-burgundy.webp)",
             boxShadow:
               "0 4px 12px rgba(41,32,24,0.18), 0 10px 28px rgba(41,32,24,0.13), 7px 0 12px -5px rgba(41,32,24,0.35)",
           }}
@@ -138,17 +140,24 @@ export function BookCover({ leafCount, begun }: BookCoverProps) {
           scrolling down to the opening follows it. Between the board
           (z-10) and the table; drop-shadow follows its cut, and the
           lamp curve rides inline because a filter class would be
-          overridden (the Pinned precedent). */}
+          overridden (the Pinned precedent).
+
+          Geometry: the keyed silk's trim box is wide (the twist
+          swings sideways) — the strip itself runs at x 44.7–57.7% of
+          the box (measured from alpha). The box is sized by width
+          230px so the strip reads ~26px, and `right` compensates for
+          the box's transparent margins so the STRIP, not the box,
+          lands 47px left of the fore-edge. */}
       <img
-        src="/materials/book-ribbon-sage-standin.webp"
+        src="/materials/book-ribbon-sage.webp"
         alt=""
         aria-hidden="true"
-        width={220}
-        height={1500}
-        className="pointer-events-none absolute z-[5] h-auto w-[26px]"
+        width={692}
+        height={1024}
+        className="pointer-events-none absolute z-[5] h-auto w-[230px]"
         style={{
-          right: edge + 34,
-          bottom: -108,
+          right: edge - 67,
+          bottom: -150,
           transform: "rotate(2.4deg)",
           filter:
             "drop-shadow(0 3px 5px rgba(41,32,24,0.28)) brightness(calc(1 - var(--lamp-dim, 0) * var(--lamp-brightness-drop, 0.27))) sepia(calc(var(--lamp-dim, 0) * var(--lamp-sepia-saturation, 0.22)))",

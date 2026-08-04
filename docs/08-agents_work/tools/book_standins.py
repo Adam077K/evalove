@@ -176,26 +176,140 @@ def build_ribbon() -> Image.Image:
     return rgba
 
 
+def rekey_polaroid_chin() -> Image.Image:
+    """Re-key polaroid-frame-chin from the raw scan, geometrically.
+
+    The shipped webp lost 79% of its chin: the chin paper measures
+    min-channel p50 253 — WHITER than the background corners (mean
+    244) — so no value threshold can separate frame paper from ground,
+    and the border-connected flood ate the chin through any near-white
+    bridge. The register bans decay, so the damage is a defect, not
+    patina.
+
+    Geometry succeeds where value cannot:
+      1. subject outline = every non-near-white pixel (the frame's
+         cream edges, shadows and texture form a closed contour)
+      2. fill the contour — frame INCLUDING window and chin
+      3. punch ONLY the enclosed near-white component whose centroid
+         sits in the upper 3/4: that is the window. The chin is the
+         enclosed white in the lower band and stays opaque.
+    Anti-aliasing comes from keying at scan resolution (1792×2304)
+    and resizing to the shipped 795×1024 — ~2.25× supersampling.
+    """
+    import numpy as np
+    from scipy import ndimage
+
+    rgb = np.asarray(
+        Image.open(ASSETS / "polaroid-frame-chin.png").convert("RGB")
+    ).astype(np.float32)
+    h, w, _ = rgb.shape
+    mn = rgb.min(axis=2)
+
+    near_white = mn >= 244
+    outline = ~near_white
+
+    # SPAN FILL, not contour fill: the frame's bottom edge blows out
+    # to pure white in the scan, so its contour never closes and
+    # binary_fill_holes leaks (measured: the chin went 98.8%
+    # transparent). Span fill — inside = between the first and last
+    # outline pixel of both the column AND the row — tolerates any
+    # gap. Cost: the rounded corners square off by a few near-white
+    # pixels, invisible on the paper grounds polaroids sit on.
+    # Denoise before spanning: isolated dark specks in the scan's
+    # background stretch the spans to the canvas edge (measured: the
+    # corners came out 45% opaque). Opening removes sub-3px specks;
+    # the frame's edges are hundreds of pixels thick and survive.
+    outline = ndimage.binary_opening(outline, iterations=2)
+
+    down = np.maximum.accumulate(outline, axis=0)
+    up = np.maximum.accumulate(outline[::-1, :], axis=0)[::-1, :]
+    right = np.maximum.accumulate(outline, axis=1)
+    left = np.maximum.accumulate(outline[:, ::-1], axis=1)[:, ::-1]
+    inside = down & up & right & left
+
+    # Punch the window BY RECT, not by component: the thin dark line
+    # between window and chin is broken in the scan, so window and
+    # chin merge into one near-white component and any component-level
+    # rule takes the chin with the window (measured, twice). The
+    # window's geometry is known from the original key (x 9.6–90.6%,
+    # y 9.8–75.3%): punch near-white only inside that zone — the
+    # frame's edge lines within it are not near-white and survive.
+    _ = ndimage  # geometry replaced component analysis; keep import stable
+    ys, xs = np.mgrid[0:h, 0:w]
+    window_zone = (ys > h * 0.09) & (ys < h * 0.752) & (xs > w * 0.088) & (xs < w * 0.912)
+    alpha = inside.astype(np.float32)
+    # `mn >= 244` is INLINED here rather than reusing `near_white`.
+    # Observed in this environment (Python 3.14 user-site numpy): the
+    # bound `near_white` array evaluated to a DIFFERENT mask than the
+    # same expression recomputed in the same frame (1,055,189 vs
+    # 3,073,579 true pixels, same `mn`, printed side by side). Cause
+    # unidentified; the inline form measures correct, so it ships and
+    # the anomaly is recorded rather than fought further.
+    alpha[(mn >= 244) & inside & window_zone] = 0.0
+
+    # Clamp to the frame's true bbox: a comb of background stripes
+    # survived the spans above the top edge (visible against midnight
+    # in the proof). The frame's edges are the rows/cols where the
+    # outline runs long; nothing outside them is frame.
+    row_run = outline.sum(axis=1)
+    col_run = outline.sum(axis=0)
+    long_rows = np.where(row_run > 0.5 * w)[0]
+    long_cols = np.where(col_run > 0.5 * h)[0]
+    top, bottom = long_rows[0], long_rows[-1]
+    left_e, right_e = long_cols[0], long_cols[-1]
+    alpha[: max(0, top - 4), :] = 0.0
+    alpha[bottom + 4 :, :] = 0.0
+    alpha[:, : max(0, left_e - 4)] = 0.0
+    alpha[:, right_e + 4 :] = 0.0
+
+    out = np.dstack([rgb, alpha[..., None] * 255]).astype(np.uint8)
+    img = Image.fromarray(out, "RGBA")
+    return img.resize((795, 1024), Image.LANCZOS)
+
+
+def clean_ribbon() -> None:
+    """Post-process the KEYED real ribbon (book-ribbon-sage.webp).
+
+    key_assets.py left a cloud of semi-opaque near-white shadow across
+    the lower half — invisible on paper, obvious on midnight (the
+    proof-sheet principle). The strip itself meanders inside a narrow
+    column band (measured 44.7–57.7% of the trim box), so everything
+    outside x ∈ [40%, 63%] is junk by construction and is cleared.
+    """
+    import numpy as np
+
+    path = PUBLIC / "book-ribbon-sage.webp"
+    im = Image.open(path).convert("RGBA")
+    a = np.asarray(im).copy()
+    h, w, _ = a.shape
+    a[:, : int(w * 0.40), 3] = 0
+    a[:, int(w * 0.63) :, 3] = 0
+    Image.fromarray(a, "RGBA").save(path, quality=90)
+
+
 def main() -> None:
     PUBLIC.mkdir(parents=True, exist_ok=True)
 
+    # The fore-edge stand-in is the one derivative that SHIPS: judged
+    # against the generated book-fore-edge asset in situ, the standin's
+    # fine even pitch reads as hundreds of pages where the generated
+    # lines read as a handful of thick sheets. The cover and ribbon
+    # stand-ins lost the same comparison and stay in ASSETS as record
+    # only — the real cloth and silk assets ship instead.
     fore = build_fore_edge()
     fore.save(ASSETS / "book-fore-edge-standin.png")
     fore.save(PUBLIC / "book-fore-edge-standin.webp", quality=90)
 
     cover = build_cover()
     cover.save(ASSETS / "book-cover-burgundy-standin.png")
-    cover.save(PUBLIC / "book-cover-burgundy-standin.webp", quality=88)
 
     ribbon = build_ribbon()
     ribbon.save(ASSETS / "book-ribbon-sage-standin.png")
-    ribbon.save(PUBLIC / "book-ribbon-sage-standin.webp", quality=90)
 
-    for name in (
-        "book-fore-edge-standin.webp",
-        "book-cover-burgundy-standin.webp",
-        "book-ribbon-sage-standin.webp",
-    ):
+    chin = rekey_polaroid_chin()
+    chin.save(PUBLIC / "polaroid-frame-chin.webp", quality=92)
+
+    for name in ("book-fore-edge-standin.webp", "polaroid-frame-chin.webp"):
         p = PUBLIC / name
         print(f"{name}: {p.stat().st_size // 1024} KB")
 

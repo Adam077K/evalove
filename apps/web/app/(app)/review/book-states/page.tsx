@@ -126,21 +126,21 @@ export default function ReviewBookStatesPage() {
 
         <section aria-labelledby="s-date">
           <Label id="s-date">State 2 — the opening, date match</Label>
-          <BookSheet ribbon>
+          <BookSheet>
             <ResurfacedItem returned={DATE_MATCH} />
           </BookSheet>
         </section>
 
         <section aria-labelledby="s-hour">
           <Label id="s-hour">State 3 — the opening, hour match</Label>
-          <BookSheet ribbon>
+          <BookSheet>
             <ResurfacedItem returned={HOUR_MATCH} />
           </BookSheet>
         </section>
 
         <section aria-labelledby="s-text">
           <Label id="s-text">State 4 — the opening, text only (no photograph anywhere)</Label>
-          <BookSheet ribbon>
+          <BookSheet>
             <ResurfacedItem returned={TEXT_MATCH} />
           </BookSheet>
         </section>

@@ -106,14 +106,14 @@ export default function BookPage() {
           {/* pr-6 keeps the fore-edge fully on screen with room to
               grow; the spine takes the one bleed edge on the left.
               The bottom margin clears the hanging ribbon's tail. */}
-          <div className="mb-36 pr-6">
+          <div className="mb-48 pr-6">
             <BookCover leafCount={leaves} begun={BEGUN} />
           </div>
 
           {/* ---- 2 · The opening ---- */}
           <div className="px-5 md:px-8">
             {returned !== null ? (
-              <BookSheet ribbon>
+              <BookSheet>
                 <ResurfacedItem returned={returned} />
               </BookSheet>
             ) : (

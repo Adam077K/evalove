@@ -1,6 +1,3 @@
-/* eslint-disable @next/next/no-img-element -- the ribbon is a keyed
-   material composite; the optimizer must never re-encode its alpha. */
-
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -15,10 +12,11 @@ import { Paper } from "@/components/materials";
  * many things ON pages scatter (±8°), but the open book itself is
  * squarely in front of you — you turned to face it.
  *
- * `ribbon` lays the sage bookmark across the top corner — the ribbon
- * that held this place, moved aside when the book opened to it. Only
- * the opening spread (what came back) carries it: one ribbon, one
- * place held.
+ * There is deliberately NO ribbon here. The product has one ribbon
+ * and it belongs to the cover, hanging toward the opening below it —
+ * a second ribbon lying on the sheet made the same object appear
+ * twice on one screen (verified in the first day capture) and read
+ * as two ribbons, so it was removed rather than aligned.
  *
  * Free composition happens INSIDE this frame (D4: pages you turn;
  * inside a page, total freedom). The sheet clips nothing — children
@@ -27,13 +25,11 @@ import { Paper } from "@/components/materials";
  */
 
 export interface BookSheetProps {
-  /** Lay the moved-aside ribbon across the top-right corner. */
-  ribbon?: boolean;
   children: ReactNode;
   className?: string;
 }
 
-export function BookSheet({ ribbon = false, children, className }: BookSheetProps) {
+export function BookSheet({ children, className }: BookSheetProps) {
   return (
     <div className={cn("relative", className)}>
       <Paper
@@ -42,22 +38,6 @@ export function BookSheet({ ribbon = false, children, className }: BookSheetProp
       >
         <div className="px-4 pb-8 pt-6">{children}</div>
       </Paper>
-
-      {ribbon && (
-        <img
-          src="/materials/book-ribbon-sage-standin.webp"
-          alt=""
-          aria-hidden="true"
-          width={220}
-          height={1500}
-          className="pointer-events-none absolute -top-7 right-6 z-10 h-auto w-[24px]"
-          style={{
-            transform: "rotate(-14deg)",
-            filter:
-              "drop-shadow(0 2px 4px rgba(41,32,24,0.25)) brightness(calc(1 - var(--lamp-dim, 0) * var(--lamp-brightness-drop, 0.27))) sepia(calc(var(--lamp-dim, 0) * var(--lamp-sepia-saturation, 0.22)))",
-          }}
-        />
-      )}
     </div>
   );
 }
