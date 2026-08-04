@@ -1,0 +1,501 @@
+[
+  {
+    "name": "city-nyc-near-silhouette",
+    "action": "keyed",
+    "bg_frac": 0.525,
+    "kept_frac": 0.475,
+    "size": [
+      2688,
+      1536
+    ],
+    "trimmed": [
+      2688,
+      1484
+    ],
+    "web": [
+      1024,
+      565
+    ],
+    "flag": null
+  },
+  {
+    "name": "city-tlv-far-silhouette",
+    "action": "keyed",
+    "bg_frac": 0.725,
+    "kept_frac": 0.275,
+    "size": [
+      2688,
+      1536
+    ],
+    "trimmed": [
+      2688,
+      818
+    ],
+    "web": [
+      1024,
+      312
+    ],
+    "flag": null
+  },
+  {
+    "name": "paper-bone-laid",
+    "action": "full-bleed stock, not keyed",
+    "bg_frac": 0.0,
+    "flag": null
+  },
+  {
+    "name": "paper-bone-v2",
+    "action": "full-bleed stock, not keyed",
+    "bg_frac": 0.0,
+    "flag": null
+  },
+  {
+    "name": "polaroid-frame-chin",
+    "action": "keyed",
+    "bg_frac": 0.736,
+    "kept_frac": 0.257,
+    "size": [
+      1792,
+      2304
+    ],
+    "trimmed": [
+      1788,
+      2304
+    ],
+    "web": [
+      795,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "polaroid-frame-empty",
+    "action": "keyed",
+    "bg_frac": 0.723,
+    "kept_frac": 0.275,
+    "size": [
+      2048,
+      2048
+    ],
+    "trimmed": [
+      1585,
+      1803
+    ],
+    "web": [
+      900,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "pushpin-brass-v2",
+    "action": "keyed",
+    "bg_frac": 0.78,
+    "kept_frac": 0.22,
+    "size": [
+      2048,
+      2048
+    ],
+    "trimmed": [
+      1274,
+      1736
+    ],
+    "web": [
+      751,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "pushpin-brass",
+    "action": "retired (superseded)",
+    "bg_frac": 0.0,
+    "flag": null
+  },
+  {
+    "name": "sticker-babysbreath-pressed",
+    "action": "keyed",
+    "bg_frac": 0.688,
+    "kept_frac": 0.311,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      862,
+      841
+    ],
+    "web": [
+      862,
+      841
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-bow-burgundy",
+    "action": "keyed",
+    "bg_frac": 0.684,
+    "kept_frac": 0.314,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      1007,
+      662
+    ],
+    "web": [
+      1007,
+      662
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-bow-ochre",
+    "action": "keyed",
+    "bg_frac": 0.67,
+    "kept_frac": 0.325,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      938,
+      838
+    ],
+    "web": [
+      938,
+      838
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-butterfly-pressed",
+    "action": "keyed",
+    "bg_frac": 0.592,
+    "kept_frac": 0.407,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      942,
+      727
+    ],
+    "web": [
+      942,
+      727
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-card-queen-hearts",
+    "action": "keyed",
+    "bg_frac": 0.659,
+    "kept_frac": 0.341,
+    "size": [
+      2048,
+      2048
+    ],
+    "trimmed": [
+      2047,
+      2008
+    ],
+    "web": [
+      1024,
+      1004
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-daisy-pressed",
+    "action": "keyed",
+    "bg_frac": 0.714,
+    "kept_frac": 0.285,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      735,
+      825
+    ],
+    "web": [
+      735,
+      825
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-discoball",
+    "action": "keyed",
+    "bg_frac": 0.457,
+    "kept_frac": 0.541,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      939,
+      1024
+    ],
+    "web": [
+      939,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-lavender-pressed",
+    "action": "keyed",
+    "bg_frac": 0.885,
+    "kept_frac": 0.114,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      475,
+      909
+    ],
+    "web": [
+      475,
+      909
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-record-45rpm",
+    "action": "keyed",
+    "bg_frac": 0.252,
+    "kept_frac": 0.747,
+    "size": [
+      2048,
+      2048
+    ],
+    "trimmed": [
+      2004,
+      2018
+    ],
+    "web": [
+      1017,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-rose-red-pressed",
+    "action": "keyed",
+    "bg_frac": 0.482,
+    "kept_frac": 0.515,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      963,
+      1024
+    ],
+    "web": [
+      963,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-stamp-vintage",
+    "action": "keyed",
+    "bg_frac": 0.806,
+    "kept_frac": 0.194,
+    "size": [
+      2048,
+      2048
+    ],
+    "trimmed": [
+      1558,
+      1706
+    ],
+    "web": [
+      935,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-star-gold-foil",
+    "action": "keyed",
+    "bg_frac": 0.717,
+    "kept_frac": 0.272,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      918,
+      962
+    ],
+    "web": [
+      918,
+      962
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-sunflower-pressed-v3",
+    "action": "keyed",
+    "bg_frac": 0.563,
+    "kept_frac": 0.437,
+    "size": [
+      2048,
+      2048
+    ],
+    "trimmed": [
+      1853,
+      2012
+    ],
+    "web": [
+      943,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "sticker-ticket-cinema",
+    "action": "keyed",
+    "bg_frac": 0.608,
+    "kept_frac": 0.377,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      1001,
+      1003
+    ],
+    "web": [
+      1001,
+      1003
+    ],
+    "flag": null
+  },
+  {
+    "name": "sunflower-gold-nanobanana",
+    "action": "keyed",
+    "bg_frac": 0.505,
+    "kept_frac": 0.494,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      839,
+      930
+    ],
+    "web": [
+      839,
+      930
+    ],
+    "flag": null
+  },
+  {
+    "name": "sunflower-gold-recraft",
+    "action": "keyed",
+    "bg_frac": 0.563,
+    "kept_frac": 0.437,
+    "size": [
+      2048,
+      2048
+    ],
+    "trimmed": [
+      1853,
+      2012
+    ],
+    "web": [
+      943,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "sunflower-nanobanana",
+    "action": "keyed",
+    "bg_frac": 0.5,
+    "kept_frac": 0.5,
+    "size": [
+      1024,
+      1024
+    ],
+    "trimmed": [
+      861,
+      982
+    ],
+    "web": [
+      861,
+      982
+    ],
+    "flag": null
+  },
+  {
+    "name": "sunflower-recraft",
+    "action": "retired (superseded)",
+    "bg_frac": 0.0,
+    "flag": null
+  },
+  {
+    "name": "torn-edge-coldpress",
+    "action": "keyed",
+    "bg_frac": 0.632,
+    "kept_frac": 0.367,
+    "size": [
+      2560,
+      1664
+    ],
+    "trimmed": [
+      2126,
+      1608
+    ],
+    "web": [
+      1024,
+      775
+    ],
+    "flag": null
+  },
+  {
+    "name": "washi-ochre-dots",
+    "action": "keyed",
+    "bg_frac": 0.719,
+    "kept_frac": 0.281,
+    "size": [
+      2560,
+      1664
+    ],
+    "trimmed": [
+      2444,
+      573
+    ],
+    "web": [
+      1024,
+      240
+    ],
+    "flag": null
+  },
+  {
+    "name": "washi-terracotta",
+    "action": "keyed",
+    "bg_frac": 0.8,
+    "kept_frac": 0.199,
+    "size": [
+      2560,
+      1664
+    ],
+    "trimmed": [
+      1928,
+      633
+    ],
+    "web": [
+      1024,
+      336
+    ],
+    "flag": null
+  }
+]

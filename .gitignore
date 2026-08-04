@@ -34,3 +34,6 @@ tools/node_modules/
 # Export output — written by tools/export/index.ts during local runs and CI;
 # never committed — the point is that it lives in Eva's R2, not this repo
 apps/web/eva-and-adam-archive/
+
+# Regenerable from the source PNGs via docs/08-agents_work/tools/key_assets.py
+docs/08-agents_work/screens/*/keyed/
