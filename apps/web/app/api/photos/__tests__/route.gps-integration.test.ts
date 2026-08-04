@@ -15,6 +15,17 @@
  * actually reach the database — names bytes independently re-parsed and
  * proven to carry no APP1/EXIF segment and no GPS IFD. What gets committed is
  * provably not the original upload.
+ *
+ * `storageObjects` is a second, independent fake: what `downloadObject`
+ * actually returns for a given path. It exists because `commitPhoto` now
+ * re-downloads and re-scans the display/thumb objects before it will write
+ * `exif_stripped: true` (see `verifyDerivativesAreClean` in
+ * `lib/data/photos.ts`) — the request body's own claims about width, bytes
+ * and checksum are no longer enough on their own. The two "GPS bypass" tests
+ * below populate this map with bytes that never went through
+ * `preparePhoto` at all, which is exactly the attack the fix closes: a
+ * session PUTting raw camera-roll bytes straight to the signed URLs and then
+ * committing as if the client pipeline had run.
  */
 
 import { readFile } from "node:fs/promises";
@@ -33,6 +44,16 @@ const EVA_ID = "550e8400-e29b-41d4-8716-446655440001";
 const ADAM_ID = "550e8400-e29b-41d4-8716-446655440002";
 const PHOTO_ID = "550e8400-e29b-41d4-8716-446655440000";
 const CLIENT_UUID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+/** What `downloadObject` answers for a given storage path. Reset per test. */
+const storageObjects = vi.hoisted(() => new Map<string, ArrayBuffer>());
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
+}
 
 const ROSTER = vi.hoisted(() => [
   {
@@ -75,6 +96,9 @@ vi.mock("@/lib/data", async (importActual) => {
         async supersedePriorDaily() {
           return 0; // kind is "book" here; this must never even be reachable.
         },
+        async downloadObject(path: string) {
+          return storageObjects.get(path) ?? null;
+        },
       },
       now: () => new Date("2026-05-09T20:00:00.000Z"),
       newId: () => PHOTO_ID,
@@ -95,9 +119,11 @@ vi.mock("@/lib/session", async (importActual) => {
  * Import after mocks are declared
  * ------------------------------------------------------------------ */
 
+import { findExifBlock } from "@/lib/photo/exif";
 import { findMetadataEvidence } from "@/lib/photo/guard";
 import { preparePhoto } from "@/lib/photo/prepare";
 import { createNodeCodec } from "@/lib/outbox/__tests__/support/doubles";
+import { photoDisplayPath, photoThumbPath } from "@/lib/schema";
 import { POST } from "@/app/api/photos/route";
 
 const FIXTURE = fileURLToPath(
@@ -112,8 +138,21 @@ function postRequest(body: unknown): Request {
   });
 }
 
+/**
+ * Seed "storage" with what the client claims it PUT — the same bytes
+ * `commitPhoto` will now download and re-scan before it trusts the commit.
+ * Every test that expects success has to do this, because a real gateway's
+ * `downloadObject` answers with whatever actually landed at the path, not
+ * with the request body's say-so.
+ */
+function seedCleanStorage(prepared: { display: { bytes: Uint8Array }; thumb: { bytes: Uint8Array } }): void {
+  storageObjects.set(photoDisplayPath(PHOTO_ID), toArrayBuffer(prepared.display.bytes));
+  storageObjects.set(photoThumbPath(PHOTO_ID), toArrayBuffer(prepared.thumb.bytes));
+}
+
 beforeEach(() => {
   inserted.length = 0;
+  storageObjects.clear();
   requireSessionMock.mockReset().mockResolvedValue(undefined);
   getIdentityMock
     .mockReset()
@@ -136,6 +175,10 @@ describe("a real HEIC with GPS, through the picker", () => {
     // — not assumed because `preparePhoto` is trusted elsewhere in the suite.
     expect(findMetadataEvidence(prepared.display.bytes)).toEqual([]);
     expect(prepared.sourceHadGps).toBe(true);
+
+    // What actually lands in storage — the server verifies against this, not
+    // against the request body.
+    seedCleanStorage(prepared);
 
     const response = await POST(
       postRequest({
@@ -178,6 +221,7 @@ describe("a real HEIC with GPS, through the picker", () => {
       clientUuid: CLIENT_UUID,
       codec: createNodeCodec(),
     });
+    seedCleanStorage(prepared);
 
     await POST(
       postRequest({
@@ -197,5 +241,88 @@ describe("a real HEIC with GPS, through the picker", () => {
     const row = inserted[0]!;
     expect(row.checksum_sha256).not.toBe(sourceChecksum);
     expect(row.author_member_id).toBe(ADAM_ID);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * The bypass this fix exists for
+ * ------------------------------------------------------------------ */
+
+/**
+ * Wrap the fixture's own Exif payload in a JPEG APP1 segment.
+ *
+ * The result is a real, GPS-bearing Exif segment in a JPEG container — the
+ * exact shape of bytes a session could PUT straight to the signed upload
+ * URLs, skipping `preparePhoto`/`assertNoMetadata` entirely, and then name in
+ * a commit request that otherwise looks unremarkable. Mirrors the fixture
+ * builder in `lib/photo/__tests__/exif-strip.test.ts`.
+ */
+function jpegCarryingFixtureExif(source: Uint8Array): Uint8Array {
+  const block = findExifBlock(source);
+  if (!block) throw new Error("The fixture lost its Exif block.");
+  const tiff = source.slice(block.tiffStart, block.tiffStart + 8192);
+  const payload = new Uint8Array(6 + tiff.length);
+  payload.set([0x45, 0x78, 0x69, 0x66, 0x00, 0x00], 0); // "Exif\0\0"
+  payload.set(tiff, 6);
+
+  const length = payload.length + 2;
+  const out = new Uint8Array(2 + 2 + 2 + payload.length + 2);
+  let at = 0;
+  out.set([0xff, 0xd8], at);
+  at += 2;
+  out.set([0xff, 0xe1], at);
+  at += 2;
+  out.set([(length >> 8) & 0xff, length & 0xff], at);
+  at += 2;
+  out.set(payload, at);
+  at += payload.length;
+  out.set([0xff, 0xd9], at);
+  return out;
+}
+
+describe("a commit whose stored bytes still carry GPS", () => {
+  it("is refused, even though the request itself looks unremarkable", async () => {
+    const source = new Uint8Array(await readFile(FIXTURE));
+
+    // The bypass: no `preparePhoto`, no `assertNoMetadata`. Whatever landed
+    // at the signed URLs is what storage actually holds — here, a JPEG
+    // carrying the fixture's real GPS IFD.
+    const gpsBearingJpeg = jpegCarryingFixtureExif(source);
+    expect(findMetadataEvidence(gpsBearingJpeg).map((e) => e.kind)).toContain(
+      "app1-exif",
+    );
+    storageObjects.set(photoDisplayPath(PHOTO_ID), toArrayBuffer(gpsBearingJpeg));
+    storageObjects.set(photoThumbPath(PHOTO_ID), toArrayBuffer(gpsBearingJpeg));
+
+    const { sha256Hex } = await import("@/lib/photo/checksum");
+
+    const response = await POST(
+      postRequest({
+        clientUuid: CLIENT_UUID,
+        photoId: PHOTO_ID,
+        kind: "book",
+        author: EVA_ID,
+        clientTz: "America/New_York",
+        caption: "a checksum computed honestly over dishonest bytes",
+        width: 640,
+        height: 480,
+        bytes: gpsBearingJpeg.byteLength,
+        colorSpace: "srgb",
+        // The request is otherwise entirely well-formed — a self-computed
+        // checksum over the bytes actually uploaded. Nothing about the
+        // request shape signals the bypass; only the server's own re-scan of
+        // storage does.
+        checksumSha256: await sha256Hex(gpsBearingJpeg),
+      }),
+    );
+
+    // Refused outright, and nothing was written — see `verifyDerivativesAreClean`
+    // in `lib/data/photos.ts` for why a plain rejection (rather than a
+    // "quarantined" row) is the right shape here.
+    expect(response.status).toBe(400);
+    expect(inserted).toHaveLength(0);
+
+    const body = (await response.json()) as { error: { kind: string } };
+    expect(body.error.kind).toBe("invalid");
   });
 });
