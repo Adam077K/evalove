@@ -229,8 +229,14 @@
      never give a photograph `.under-lamp`, per the standing
      rule that at 11pm the brightest thing on the screen is
      the other one's face.
-     -------------------------------------------------------- */
+
+     The curve itself lives here too, as tokens, because it is
+     read from two places (the utility, and Pinned's inline
+     filter where drop-shadow forces the curve inline). These
+     values moved twice today; a literal copy WILL drift. */
   --lamp-dim: 0;
+  --lamp-brightness-drop: 0.27;
+  --lamp-sepia-saturation: 0.22;
 }
 
 /* ------------------------------------------------------------
@@ -658,10 +664,13 @@ textarea[aria-invalid="true"] {
      0.87 (token parity with the old inverted night) was
      lights-off; 0.78 was right against that dark baseline; under
      D1's dim-not-invert tokens the one-dim-for-the-whole-table
-     principle lands here. If night depth changes, change §2 and
-     this together — they are the same lamp. */
-  filter: brightness(calc(1 - var(--lamp-dim) * 0.27))
-    sepia(calc(var(--lamp-dim) * 0.22));
+     principle lands here. The curve constants live in :root
+     (--lamp-brightness-drop / --lamp-sepia-saturation) because
+     Pinned.tsx must inline the same curve behind its drop-shadow
+     — one definition, two readers, no drift. If night depth
+     changes, change §2 and those tokens together. */
+  filter: brightness(calc(1 - var(--lamp-dim) * var(--lamp-brightness-drop)))
+    sepia(calc(var(--lamp-dim) * var(--lamp-sepia-saturation)));
   transition: filter var(--dur-3) var(--ease-io);
 }
 

@@ -2,6 +2,7 @@
    keyed material assets directly; the optimizer must not re-encode
    their alpha, and none of these are content photographs. */
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 import { Mounted, Paper, Pinned, Seam, Taped, Torn } from "@/components/materials";
 
@@ -24,6 +25,12 @@ export const metadata: Metadata = {
 };
 
 export default function MaterialsBench() {
+  /* A dev surface that reaches production is how dev surfaces
+     become permanent. (Auth already covers it — middleware walls
+     every non-allowlisted route — so this is hygiene, not
+     security.) */
+  if (process.env.NODE_ENV === "production") notFound();
+
   return (
     <main className="mx-auto max-w-[430px]">
       {/* ---------------- PAPER — the table ----------------

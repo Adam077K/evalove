@@ -84,11 +84,13 @@ export function Pinned({ variant, placement, children, className }: PinnedProps)
             zIndex: 60,
             pointerEvents: "none",
             /* drop-shadow grounds the pin; the brightness/sepia pair
-               is `.under-lamp`'s curve inlined — an inline filter
-               would override the class, so the lamp rides along here.
-               Keep in sync with @utility under-lamp in globals.css. */
+               is `.under-lamp`'s curve — an inline filter would
+               override the class, so the lamp rides along here,
+               reading the same :root tokens the utility reads. The
+               literal fallbacks are last-resort defaults, not a
+               second copy of the curve. */
             filter:
-              "drop-shadow(0 2px 2px rgba(41, 32, 24, 0.3)) brightness(calc(1 - var(--lamp-dim, 0) * 0.27)) sepia(calc(var(--lamp-dim, 0) * 0.22))",
+              "drop-shadow(0 2px 2px rgba(41, 32, 24, 0.3)) brightness(calc(1 - var(--lamp-dim, 0) * var(--lamp-brightness-drop, 0.27))) sepia(calc(var(--lamp-dim, 0) * var(--lamp-sepia-saturation, 0.22)))",
             transition: "filter var(--dur-3) var(--ease-io)",
             ...PIN_X[placement],
           }}
