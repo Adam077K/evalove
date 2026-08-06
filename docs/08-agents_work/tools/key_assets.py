@@ -34,6 +34,17 @@ PAD = 6              # px of transparent margin kept after trimming
 PUNCH = 0.0          # enclosed near-white components >= this frac become holes
 DESPECKLE = 0.05     # border-touching subject blobs < this frac of the main blob go
 
+# Ground-colour mode — for plates whose background is a flat colour that is
+# not white (the deco skylines: buildings on a baked navy sky). The principle
+# is identical to the white path (background = near-GROUND-colour AND
+# border-connected, never luminance); only the distance metric and the
+# unpremultiply target change. The NYC plate's building bodies sit only ~22
+# RGB-euclidean from its sky, so TOL must stay well under that; the skies
+# measured flat (std < 1), which is what makes a small TOL safe.
+BG = None            # (r, g, b) ground colour — enables the mode when set
+TOL = 8              # distance at or below this counts as ground
+SOLID_D = 20         # this far from ground counts as fully opaque subject
+
 
 def key_one(path, out_dir, web_max):
     name = os.path.splitext(os.path.basename(path))[0]
@@ -41,8 +52,14 @@ def key_one(path, out_dir, web_max):
     h, w, _ = rgb.shape
     mn = rgb.min(axis=2)
 
-    # 1 + 2 — background is near-white AND reachable from the border
-    near_white = mn >= WHITE
+    # 1 + 2 — background is near-ground AND reachable from the border.
+    # Ground is "near-white" by default, or "near BG" for flat-colour plates.
+    if BG is not None:
+        ground = np.asarray(BG, dtype=np.float32)
+        cdist = np.sqrt(((rgb - ground) ** 2).sum(axis=2))
+        near_white = cdist <= TOL
+    else:
+        near_white = mn >= WHITE
     lbl, _ = ndimage.label(near_white)
     border = np.concatenate([lbl[0, :], lbl[-1, :], lbl[:, 0], lbl[:, -1]])
     bg_labels = [v for v in np.unique(border) if v != 0]
@@ -87,15 +104,22 @@ def key_one(path, out_dir, web_max):
     # 3 — soft edge only in a narrow band just inside the subject
     dist = ndimage.distance_transform_edt(~bg)
     band = (dist > 0) & (dist <= FEATHER)
-    cov = np.clip((WHITE - mn) / float(SOLID), 0.0, 1.0)
+    if BG is not None:
+        cov = np.clip(cdist / float(SOLID_D), 0.0, 1.0)
+    else:
+        cov = np.clip((WHITE - mn) / float(SOLID), 0.0, 1.0)
     a[band] = cov[band]
 
-    # unpremultiply the white blended into partially-covered pixels
+    # unpremultiply the ground blended into partially-covered pixels —
+    # white for the paper path, the plate's own sky for the ground path.
+    # Without this the anti-aliased rim carries the baked sky and reads
+    # as a halo the moment the CSS sky behind it is a different value.
     out = rgb.copy()
     a3 = a[..., None]
     partial = (a > 0.0) & (a < 1.0)
+    gr = np.asarray(BG, dtype=np.float32) if BG is not None else 255.0
     with np.errstate(divide='ignore', invalid='ignore'):
-        un = (rgb - 255.0 * (1.0 - a3)) / np.where(a3 == 0.0, 1.0, a3)
+        un = (rgb - gr * (1.0 - a3)) / np.where(a3 == 0.0, 1.0, a3)
     out[partial] = np.clip(un[partial], 0.0, 255.0)
 
     alpha255 = np.clip(a * 255.0, 0, 255)          # <- the single scale point
@@ -147,6 +171,15 @@ def key_one(path, out_dir, web_max):
 OVERRIDES = {
     'paper-bone-laid':         {'skip': True},
     'paper-bone-v2':           {'skip': True},
+    # The deco plates (2026-08-06). Grounds measured from the source pixels,
+    # not assumed: NYC sky (20,24,33) std 0.5; TLV sky (27,30,39) std 0.9;
+    # ornament ground (10,15,21) std 0.5. NYC building bodies sit ~22 from
+    # its sky, hence the tight TOL/SOLID_D pair. The window interior is a
+    # full-bleed scene — it IS its background, nothing to key.
+    'deco-skyline-nyc':        {'bg': (20, 24, 33), 'tol': 8, 'solidd': 18},
+    'deco-skyline-tlv':        {'bg': (27, 30, 39), 'tol': 9, 'solidd': 24},
+    'deco-ornament-border':    {'bg': (10, 15, 21), 'tol': 8, 'solidd': 24},
+    'deco-window-interior':    {'skip': True},
     'sticker-ticket-cinema':   {'white': 230},
     'sticker-discoball':       {'white': 230},
     'sticker-daisy-pressed':   {'white': 230},
@@ -160,7 +193,8 @@ RETIRED = {'pushpin-brass', 'sunflower-recraft'}
 
 
 def run(pattern, out_dir, web_max):
-    base = dict(WHITE=WHITE, PUNCH=PUNCH, DESPECKLE=DESPECKLE)
+    base = dict(WHITE=WHITE, PUNCH=PUNCH, DESPECKLE=DESPECKLE,
+                BG=BG, TOL=TOL, SOLID_D=SOLID_D)
     report = []
     for p in sorted(glob.glob(pattern)):
         stem = os.path.splitext(os.path.basename(p))[0]
@@ -176,6 +210,9 @@ def run(pattern, out_dir, web_max):
         globals()['WHITE'] = ov.get('white', base['WHITE'])
         globals()['PUNCH'] = ov.get('punch', base['PUNCH'])
         globals()['DESPECKLE'] = ov.get('despeckle', base['DESPECKLE'])
+        globals()['BG'] = ov.get('bg', base['BG'])
+        globals()['TOL'] = ov.get('tol', base['TOL'])
+        globals()['SOLID_D'] = ov.get('solidd', base['SOLID_D'])
         report.append(key_one(p, out_dir, web_max))
     globals().update(base)
     return report

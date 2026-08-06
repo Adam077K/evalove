@@ -45,12 +45,16 @@ try {
 `;
 
 /**
- * The dock's measurements live here, on the scroll container itself,
+ * The tray's measurements live here, on the scroll container itself,
  * because two different things need them and only one of them is in
  * document coordinates.
  *
- *   --dock-offset     how far the pill floats off the bottom edge
- *   --dock-footprint  the whole band the dock covers: pill + offset
+ *   --dock-footprint  the whole band the tray covers: its tallest
+ *                     tool (3.25rem send) + 0.5rem lip + the floor
+ *                     padding, max(0.5rem, safe-area). There is no
+ *                     --dock-offset any more: the tray rests flush
+ *                     against the bottom edge — an object on the
+ *                     table does not hover.
  *
  * `scroll-padding-bottom` is the load-bearing line. A `padding-bottom`
  * further down the tree only lengthens the document, so it buys
@@ -58,14 +62,13 @@ try {
  * scroll the browser performs (focusing a link, `scrollIntoView`, a
  * hash target, Safari revealing an input above the keyboard) aligns to
  * the *scrollport*, and the scrollport's bottom edge is the viewport's
- * bottom edge — underneath the dock. Insetting the scrollport is what
+ * bottom edge — underneath the tray. Insetting the scrollport is what
  * makes the clearance true at every scroll offset instead of one, and
  * it holds whether the page overflows or not: if there is nothing to
  * scroll, there is no scroll to land wrong.
  */
 const DOCK_VARS =
-  "[--dock-offset:max(1rem,env(safe-area-inset-bottom))] " +
-  "[--dock-footprint:calc(4rem+var(--dock-offset))] " +
+  "[--dock-footprint:calc(3.75rem+max(0.5rem,env(safe-area-inset-bottom)))] " +
   "scroll-pb-[calc(var(--dock-footprint)+1rem)]";
 
 /**

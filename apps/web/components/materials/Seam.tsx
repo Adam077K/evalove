@@ -75,22 +75,34 @@ const FIBRE: Record<SeamVariant, { src: string; width: number; height: number }>
  * Falloff stops, as fractions of the container at the 393px baseline
  * (height 256; the fibre tips land at ~54%, measured from the
  * coldpress alpha channel). The shape is asymmetric on purpose, and
- * it was chosen against pixels, not by argument — four geometries
- * were screenshot in both modes:
+ * it has now been chosen against pixels twice:
  *
- *   - The ramp under the fibre is STEEP (0 → 0.6 over ~15px): by day
+ *   - The ramp under the fibre is STEEP (0 → 0.6 over ~20px): by day
  *     the canvas is bright, and every semi-transparent pixel below
  *     the tear leaks page-light into the window — a slow start reads
- *     as fog, not depth.
- *   - The deep end is LONG (0.6 → night-sky over ~90px): by night
- *     both sides are dark, and the slow deepening is what gives the
- *     sky distance. A short deep end reads as a colour block.
+ *     as fog, not depth. Unchanged; measured correct.
+ *
+ *   - The mid-band COMMITS fast (0.6 → 0.9 over the next ~20px).
+ *     The first accepted geometry held 0.55–0.8 opacity for ~45px,
+ *     and the measured luminance profile (2026-08-06, both modes)
+ *     showed why it still hazed: a ~104px descent from lum 129 to 18
+ *     by day, 97 to 18 by night — §9.6's fog mechanism operating in
+ *     BOTH modes, night simply leaking a dimmer page. At 0.9 the day
+ *     leak is ~+22 luminance over the sky; at 0.8 it was ~+45 and
+ *     read as a grey transitional band.
+ *
+ *   - The deep end stays LONG but runs NEARLY OPAQUE (0.9 → 0.97 →
+ *     night-sky over ~55px): the slow deepening that gives the night
+ *     sky its distance now happens between lum ~24 and 18 instead of
+ *     between ~90 and 18. Distance survives; the fog does not. A
+ *     short deep end still reads as a colour block — that finding
+ *     stands.
  *
  * The fibre itself stays inside the transparent zone — light remains
  * on the torn lip. Straight-to-dark read as a mask in every capture.
  */
 const FALLOFF =
-  "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 47%, rgb(13 18 32 / 0.55) 55%, rgb(13 18 32 / 0.8) 72%, var(--night-sky) 93%)";
+  "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 47%, rgb(13 18 32 / 0.6) 55%, rgb(13 18 32 / 0.9) 63%, rgb(13 18 32 / 0.97) 74%, var(--night-sky) 93%)";
 
 export function Seam({ variant = "coldpress", height = 256, className }: SeamProps) {
   const fibre = FIBRE[variant];

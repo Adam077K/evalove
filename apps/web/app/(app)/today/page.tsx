@@ -109,28 +109,57 @@ export default function TodayPage() {
           </h2>
         </div>
 
-        {/* The skylines — far city behind near city. Opacity on the
-            far plate is atmosphere between illustration layers; the
-            no-filter law protects photographs, and these are drawn. */}
-        <div className="relative mt-8 h-[220px] overflow-hidden">
+        {/* The window view — two shores and the space between.
+
+            Interleaving the two full panoramas was tried twice and
+            failed the same way both times: at phone width the far
+            city becomes the visible band, so the depth reads
+            inverted, and its cut plate-edge floats as a hard line.
+            The scene this window actually describes has a simpler
+            geography — New York on the left shore, Tel Aviv on the
+            right, and the distance between them empty at the centre.
+            The gap is not leftover space; it is the subject, and the
+            Book's corner rises out of it.
+
+            The plates are keyed (border-connected flood fill, §9.7),
+            the crops are display views derived from the keyed
+            masters (the masters stay canonical), and the CSS sky is
+            a live layer — the seam falloff lands on it and it can be
+            driven by the hour. Each crop keeps its plate's internal
+            far towers, so each shore carries its own depth. Both
+            cities at full strength, equal weight — neither of them
+            is the far one; they are both "here", one per person. */}
+        {/* Height judged by eye against the vertical dead zone: at 260
+            the band between TEL AVIV and the rooftops read as
+            under-filled rather than intended (the horizontal emptiness
+            between the shores is the subject; vertical emptiness was
+            not). 228 brings the crown up under the names with ~30px of
+            true sky left above it. */}
+        <div className="relative mt-2 h-[228px] overflow-hidden">
           <img
-            src="/materials/city-tlv-far-silhouette.webp"
+            src="/materials/deco-nyc-shore.webp"
             alt=""
             aria-hidden="true"
-            className="absolute bottom-10 left-0 w-full opacity-45"
+            width={640}
+            height={638}
+            className="absolute -bottom-10 -left-4 w-[62%] max-w-none"
           />
           <img
-            src="/materials/city-nyc-near-silhouette.webp"
+            src="/materials/deco-tlv-shore.webp"
             alt=""
             aria-hidden="true"
-            className="absolute -bottom-8 right-0 w-[92%]"
+            width={724}
+            height={525}
+            className="absolute -bottom-4 -right-6 w-[58%] max-w-none"
           />
         </div>
 
         {/* ---- The Book — a physical corner at the bottom edge,
              overlapping the foreground of the window view: looking
-             down at your lap. ---- */}
-        <div className="relative -mt-24">
+             down at your lap. The overlap stays shallow on purpose:
+             it clips the shores at street level, never at the towers
+             — the sheet is in the room, the cities are outside. ---- */}
+        <div className="relative -mt-14">
           <TodayDoorway now={now} />
         </div>
       </section>
