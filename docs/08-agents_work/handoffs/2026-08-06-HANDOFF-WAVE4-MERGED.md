@@ -107,22 +107,42 @@ and taping it to his print.**
    is no way back — *you cannot un-arrange a page, only arrange it differently.* **CPO and
    CTO must settle the placement shape before a builder starts.**
 
-## §4 · In flight
+## §4 · BUILT, PUSHED, WAITING ON THE FOUNDER'S THUMB — `feat/lay-probe` @ `c372bdd`
 
-**`feat/lay-probe`** — a deliberately **throwaway** one-day probe off `integration/wave4`:
-take → lift → lay only, three prints in the pile. No tape, stickers, writing, keyboard path
-or persistence. **The question:** *press a photograph, lay it beside another, watch it land
-crooked — does that read as making, within three tries?*
+**Complete and on origin. Unmerged, deliberately, and throwaway by design.** Route:
+`/review/lay-probe`. Take → lift → lay only, three prints. No tape, stickers, writing,
+keyboard path or persistence. **The question:** *press a photograph, lay it beside another,
+watch it land crooked — does that read as making, within three tries?*
 
-**It instruments the reach invariant** (region under the held object within **495 CSS px of
-(355, 790)**) so a NO is interpretable: invariant held and it still feels wrong → **the
-model is wrong**, for a day instead of a wave. Invariant violated → the implementation
-drifted and the model was never tested.
+**It instruments the reach invariant** — distance from the pivot (355, 790) to the
+**farthest corner** of the held object, read literally as *"the region under the held
+object"* rather than centre-distance, which would have quietly passed violating gestures.
+One `console.debug` line per gesture. **That is what makes a NO interpretable:**
 
-**Two things most likely to break it, both flagged twice:** `-webkit-touch-callout: none`
-and `user-select: none` on every page object, or iOS Safari's save-image callout eats the
-gesture — **it will look perfect in desktop Chromium and broken on the phone.** And the
-untouched-page gate: a page nobody has pressed must differ by **zero DOM nodes and zero
+- **invariant held and it still feels wrong → the model is wrong.** Falsified for a day
+  instead of a wave, and **deleting this branch is then the successful outcome.**
+- **invariant violated → the implementation drifted** and the model was never tested.
+
+**Deviation the worker flagged rather than hid:** the spec's *"it lifts (scale 1→1.05)"*
+reads as an eased tween; it built an **instant swap**, because a tween on the same node
+that also does 1:1 finger-tracking would stomp the tracked position back to origin if a
+drag began before it finished. **If it reads as abrupt on device, change that — not the
+model.** It also noted the REACH gate's own arithmetic carries ~19 px slack at the
+mathematical extreme: pre-existing in the spec's numbers, not introduced here, and a corner
+no hand would reach for.
+
+**Verified live at 393×852:** hydrated · three prints · every `img.photo` computes
+`filter: none` · callout guards present on all six relevant nodes.
+
+⚠️ **Trap for whoever verifies this next:** checking `-webkit-touch-callout` via
+`getComputedStyle` returns **false in Chromium, which does not implement the property.**
+The CEO hit exactly this and briefly believed the guard was missing — it was set in six
+places all along. **Grep the source; do not trust computed style for that one.**
+
+**Older note, still true:** without the guard, a ≥250 ms press in iOS Safari raises the
+native save-image callout and the lift never fires — perfect in desktop Chromium, broken on
+the phone. And the untouched-page gate: a page nobody has pressed must differ by **zero DOM
+nodes and zero
 pixels.**
 
 ## §5 · Ready but NOT gated — do not merge without QA
@@ -185,3 +205,53 @@ caught only by **looking at the artefact instead of the number.**
 > **A test that did not run is indistinguishable from a test that found a problem.**
 
 **Brief agents to argue back.** Every one that did improved the outcome.
+
+---
+
+## §9 · Exact state at handoff — everything is on origin
+
+Written last, after context compaction was announced, so **no work is recoverable only
+from a transcript.** Every branch below is pushed.
+
+| Branch | On origin | Gate | Do what |
+|---|---|---|---|
+| `main` | ✅ `0e51e8e` | PASS ×2 | nothing — Wave 4 is merged and verified here |
+| `feat/lay-probe` | ✅ `c372bdd` | none — throwaway | **founder judges it on a phone.** Delete on a NO; that is success |
+| `feat/dates-cardcopy` | ✅ | **none** | **QA gate before merge.** 33 card pairs, `tsc` clean |
+| `integration/wave4` | ✅ | PASS ×2 | already merged to main; kept for provenance |
+| `ceo-4-1785631505` | ✅ | docs only | already merged to main; kept for provenance |
+
+**`main` verified after merge:** typecheck clean · **34 files / 492 tests / 489 passed / 1
+failed / 2 skipped** — the one failure is the documented `tools/export`
+`ERR_MODULE_NOT_FOUND`. **Run `pnpm install` in `apps/web` before trusting any test count**
+(see §2).
+
+### Two uncommitted local files that must never be committed
+
+Both live only in the main repo working tree and are the reason the app is reachable at
+all:
+
+1. `apps/web/middleware.ts` — the `NODE_ENV`-gated **dev auth bypass** (18 lines added).
+2. `apps/web/next.config.ts` — `"10.0.0.7"` added to `allowedDevOrigins` so a **phone** can
+   load the app. Without it the phone gets a page that **never hydrates**: no errors, 200s
+   on every chunk, a dead screen easily misread as a broken app. **Replace with whatever
+   `ipconfig getifaddr en0` returns on the machine of the day.**
+
+**Both were confirmed absent from the push.** Verify again after any future merge.
+
+### The dev server
+
+Serves from the **main repo**, port 3000, bound to all interfaces →
+`http://<LAN-IP>:3000` on a phone. It was left on **`main`**. To show the probe:
+`git checkout --detach feat/lay-probe`, then `git checkout main` after. The uncommitted
+files above survive branch switches; check they are still modified afterwards.
+
+### Five things only the founder can close
+
+1. **The slop test** — his by name in both governing documents. **A design-critic returned
+   PASS on it and that PASS was struck.** Not run on this work.
+2. **The lay probe** — does it read as making, within three tries?
+3. **Dates** — resolved as *the window* (DECO, one card, no rail); spec and 33 card pairs
+   ready.
+4. **`/send`** — still two-tier; folding it into the pen changes the core interaction.
+5. **The auth-verification wall** and **installing semgrep** — both structural, §6.
