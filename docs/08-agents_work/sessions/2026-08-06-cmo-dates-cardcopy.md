@@ -5,6 +5,8 @@ task: dates-cardcopy
 status: COMPLETE
 qa_verdict: N/A — no QA-Lead spawned this session; fixture data only, gates work for a code worker
 fixture_file: apps/web/lib/fixtures/suggestions.ts
+worktree: /Users/adamks/VibeCoding/evalove/.worktrees/dates-cardcopy
+branch: feat/dates-cardcopy
 ---
 
 # Dates card display copy — interim fixture
@@ -33,7 +35,9 @@ Selected 26 additional records — prioritizing w2/w5/w6/w7 first per the brief 
 `windowFit` array is copied verbatim from the record's own `window_fit`, so a single entry often
 counts toward several windows (e.g. `t2-diy-body-doubling-facetime` covers w5, w8, w9 at once).
 
-Total: 31 entries (5 existing + 26 new). Coverage, verified by parsing the committed file:
+Total: 31 entries (5 existing + 26 new) in this first pass — see "Founder's ruling" below for two
+more added after review, bringing the final total to 33. Coverage, verified by parsing the
+committed file, first pass:
 
 | Window | Count | Window | Count | Window | Count |
 |---|---|---|---|---|---|
@@ -82,6 +86,63 @@ USER-INSIGHTS.md) but because a tasteful ≤66-char rendering felt more like eup
 derivation, and w6 reached its coverage target (4) without them. This is a judgment call, not a
 policy — CPO/founder should weigh in before the real 98-entry library is wired if those two are
 meant to surface as date proposals.
+
+## Founder's ruling — resolved, not re-open for the library pass
+
+I raised the exclusion above rather than deciding it silently; the founder read it and ruled:
+**include them, written plainly.** Card copy for both now exists in `SUGGESTIONS` (see below);
+total fixture is 33 entries.
+
+**Both sides of the reasoning, for whoever wires the real 98-entry library next:**
+
+- **My side, at the time:** the failure mode I was guarding against was *fabrication by
+  euphemism* — compressing an explicit record into 66 characters by writing around what it
+  actually says ("something private", "a little something") produces a card whose claim the
+  source record doesn't quite support. That's the same "derive, never invent" rule that shaped
+  every other pair in this fixture, applied to the direction of softening rather than escalation.
+- **The founder's side, and the one that stands:** w6 is the both-alert window *by design* —
+  intimacy is not incidental content that happened to land there, it is what the window is for.
+  A card that gets coy about what its own source record says is exactly the softening I was right
+  to name as a risk — but the honest fix runs *through* the content, not around it. Naming the
+  record's own subject plainly (the record's own name is literally "Scheduled sexting...") is not
+  escalation; declining to name it and reaching for a vaguer synonym would have been the
+  fabrication. He made the call having seen the real cost stated plainly first: the card is
+  unprompted and either of them may open Dates with family in the room, and accepted that.
+
+**The settled rule going forward:** plain and derived beats vague-but-safe *and* beats
+crude-but-invented. Compress, don't launder. If a record's own words are explicit, the card's
+words may be too, scaled to 34/66 characters, never past what the record itself supports.
+
+**The two entries, added to `SUGGESTIONS`:**
+
+| id | title (chars) | description (chars) |
+|---|---|---|
+| `t7-sexting-as-connection-ritual` | "A standing time to sext" (23) | "Set on the calendar in advance, not left to chance timing." (58) |
+| `t7-app-controlled-toy-realtime-overlap` | "An app-linked toy, live" (23) | "One moves; the other feels it, in real time." (44) |
+
+Both derived directly from their `library.json` `name`/`one_liner` (scheduled-not-spontaneous
+sexting ritual; app-controlled toy with real-time cross-device control). Neither invents detail
+beyond the record — the first names the practice the record names, without describing content
+the record doesn't specify; the second states the mechanism the record states (movement on one
+side, sensation on the other, live) without assigning a direction to either partner, matching this
+fixture's existing convention of "one / the other" for symmetric or either-direction activities
+(e.g. `t4-two-truths-and-a-lie`, `ldr-words-correspondence`). Both stay well under cap (23/58 and
+23/44 against 34/66) and both pass every other standing rule: no window code, no emoji, no
+counters, no exclamation marks, sentence case, Eva-before-Adam is not applicable to either (no
+name is used in either pair, consistent with the fixture's established symmetric-activity
+pattern).
+
+**Updated coverage** (33 entries total; w1/w5/w6/w7 gained one record each from the two above,
+`t7-app-controlled-toy-realtime-overlap` also lifts w7):
+
+| Window | Count | Window | Count | Window | Count |
+|---|---|---|---|---|---|
+| w1 | 8 | w4 | 11 | w7 | 9 |
+| w2 | 7 | w5 | 6 | w8 | 7 |
+| w3 | 8 | w6 | 6 | w9 | 7 |
+
+Longest `title` still 33/34, longest `description` still 66/66 — neither of the two new entries
+set a new max.
 
 ## USER-INSIGHTS.md gate
 

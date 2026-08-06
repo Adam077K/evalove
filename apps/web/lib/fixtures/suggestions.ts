@@ -7,14 +7,15 @@ import type { ActivityIndexEntry, DateKind } from "@/lib/types";
  * No tier badge, no window code, no icon, no image.
  *
  * Interim display-copy fixture (2026-08-06, CMO): extended from the
- * original 5 entries to >=3 per window across all nine, derived
- * from `library.json` `name`/`one_liner` fields — never invented.
- * Every `title` <=34 chars, every `description` <=66 chars, per the
- * contract above. See docs/08-agents_work/sessions/
+ * original 5 entries to >=3 per window across all nine (33 total),
+ * derived from `library.json` `name`/`one_liner` fields — never
+ * invented. Every `title` <=34 chars, every `description` <=66
+ * chars, per the contract above. See docs/08-agents_work/sessions/
  * 2026-08-06-cmo-dates-cardcopy.md for the per-entry derivation
- * trail. `windowFit` is copied verbatim from each record's
- * `window_fit` array — no window code ever appears in `title` or
- * `description` themselves.
+ * trail, including the founder's ruling on the two `worth staying
+ * up for` records initially held back. `windowFit` is copied
+ * verbatim from each record's `window_fit` array — no window code
+ * ever appears in `title` or `description` themselves.
  */
 
 export const SUGGESTIONS: Record<string, ActivityIndexEntry> = {
@@ -519,6 +520,44 @@ export const SUGGESTIONS: Record<string, ActivityIndexEntry> = {
     intimacyLevel: 2,
     windowFit: ["w8", "w9"],
     tier: "A",
+    verificationTier: "verified",
+  },
+
+  /* Worth staying up for — held back in the first pass, then founder-
+   * ruled in: the record's own subject is intimate by design, and a
+   * card that gets coy about what the record says is the softening
+   * that was wrong to do. Named plainly, not escalated past the
+   * record. See docs/08-agents_work/sessions/
+   * 2026-08-06-cmo-dates-cardcopy.md for the ruling and reasoning. */
+  "t7-sexting-as-connection-ritual": {
+    id: "t7-sexting-as-connection-ritual",
+    title: "A standing time to sext",
+    description: "Set on the calendar in advance, not left to chance timing.",
+    durationMin: 20,
+    costTier: "free",
+    costConditional: false,
+    costNote: "",
+    shareplay: "no",
+    screenFree: false,
+    intimacyLevel: 5,
+    windowFit: ["w1", "w5", "w6"],
+    tier: "S",
+    verificationTier: "verified",
+  },
+  /* Worth staying up for — same ruling as above. */
+  "t7-app-controlled-toy-realtime-overlap": {
+    id: "t7-app-controlled-toy-realtime-overlap",
+    title: "An app-linked toy, live",
+    description: "One moves; the other feels it, in real time.",
+    durationMin: 30,
+    costTier: "paid",
+    costConditional: true,
+    costNote: "",
+    shareplay: "unknown",
+    screenFree: false,
+    intimacyLevel: 5,
+    windowFit: ["w6", "w7"],
+    tier: "B",
     verificationTier: "verified",
   },
 };
