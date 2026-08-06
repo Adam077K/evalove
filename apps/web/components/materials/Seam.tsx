@@ -55,6 +55,35 @@ export interface SeamProps {
    */
   height?: number;
   className?: string;
+  /**
+   * Point-reflects the whole strip 180° for a ceiling instead of a
+   * floor — the shared shell's band uses this to tear paper DOWN away
+   * from a night-sky masthead, the geometric inverse of this
+   * component's original job (paper above, night below).
+   *
+   * A ROTATION, deliberately not a `scaleY(-1)` mirror: a vertical-only
+   * flip reproduces this exact meander upside down, which would twin
+   * whatever lower tear already exists on the same screen (Today ships
+   * one). A full 180° turn flips the horizontal axis too, so the
+   * meander is a genuinely different shape, not a reflection of this
+   * one.
+   *
+   * Whether that turn also lands the flush edge on the wrong side was
+   * flagged as a real open question and checked against the source
+   * asset rather than assumed: `seam-tear-coldpress-tostock.webp`'s
+   * alpha channel is a flat 255 for its top ~83% (rows 0–411 of 497)
+   * and falls to 0 by row 490 — the meander lives entirely in the
+   * final ~15%, at the bottom. Point-reflecting the rendered strip
+   * (fibre image + falloff together, as one composite) swaps that
+   * with the falloff's own dark end, which is already `var(--night-sky)`
+   * — the same solid colour the band's masthead is painted, so the
+   * top of a rotated strip lands on a colour that already matches its
+   * new neighbour with no separate correction. No gradient-stop or
+   * crop change was needed for this variant; verify against the asset
+   * again if the source strip is ever regenerated.
+   * @default false
+   */
+  rotated?: boolean;
 }
 
 /**
@@ -104,13 +133,18 @@ const FIBRE: Record<SeamVariant, { src: string; width: number; height: number }>
 const FALLOFF =
   "linear-gradient(to bottom, rgb(13 18 32 / 0) 0%, rgb(13 18 32 / 0) 47%, rgb(13 18 32 / 0.6) 55%, rgb(13 18 32 / 0.9) 63%, rgb(13 18 32 / 0.97) 74%, var(--night-sky) 93%)";
 
-export function Seam({ variant = "coldpress", height = 256, className }: SeamProps) {
+export function Seam({
+  variant = "coldpress",
+  height = 256,
+  className,
+  rotated = false,
+}: SeamProps) {
   const fibre = FIBRE[variant];
 
   return (
     <div
       aria-hidden="true"
-      className={cn("relative w-full overflow-hidden", className)}
+      className={cn("relative w-full overflow-hidden", rotated && "rotate-180", className)}
       style={{ height }}
     >
       {/* Light dying into the sky — behind and below the fibre, never
