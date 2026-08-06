@@ -53,10 +53,11 @@ export type TapePlacement =
 export interface TapedProps {
   /**
    * Which of the 12 washi patterns to composite.
-   * Currently available: 'washi-ochre-dots' and 'washi-terracotta' —
-   * named for what the assets actually are (Wave 0 QA gate: they
-   * were shipped as 'houndstooth'/'kraft', which claimed patterns
-   * that do not exist yet). Others render children with no strip.
+   * Currently available: 'washi-ochre-dots', 'washi-terracotta',
+   * 'floral-pressed' (Eva's sunflower) and 'floral-blue' (cornflower /
+   * forget-me-not) — named for what the assets actually are (Wave 0 QA
+   * gate: they were shipped as 'houndstooth'/'kraft', which claimed
+   * patterns that do not exist yet). Others render children with no strip.
    */
   variant: TapeVariant;
   /** Which edge (or corner) of the child the tape bridges. */
@@ -78,10 +79,18 @@ interface TapeAsset {
   height: number;
 }
 
-/** Asset registry. Sizes follow each source's aspect (1024×240, 1024×336). */
+/**
+ * Asset registry. Sizes follow each source's own aspect — never forced
+ * to a shared ratio. floral-pressed and floral-blue are 4.93:1 and
+ * 4.33:1 respectively (real deckle-edge crops, not terracotta's 3.05:1);
+ * forcing either to terracotta's height would have stretched the flowers
+ * ~1.6× vertically.
+ */
 const TAPE_ASSETS: Partial<Record<TapeVariant, TapeAsset>> = {
   "washi-ochre-dots": { src: "/materials/washi-ochre-dots.webp", width: 84, height: 20 },
   "washi-terracotta": { src: "/materials/washi-terracotta.webp", width: 84, height: 28 },
+  "floral-pressed": { src: "/materials/floral-pressed.webp", width: 84, height: 17 },
+  "floral-blue": { src: "/materials/floral-blue.webp", width: 84, height: 19 },
 };
 
 /**
