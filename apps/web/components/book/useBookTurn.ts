@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
-import { leafTurnPose, type LeafTurnPose } from "./turn";
+import { leafTurnPose, posesEqual, type LeafTurnPose } from "./turn";
 
 /**
  * The spine-hinged turn's interaction state machine — the thumb (or a
@@ -24,6 +24,17 @@ const TURN_DISTANCE_PX = 220;
     --dur-2 (the lamp-curve precedent, globals.css:696-698, applies
     here too — one value, two readers, noted on purpose). */
 export const SETTLE_MS = 220;
+
+/** Fallback margin, ms, above SETTLE_MS before an unresolved settle
+    is forced closed — see the `useEffect` in useBookTurn below.
+    `transitionend` is not guaranteed: a backgrounded tab throttles
+    rAF/transitions, a leaf can unmount mid-settle, and some browsers
+    coalesce rapid transitions. `settling` has exactly one other exit
+    (`onSettleTransitionEnd`), so a dropped event would otherwise wedge
+    Next/Prev/drag shut for the rest of the session. Generous enough
+    that a normal transition always resolves first; tight enough that
+    a stalled settle recovers well within one interaction. */
+const SETTLE_FALLBACK_SLACK_MS = 150;
 
 /** Past this fraction of the arc, releasing commits the turn. */
 const COMMIT_PROGRESS = 0.4;
@@ -126,6 +137,16 @@ export function useBookTurn(leafCount: number, { now = Date.now }: UseBookTurnOp
   const onPointerDown = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
       if (settling) return; // let the in-flight settle resolve before a new gesture starts
+      // Only the primary pointer, and only a mouse's primary (left)
+      // button — a right-click drag must not start a turn. A second
+      // finger's pointerdown (a non-primary touch, or a primary touch
+      // arriving while an untouched-but-already-`started` drag is
+      // live — e.g. a stray primary reassignment mid-gesture) must
+      // not overwrite `dragRef.current`: that would orphan the first
+      // finger's drag with no release path, since only the pointerId
+      // that owns `dragRef.current` is ever released.
+      if (!e.isPrimary || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if (dragRef.current?.started) return;
       dragRef.current = {
         pointerId: e.pointerId,
         index: -1,
@@ -227,9 +248,25 @@ export function useBookTurn(leafCount: number, { now = Date.now }: UseBookTurnOp
         return;
       }
 
+      const target: 0 | 1 = commits ? (drag.direction === 1 ? 1 : 0) : drag.direction === 1 ? 0 : 1;
+
+      // A release can land exactly on the pose it is about to be told
+      // to settle toward — dragged out and back to the origin
+      // (progress clamps to the non-commit target), or dragged all the
+      // way to the far end and released right there (progress clamps
+      // to the commit target). Either way nothing would change on
+      // screen, so no transition would start and no `transitionend`
+      // would ever fire to clear `settling` — see posesEqual's own
+      // comment in turn.ts. Resolve inline instead of entering
+      // `settling`.
+      if (posesEqual(leafTurnPose(drag.progress), leafTurnPose(target))) {
+        if (commits) commitInstant(drag.direction);
+        return;
+      }
+
       setSettling({
         index: drag.index,
-        target: commits ? (drag.direction === 1 ? 1 : 0) : drag.direction === 1 ? 0 : 1,
+        target,
         commits,
       });
     },
@@ -243,11 +280,13 @@ export function useBookTurn(leafCount: number, { now = Date.now }: UseBookTurnOp
   );
 
   /** Wired to the settling leaf's own `onTransitionEnd` (transform
-      only — filter transitions on the same element would otherwise
-      fire this twice). Finalizes `currentIndex` exactly once the
-      settle's own transition has actually run — never on a timer,
-      so there is nothing to fire early or drift out of sync with
-      what is on screen. */
+      only — filter has its own transition on a different element,
+      see BookTurnStage.tsx) and to the fallback timer below.
+      Finalizes `currentIndex` exactly once, whichever of the two
+      fires first: the functional `setSettling` update below reads
+      `current` fresh each call, so a second call (real event after
+      the timer already resolved it, or vice versa) sees `settling`
+      already `null` and is a no-op. */
   const onSettleTransitionEnd = useCallback((index: number) => {
     setSettling((current) => {
       if (!current || current.index !== index) return current;
@@ -257,6 +296,26 @@ export function useBookTurn(leafCount: number, { now = Date.now }: UseBookTurnOp
       return null;
     });
   }, []);
+
+  /** Defensive fallback: forces any settle closed if its
+      `transitionend` never arrives — a backgrounded tab, a leaf
+      unmounted mid-settle, a coalesced transition. `settling` has
+      exactly one other exit (the handler above), so a dropped event
+      would otherwise wedge Next/Prev/drag shut for good. Re-arms
+      whenever a new settle starts and clears on resolution (either
+      path) or unmount; idempotent with the real event by construction
+      (see the handler's own comment), so a race between the two never
+      double-commits. Never fires on the reduced-motion path — that
+      path commits through `commitInstant` directly and never sets
+      `settling` in the first place. */
+  useEffect(() => {
+    if (!settling) return;
+    const index = settling.index;
+    const timer = window.setTimeout(() => {
+      onSettleTransitionEnd(index);
+    }, SETTLE_MS + SETTLE_FALLBACK_SLACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [settling, onSettleTransitionEnd]);
 
   const poseFor = useCallback(
     (index: number): BookTurnPoseEntry => {

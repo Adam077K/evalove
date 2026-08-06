@@ -9,11 +9,11 @@
  * check.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 
 import { BookTurnControls, BookTurnStage } from "../BookTurnStage";
-import { useBookTurn } from "../useBookTurn";
+import { SETTLE_MS, useBookTurn } from "../useBookTurn";
 
 afterEach(cleanup);
 
@@ -118,6 +118,29 @@ describe("BookTurnStage — structure", () => {
     expect(z[0]).toBeGreaterThan(z[1]!);
     expect(z[1]).toBeGreaterThan(z[2]!);
   });
+
+  it("the element that carries the animated transform is the same element that declares a transition naming transform — otherwise a real browser never fires transitionend for it", () => {
+    // This is a structural check, not a behavioral one: it reads the
+    // rendered style attributes and fires no event at all. The bug
+    // this guards against was a wrapper declaring `transition:
+    // transform ...` while never itself setting `transform` (that
+    // lived on its child instead) — a combination no real browser
+    // ever fires `transitionend` for, because the property named in
+    // the transition never actually changed on that element. A test
+    // that hand-fires the event (see the WCAG-path tests below)
+    // cannot catch that mismatch; only reading the two style
+    // attributes and requiring them to agree can.
+    render(createElement(Harness, { count: 2 }));
+    fireEvent.click(screen.getByLabelText("Next page")); // enters a real settle
+    const wrapper = leafWrapper(0);
+    const flip = flipOf(wrapper);
+    expect(flip.style.transform).not.toBe("");
+    expect(flip.style.transition).toContain("transform");
+    // And the inverse: the wrapper must NOT claim a transition for a
+    // property it never sets — that mismatch is the bug.
+    expect(wrapper.style.transform).toBe("");
+    expect(wrapper.style.transition).not.toContain("transform");
+  });
 });
 
 describe("BookTurnStage — the WCAG 2.5.7 path (buttons, no drag)", () => {
@@ -132,27 +155,42 @@ describe("BookTurnStage — the WCAG 2.5.7 path (buttons, no drag)", () => {
     fireEvent.click(screen.getByLabelText("Next page"));
     const flip0 = flipOf(leafWrapper(0));
     expect(flip0.style.transform).toContain("172deg");
-    expect(leafWrapper(0).style.transition).not.toBe("none");
+    expect(flip0.style.transition).toContain("transform");
   });
+
+  // jsdom does not run real CSS transitions, so the tests below
+  // hand-fire the `transitionend` event a browser sends once the
+  // transform's own transition genuinely completes — on the flip
+  // element, the one that actually declares `transform` and its
+  // transition (see BookTurnStage.tsx). jsdom cannot confirm that a
+  // real browser would fire this event on its own; the structural
+  // test above (in the "structure" describe block) is what actually
+  // catches a wrapper/flip mismatch, since it reads style attributes
+  // instead of manufacturing the signal it's supposed to check for.
 
   it("finishes the turn on transitionend, and only then flips the disabled buttons", () => {
     render(createElement(Harness, { count: 2 }));
     fireEvent.click(screen.getByLabelText("Next page"));
-    fireEvent.transitionEnd(leafWrapper(0), { propertyName: "transform" });
+    fireEvent.transitionEnd(flipOf(leafWrapper(0)), { propertyName: "transform" });
     expect((screen.getByLabelText("Previous page") as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByLabelText("Next page") as HTMLButtonElement).disabled).toBe(true);
     // The now-current leaf (index 1) rests unrotated on top.
     expect(flipOf(leafWrapper(1)).style.transform).toContain("rotateY(0deg)");
   });
 
-  it("a filter transitionend on the same leaf does not double-finish the turn", () => {
+  it("a filter transitionend on the flip element does not finish the turn — only transform does", () => {
     render(createElement(Harness, { count: 3 }));
     fireEvent.click(screen.getByLabelText("Next page"));
-    fireEvent.transitionEnd(leafWrapper(0), { propertyName: "filter" });
-    // Still mid-settle: Next should still be reachable (not yet on the
-    // second leaf's own bounds) and the transform hasn't been
-    // finalized into a new resting frame.
-    fireEvent.transitionEnd(leafWrapper(0), { propertyName: "transform" });
+    const flip0 = flipOf(leafWrapper(0));
+    // Real filter transitions live on the wrapper, not the flip
+    // element, so a browser would never actually deliver this — this
+    // guards the `propertyName` check itself, defensively, against a
+    // future refactor that adds a second transitioned property here.
+    fireEvent.transitionEnd(flip0, { propertyName: "filter" });
+    // Still mid-settle, still on leaf 0 — Previous is still disabled
+    // (isFirst). The turn only finalizes on a "transform" event.
+    expect((screen.getByLabelText("Previous page") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.transitionEnd(flip0, { propertyName: "transform" });
     expect((screen.getByLabelText("Previous page") as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -162,8 +200,32 @@ describe("BookTurnStage — the WCAG 2.5.7 path (buttons, no drag)", () => {
     fireEvent.click(screen.getByLabelText("Next page"));
     expect(leafWrapper(0).style.transition).toBe("none");
     expect(leafWrapper(1).style.transition).toBe("none");
+    expect(flipOf(leafWrapper(0)).style.transition).toBe("none");
+    expect(flipOf(leafWrapper(1)).style.transition).toBe("none");
     expect(flipOf(leafWrapper(1)).style.transform).toContain("rotateY(0deg)");
     expect((screen.getByLabelText("Next page") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("a settle whose transitionend never arrives still resolves, via the fallback timer", () => {
+    // Simulates a dropped/coalesced transition event (backgrounded
+    // tab, a leaf unmounted mid-settle) — no transitionend is ever
+    // fired by hand. Without the fallback timer in useBookTurn.ts,
+    // `settling` has no other exit and this wedges Next/Prev/drag
+    // shut for the rest of the session.
+    vi.useFakeTimers();
+    try {
+      render(createElement(Harness, { count: 2 }));
+      fireEvent.click(screen.getByLabelText("Next page"));
+      expect((screen.getByLabelText("Next page") as HTMLButtonElement).disabled).toBe(false);
+      act(() => {
+        vi.advanceTimersByTime(SETTLE_MS + 200);
+      });
+      expect((screen.getByLabelText("Previous page") as HTMLButtonElement).disabled).toBe(false);
+      expect((screen.getByLabelText("Next page") as HTMLButtonElement).disabled).toBe(true);
+      expect(flipOf(leafWrapper(1)).style.transform).toContain("rotateY(0deg)");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -172,7 +234,7 @@ describe("BookTurnStage — the drag gesture", () => {
     const clock = makeClock();
     render(createElement(Harness, { count: 2, clock: clock.now }));
     const stage = screen.getByRole("group", { name: "The pages" });
-    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 200 });
+    fireEvent.pointerDown(stage, { pointerId: 1, isPrimary: true, clientX: 200 });
     clock.set(50);
     fireEvent.pointerMove(stage, { pointerId: 1, clientX: 90 }); // -110px, past threshold
     const flip0 = flipOf(leafWrapper(0));
@@ -185,7 +247,7 @@ describe("BookTurnStage — the drag gesture", () => {
     const clock = makeClock();
     render(createElement(Harness, { count: 2, clock: clock.now }));
     const stage = screen.getByRole("group", { name: "The pages" });
-    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 200 });
+    fireEvent.pointerDown(stage, { pointerId: 1, isPrimary: true, clientX: 200 });
     clock.set(10);
     fireEvent.pointerMove(stage, { pointerId: 1, clientX: 197 }); // 3px
     expect(flipOf(leafWrapper(0)).style.transform).toContain("rotateY(0deg)");
@@ -195,12 +257,17 @@ describe("BookTurnStage — the drag gesture", () => {
     const clock = makeClock();
     render(createElement(Harness, { count: 2, clock: clock.now }));
     const stage = screen.getByRole("group", { name: "The pages" });
-    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 300 });
+    fireEvent.pointerDown(stage, { pointerId: 1, isPrimary: true, clientX: 300 });
     clock.set(400);
     fireEvent.pointerMove(stage, { pointerId: 1, clientX: 50 }); // -250px ≈ progress 1
     fireEvent.pointerUp(stage, { pointerId: 1, clientX: 50 });
     expect(flipOf(leafWrapper(0)).style.transform).toContain("172deg");
-    fireEvent.transitionEnd(leafWrapper(0), { propertyName: "transform" });
+    // This particular release lands exactly on progress 1 — the same
+    // pose the settle would target — so the no-op guard in
+    // useBookTurn.ts's releaseDrag resolves it inline and this fire is
+    // a harmless no-op by the time it arrives. Left in place because a
+    // release that lands short of 1 (any real thumb) still needs it.
+    fireEvent.transitionEnd(flipOf(leafWrapper(0)), { propertyName: "transform" });
     expect((screen.getByLabelText("Next page") as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -208,12 +275,12 @@ describe("BookTurnStage — the drag gesture", () => {
     const clock = makeClock();
     render(createElement(Harness, { count: 2, clock: clock.now }));
     const stage = screen.getByRole("group", { name: "The pages" });
-    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 300 });
+    fireEvent.pointerDown(stage, { pointerId: 1, isPrimary: true, clientX: 300 });
     // -40px over 400ms: progress 40/220 ≈ 0.18, velocity 0.1px/ms — under both thresholds.
     clock.set(400);
     fireEvent.pointerMove(stage, { pointerId: 1, clientX: 260 });
     fireEvent.pointerUp(stage, { pointerId: 1, clientX: 260 });
-    fireEvent.transitionEnd(leafWrapper(0), { propertyName: "transform" });
+    fireEvent.transitionEnd(flipOf(leafWrapper(0)), { propertyName: "transform" });
     expect((screen.getByLabelText("Previous page") as HTMLButtonElement).disabled).toBe(true); // still leaf 0
     expect(flipOf(leafWrapper(0)).style.transform).toContain("rotateY(0deg)");
   });
@@ -222,21 +289,43 @@ describe("BookTurnStage — the drag gesture", () => {
     const clock = makeClock();
     render(createElement(Harness, { count: 2, clock: clock.now }));
     const stage = screen.getByRole("group", { name: "The pages" });
-    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 300 });
+    fireEvent.pointerDown(stage, { pointerId: 1, isPrimary: true, clientX: 300 });
     // -60px over 50ms = 1.2px/ms, above COMMIT_VELOCITY (0.5) though
     // progress (60/220 ≈ 0.27) is under COMMIT_PROGRESS (0.4).
     clock.set(50);
     fireEvent.pointerMove(stage, { pointerId: 1, clientX: 240 });
     fireEvent.pointerUp(stage, { pointerId: 1, clientX: 240 });
-    fireEvent.transitionEnd(leafWrapper(0), { propertyName: "transform" });
+    fireEvent.transitionEnd(flipOf(leafWrapper(0)), { propertyName: "transform" });
     expect((screen.getByLabelText("Next page") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("a drag that returns exactly to its own origin and releases there does not wedge settling — next() still works afterward", () => {
+    // The second, independent deadlock: releaseDrag used to call
+    // setSettling unconditionally for any started drag. Dragged out
+    // past the threshold and back to exactly clientX 200 (deltaX 0,
+    // progress clamps to 0) — the release target (0, since it doesn't
+    // commit) is the SAME pose already on screen. No CSS property
+    // would change, so no transition starts and no transitionend
+    // fires. No transitionend is hand-fired here on purpose: the fix
+    // must resolve this without waiting for one.
+    const clock = makeClock();
+    render(createElement(Harness, { count: 2, clock: clock.now }));
+    const stage = screen.getByRole("group", { name: "The pages" });
+    fireEvent.pointerDown(stage, { pointerId: 1, isPrimary: true, clientX: 200 });
+    clock.set(50);
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: 100 }); // -100px, past threshold
+    clock.set(100);
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: 200 }); // back to the origin: progress 0
+    fireEvent.pointerUp(stage, { pointerId: 1, clientX: 200 });
+    fireEvent.click(screen.getByLabelText("Next page"));
+    expect(flipOf(leafWrapper(0)).style.transform).toContain("172deg");
   });
 
   it("dragging forward past the last leaf rubber-bands and never commits", () => {
     const clock = makeClock();
     render(createElement(Harness, { count: 1, clock: clock.now }));
     const stage = screen.getByRole("group", { name: "The pages" });
-    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 300 });
+    fireEvent.pointerDown(stage, { pointerId: 1, isPrimary: true, clientX: 300 });
     clock.set(400);
     fireEvent.pointerMove(stage, { pointerId: 1, clientX: 40 }); // would be progress ~1 unbounded
     const flip0 = flipOf(leafWrapper(0));

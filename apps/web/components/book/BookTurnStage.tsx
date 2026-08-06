@@ -96,9 +96,15 @@ export function BookTurnStage({ leaves, ariaLabel, className, turn }: BookTurnSt
                   1,
                 )}px rgb(41 32 24 / ${(0.18 * pose.shadow).toFixed(3)}))`
               : "none",
-          transition: transition
-            ? `transform ${SETTLE_MS}ms var(--ease-out), filter ${SETTLE_MS}ms var(--ease-out)`
-            : "none",
+          // `filter` only. `transform` lives on `flipStyle` below, and
+          // its OWN `transition` must live there too — a `transition`
+          // declared on an element that never carries the property it
+          // names never fires `transitionend` for that property. That
+          // mismatch (this element used to declare both `transform`
+          // and `filter` in its transition while only ever setting
+          // `filter`) is exactly what let `settling` (useBookTurn.ts)
+          // wait forever for an event that could never arrive.
+          transition: transition ? `filter ${SETTLE_MS}ms var(--ease-out)` : "none",
         };
         const flipStyle = {
           // Both faces must fill the grid cell exactly, not their own
@@ -117,20 +123,24 @@ export function BookTurnStage({ leaves, ariaLabel, className, turn }: BookTurnSt
           transformStyle: "preserve-3d",
           willChange: "transform",
           transform: `translateY(${pose.translateY}px) rotateY(${pose.rotateY}deg)`,
+          // Declared on the same element as `transform` above — see
+          // `wrapperStyle.transition`'s comment. `onTransitionEnd`
+          // below listens on this same element for the same reason:
+          // it is the only element a real browser will ever fire a
+          // `transform` `transitionend` on.
+          transition: transition ? `transform ${SETTLE_MS}ms var(--ease-out)` : "none",
           "--leaf-sheen-opacity": pose.sheen,
         } as CSSProperties;
 
         return (
-          <div
-            key={index}
-            data-leaf-index={index}
-            style={wrapperStyle}
-            onTransitionEnd={(e) => {
-              if (e.propertyName !== "transform") return;
-              turn.onSettleTransitionEnd(index);
-            }}
-          >
-            <div style={flipStyle}>
+          <div key={index} data-leaf-index={index} style={wrapperStyle}>
+            <div
+              style={flipStyle}
+              onTransitionEnd={(e) => {
+                if (e.propertyName !== "transform") return;
+                turn.onSettleTransitionEnd(index);
+              }}
+            >
               {/* Front face — the caller's own page. Normal flow: this
                   is what the grid cell actually measures. height:
                   100% so a caller's own `h-full` BookSheet (see
