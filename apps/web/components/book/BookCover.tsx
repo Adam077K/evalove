@@ -21,10 +21,21 @@ import { cn } from "@/lib/utils";
  * number. No digit of the count appears anywhere, in copy or in a
  * label or in an aria string. A thick book is an object, not a tally.
  *
- * The spine bleeds off the LEFT edge of the viewport (§4 move #1: one
- * element bleeds off one edge). The book is larger than the screen —
- * an object on your lap, not an icon in a column. The fore-edge, the
- * edge that means something, stays fully on screen with room to grow.
+ * The board is a FIXED Crown Quarto rectangle — BOARD_WIDTH_PX ×
+ * BOARD_HEIGHT_PX below, ratio 189:246 ≈ 0.7683 — and that ratio is
+ * invariant at every leaf count. It used to be the flex remainder left
+ * over after the fore-edge (a fixed row height, a `flex-1` width), so
+ * the cover narrowed as the archive thickened: a bound book's cover
+ * does not get narrower as you add pages. Fixed here at the source —
+ * the board's own size, never a sibling's — per the measured proportion
+ * spec (docs/08-agents_work/sessions/2026-08-06-design-lead-book-proportion.md).
+ *
+ * The board sits on a real 34px table margin (BOOK_LEFT_MARGIN_PX), not
+ * bled off the left edge. The old −36px spine bleed spent the object's
+ * one identifying feature — the spine — on a rotation too small (−1.6°)
+ * to carry "placed object" alone, and it parked the lamp's pool under
+ * the board instead of beside it. /book has no bleeding element,
+ * deliberately.
  *
  * Rotation is a fixed −1.6°, not seeded. There is exactly one book,
  * forever, and it is the masthead of this surface: it sits where it
@@ -72,55 +83,94 @@ interface BookCoverProps {
  * Leaf count → fore-edge width in px.
  *
  * 12px floor: two boards and the endpapers — a brand-new book is thin,
- * not absent. ~2.6px per leaf while young, so the first weeks visibly
- * thicken week over week; past ~96px the stack compresses (real paper
- * under its own weight) and the growth slows without ever stopping
- * until a 132px ceiling that keeps year three on a 393px screen.
+ * not absent. Logarithmic, not linear: linear at a rate fast enough to
+ * stay visible reaches an unworkable width inside a month, but log
+ * keeps week-over-week growth legible early (6 → 13 leaves is +5px)
+ * and never actually stops thickening. Ceiling 60px — ~40mm on the
+ * 280px board, a genuinely fat album; the old 132px ceiling was ~89mm,
+ * which is not an album, and could not coexist with the board's own
+ * fixed width on a 393px screen (see BOARD_WIDTH_PX below). Reached at
+ * ~2.6 years (~950 leaves) — the board's shape never changes because
+ * of it, which is the whole point of this curve living apart from the
+ * board's geometry.
  */
 export function foreEdgePx(leaves: number): number {
-  const raw = 12 + leaves * 2.6;
-  const soft = raw <= 96 ? raw : 96 + (raw - 96) * 0.22;
-  return Math.round(Math.min(soft, 132));
+  return Math.round(Math.min(12 + 7 * Math.log(1 + leaves), 60));
 }
 
 /**
- * The blind-stamp impression, rebuilt after the founder called the
- * first pass nearly illegible — and it was: a transparent fill under
+ * The board's fixed geometry — Crown Quarto, 189 × 246mm, a standard
+ * bound-book trim for illustrated and photographic books. Width and
+ * height are both literal constants: neither is ever a side effect of
+ * the fore-edge's width or the viewport's height. That is what keeps
+ * the ratio invariant at every leaf count (proportion spec §1, §5.2).
+ */
+export const BOARD_WIDTH_PX = 280;
+export const BOARD_RATIO = 189 / 246; // ≈ 0.7683
+export const BOARD_HEIGHT_PX = Math.round((BOARD_WIDTH_PX / BOARD_RATIO) * 10) / 10; // 364.4
+
+/**
+ * The table margin the board sits on — a real margin, not a bleed
+ * (§1: "/book has no bleeding element, deliberately"). Shared by the
+ * closed cover and the open flap so the board is the same board,
+ * pixel for pixel, in both poses.
+ */
+export const BOOK_LEFT_MARGIN_PX = 34;
+
+/**
+ * The blind-stamp impression — twice-corrected.
+ *
+ * First correction (the founder): the original transparent fill under
  * two 1px-offset, 1px-blur shadows meant the light and dark copies
- * overlapped across most of every stroke and cancelled into mush.
- * You had to know what it said to read it.
+ * overlapped across most of every stroke and cancelled into mush. You
+ * had to know what it said to read it.
  *
- * What a real blind stamp does: the die presses a FLOOR into the
- * cloth, and the floor sits in its own slight occlusion shade —
- * that is the letterform's mass, and it is what the transparent fill
- * threw away. Then the walls of the impression work the light: the
- * lower wall catches it (crisp 1px lip, then a soft spill), the
- * upper wall shades (crisp lip, then depth). Crisp means 0 blur at
- * 1px offset — pressed edges are edges, not glows.
+ * Second correction (measured, proportion spec §3, after the rebuild
+ * that fixed the first defect): both floors still sat INSIDE the
+ * cloth's own tonal range — lighter than the weave's ordinary shadows
+ * — because the 1px walls are luminance-neutral by construction (equal
+ * and opposite, they cancel over a glyph) and a 70%-transparent fill
+ * lets the weave show through the letterform at nearly full strength.
+ * A die crushes the weave FLAT inside the impression: you read a
+ * blind stamp from the texture inside the letter differing from the
+ * texture outside it, not from its rim. The fill is the load-bearing
+ * lever, not the walls — 0.62 depresses the floor 7.3L below the
+ * cloth's own p1 while keeping residual weave sd at 38% of the
+ * cloth's; past ≈0.75 the weave dies inside the glyph and it stops
+ * being a blind stamp and becomes flat print.
  *
- * The highlight rides the lamp so at night the stamping deepens with
- * the cloth it is pressed into; the floor's shade does not dim,
- * because an impression does not fill itself back in when the light
- * goes low.
+ * Light direction: this surface's lamp sits at the lower-left
+ * (LAMPLIGHT, LampShade below). For a depression lit from below-left,
+ * the far wall — upper and right — catches the light across the pit,
+ * and the near wall — lower and left, the side closest to the lamp —
+ * sits in its own rim's shadow. The highlight rides the lamp so at
+ * night the stamping deepens with the cloth it is pressed into; the
+ * floor's shade does not dim, because an impression does not fill
+ * itself back in when the light goes low.
  */
 const EMBOSS: CSSProperties = {
-  color: "rgb(30 27 13 / 0.30)",
+  color: "rgb(30 27 13 / 0.62)",
   textShadow: [
-    "0 1px 0 rgb(242 234 208 / calc(0.62 - var(--lamp-dim, 0) * 0.26))",
-    "0 2px 3px rgb(242 234 208 / calc(0.24 - var(--lamp-dim, 0) * 0.10))",
-    "0 -1px 0 rgb(16 14 7 / 0.50)",
-    "0 -2px 2px rgb(16 14 7 / 0.20)",
+    "1px -1px 0 rgb(242 234 208 / calc(0.62 - var(--lamp-dim, 0) * 0.26))",
+    "2px -2px 3px rgb(242 234 208 / calc(0.24 - var(--lamp-dim, 0) * 0.10))",
+    "-1px 1px 0 rgb(16 14 7 / 0.50)",
+    "-2px 2px 2px rgb(16 14 7 / 0.20)",
   ].join(", "),
 };
 
-/** The colophon's impression. At 13px the same walls smudge into one
-    another, so the small die is pressed deeper (more floor) and lit
-    tighter (1px walls only) — legible first, embossed second. */
+/** The colophon's impression, pressed deeper (0.68 vs the main
+    stamp's 0.62 — a small die is struck deeper) and lit tighter (1px
+    walls only, no spill). At 13px Fraunces italic the stems were
+    ≈1.2 CSS px — too thin for the fill to ever reach full opacity
+    across their width, so the stroke's effective floor stayed lighter
+    than specified no matter the alpha. 16px at weight 600 brings the
+    stems to ≈2.1px; tracking 0.08em keeps adjacent strokes from
+    merging into the weave's shadow between them (proportion spec §3). */
 const EMBOSS_SMALL: CSSProperties = {
-  color: "rgb(30 27 13 / 0.44)",
+  color: "rgb(30 27 13 / 0.68)",
   textShadow: [
-    "0 1px 0 rgb(242 234 208 / calc(0.50 - var(--lamp-dim, 0) * 0.22))",
-    "0 -1px 0 rgb(16 14 7 / 0.30)",
+    "1px -1px 0 rgb(242 234 208 / calc(0.50 - var(--lamp-dim, 0) * 0.22))",
+    "-1px 1px 0 rgb(16 14 7 / 0.30)",
   ].join(", "),
 };
 
@@ -153,14 +203,16 @@ export function LampShade({ className, strength = 1 }: { className?: string; str
 
 /**
  * The front board — one face, two poses: lying closed in `BookCover`,
- * and swinging on the flap in `BookObject`. Position, size, corner
- * radii and shadow belong to the caller; the cloth, the stamping, the
- * colophon and the lamp belong here, so the board that opens is the
- * board that was closed.
+ * and swinging on the flap in `BookObject`. Position (via the
+ * caller's margin/left), size, corner radii and shadow belong to the
+ * caller; the cloth, the stamping, the colophon and the lamp belong
+ * here, so the board that opens is the board that was closed —
+ * literally the same BOARD_WIDTH_PX × BOARD_HEIGHT_PX rectangle in
+ * both poses.
  *
- * `pl-9` on the stamping returns the bled 36px so the type centres on
- * the VISIBLE cloth — both poses bleed the same 36px past the screen's
- * left edge, so the correction is the board's own.
+ * The stamping is centred with plain symmetric padding: there is no
+ * bleed left to compensate for (proportion spec §1 — the board no
+ * longer bleeds off the screen's left edge).
  */
 export function CoverBoard({
   begun,
@@ -179,7 +231,7 @@ export function CoverBoard({
         ...style,
       }}
     >
-      <div className="absolute inset-x-0 top-[21%] pl-9 pr-4 text-center">
+      <div className="absolute inset-x-0 top-[21%] px-4 text-center">
         <p
           className="font-display text-[30px] font-semibold uppercase leading-[1.32] tracking-[0.16em]"
           style={EMBOSS}
@@ -195,9 +247,11 @@ export function CoverBoard({
       </div>
 
       {/* The colophon — Fraunces italic, the app's own voice (§2),
-          at the foot of the board the way a press dates itself. */}
+          at the foot of the board the way a press dates itself. 16px
+          / weight 600 / tracking 0.08em: see EMBOSS_SMALL's comment
+          for why 13px could never carry the fill. */}
       <p
-        className="font-display absolute inset-x-0 bottom-[7%] pl-9 pr-4 text-center text-[13px] italic tracking-[0.05em]"
+        className="font-display absolute inset-x-0 bottom-[7%] px-4 text-center text-[16px] font-semibold italic tracking-[0.08em]"
         style={EMBOSS_SMALL}
       >
         Begun {longDate(begun)}
@@ -243,22 +297,31 @@ export function BookCover({ leafCount, begun }: BookCoverProps) {
   const edge = foreEdgePx(leafCount);
 
   return (
-    <div className="relative" style={{ transform: "rotate(-1.6deg)" }}>
+    <div
+      className="relative"
+      style={{ marginLeft: BOOK_LEFT_MARGIN_PX, transform: "rotate(-1.6deg)" }}
+    >
       <div className="flex items-stretch">
-        {/* The front board. Bleeds off the left edge — the spine is
-            off-screen. Casts right onto the page stack (the third
-            shadow layer) as well as down onto the table. */}
+        {/* The front board — fixed at BOARD_WIDTH_PX × BOARD_HEIGHT_PX,
+            invariant at every leaf count (no more flex-1 remainder).
+            Casts right onto the page stack (the third shadow layer)
+            as well as down onto the table. */}
         <CoverBoard
           begun={begun}
-          className="z-10 -ml-9 h-[min(540px,58dvh)] flex-1 rounded-[3px] rounded-r-none"
+          className="z-10 rounded-[3px] rounded-r-none"
           style={{
+            width: BOARD_WIDTH_PX,
+            height: BOARD_HEIGHT_PX,
             boxShadow:
               "0 4px 12px rgba(41,32,24,0.18), 0 10px 28px rgba(41,32,24,0.13), 7px 0 12px -5px rgba(41,32,24,0.35)",
           }}
         />
 
         {/* Inset top and bottom by the boards' squares: the boards
-            overhang the page block the way bound boards do. */}
+            overhang the page block the way bound boards do. Stretches
+            to the board's own height via `items-stretch` — the board
+            is definite now (explicit width + height), so it is always
+            the fore-edge that yields to it, never the reverse. */}
         <ForeEdge
           width={edge}
           className="-ml-px my-[3px] rounded-r-[2px]"
@@ -277,24 +340,26 @@ export function BookCover({ leafCount, begun }: BookCoverProps) {
 
           Geometry: the burgundy is trimmed TIGHT (its junk was
           cleared before trim, unlike the sage's wide box), so the
-          strip fills most of the 221x1024 box. Width 83px puts the
-          silk's cross-section at ~30px, the sage's in-situ scale;
-          `right: edge - 6` lands the hanging tail left of the
-          fore-edge, under the boards. The asset's upper twist drapes
-          the page block's lower corner AT the fore-edge — kept
-          deliberately: seen in situ it reads as the ribbon exiting
-          between the pages, and it explains where the tail comes
-          from. */}
+          strip fills most of the 221x1024 box. Width 62px / bottom
+          -111 rescale the same ribbon to the 364px board — the old
+          83px / -150 were tuned to the 494px board this cover used to
+          have, and left unscaled would put the ribbon's exit at 24%
+          down the new board instead of the measured 52%. `right: edge
+          - 6` lands the hanging tail left of the fore-edge, under the
+          boards. The asset's upper twist drapes the page block's
+          lower corner AT the fore-edge — kept deliberately: seen in
+          situ it reads as the ribbon exiting between the pages, and
+          it explains where the tail comes from. */}
       <img
         src="/materials/book-ribbon.webp"
         alt=""
         aria-hidden="true"
         width={221}
         height={1024}
-        className="pointer-events-none absolute z-[5] h-auto w-[83px]"
+        className="pointer-events-none absolute z-[5] h-auto w-[62px]"
         style={{
           right: edge - 6,
-          bottom: -150,
+          bottom: -111,
           transform: "rotate(2.4deg)",
           filter:
             "drop-shadow(0 3px 5px rgba(41,32,24,0.28)) brightness(calc(1 - var(--lamp-dim, 0) * var(--lamp-brightness-drop, 0.27))) sepia(calc(var(--lamp-dim, 0) * var(--lamp-sepia-saturation, 0.22)))",

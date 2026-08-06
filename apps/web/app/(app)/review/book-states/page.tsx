@@ -128,8 +128,12 @@ export default function ReviewBookStatesPage() {
 
         <section aria-labelledby="s-cover-year3" className="overflow-x-clip pb-16">
           <Label id="s-cover-year3">State 1c — the closed book, year three (thick)</Label>
+          {/* 1095, not 200: under the new log fore-edge curve (ceiling
+              60px) 200 leaves yields only 49px — the harness would
+              silently stop testing the widest state. 1095 clears the
+              ceiling (proportion spec §4). */}
           <div className="pr-6">
-            <BookCover leafCount={200} begun="2026-08-02" />
+            <BookCover leafCount={1095} begun="2026-08-02" />
           </div>
         </section>
 
