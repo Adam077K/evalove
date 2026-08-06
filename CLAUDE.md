@@ -217,12 +217,15 @@ With frontmatter including `qa_verdict: PASS` and (when applicable) `tier: full|
 
 ## Project State
 
-> **Fill this in per project.** This is the only section the agents read to know "where are we right now."
+*Updated 2026-08-06. `main` at `d53fc3a`, pushed and in sync.*
 
-- **Current focus:** Building MVP
-- **Active sprint:** Sprint 1 — foundation
-- **Blockers:** None
-- **Next milestone:** First demo
+- **Current focus:** **Design audit and repair.** The founder used the app and called it *"very, very bad"* and *"a three years old website design."* Layout breaks, the Book is the wrong size, mobile use is poor. **Active brief: [`docs/08-agents_work/handoffs/2026-08-06-HANDOFF-USE-THE-APP.md`](docs/08-agents_work/handoffs/2026-08-06-HANDOFF-USE-THE-APP.md)** — read it before anything else.
+- **Stage:** Stage 1 UI, plus the photo path (the founder authorised breaking "UI only" so screens get judged against real photographs instead of placeholders).
+- **Merged and live:** Today (three states, the seam, the Deco band) · The Book (opens on tap, pages turn inside, three ways out, none the back button) · the photo path with server-verified EXIF/GPS stripping · the dock as a physical tray · real Deco art · a working build, lint and dev server.
+- **Blockers:** None technical. Two decisions sit with the founder — **Echo** (its streaming endpoint works, the UI returns a canned apology; five questions open in `AI-PARTNER-SPEC.md` §12) and **the Pocket** (removal decided, unbuilt).
+- **Next milestone:** A written design audit — ranked, one screenshot per finding — then repair in priority order. **Mobile-first at 393×852 is the only viewport that counts.** Two users, both on phones, no desktop story.
+- **The lesson governing this stage:** seven QA-Lead PASS verdicts were issued on this code and the app is still bad to use. Every review checked whether the code was *correct*; nobody checked whether the thing *worked*. **Use the app before you read it.**
+- **Eva has still never been asked a single question.** Every claim about her half of this product is the founder's account, not a finding.
 
 ---
 
