@@ -1,0 +1,65 @@
+[
+  {
+    "name": "deco-ornament-border",
+    "action": "keyed",
+    "bg_frac": 0.732,
+    "kept_frac": 0.268,
+    "size": [
+      832,
+      1280
+    ],
+    "trimmed": [
+      832,
+      1267
+    ],
+    "web": [
+      672,
+      1024
+    ],
+    "flag": null
+  },
+  {
+    "name": "deco-skyline-nyc",
+    "action": "keyed",
+    "bg_frac": 0.69,
+    "kept_frac": 0.31,
+    "size": [
+      1344,
+      768
+    ],
+    "trimmed": [
+      1344,
+      638
+    ],
+    "web": [
+      1024,
+      486
+    ],
+    "flag": null
+  },
+  {
+    "name": "deco-skyline-tlv",
+    "action": "keyed",
+    "bg_frac": 0.632,
+    "kept_frac": 0.368,
+    "size": [
+      1344,
+      768
+    ],
+    "trimmed": [
+      1344,
+      525
+    ],
+    "web": [
+      1024,
+      400
+    ],
+    "flag": null
+  },
+  {
+    "name": "deco-window-interior",
+    "action": "full-bleed stock, not keyed",
+    "bg_frac": 0.0,
+    "flag": null
+  }
+]
