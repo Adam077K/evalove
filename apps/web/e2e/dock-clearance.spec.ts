@@ -29,7 +29,13 @@ import { test, expect } from "@playwright/test";
  * the reserve is made of) while every glyph in it stays clear.
  */
 
-const ROUTES = ["/today", "/book", "/dates", "/send", "/echo", "/pocket"] as const;
+// "/echo" deliberately absent: it redirects to /today (2026-08-06,
+// Echo is no longer a destination), so goto("/echo") would silently
+// measure /today a second time under the wrong describe label rather
+// than fail — coverage of a route this suite never actually visits.
+// See app/(app)/echo/__tests__/page.test.ts for the redirect's own
+// coverage. Do not add it back.
+const ROUTES = ["/today", "/book", "/dates", "/send", "/pocket"] as const;
 
 type Hit = { text: string; top: number; bottom: number };
 
