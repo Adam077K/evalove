@@ -175,6 +175,19 @@ state, and part of why Dates feels bad.*
 5. **Install `semgrep`** — it never ran on the Full-tier gate; the binary is absent. Manual
    review covered the categories, but **compensation is not equivalence**, and this project
    has already had to void two exemptions that began as reasonable accommodations.
+6. **The skill index is a silent instrument.** `CLAUDE.md` orders every agent to discover
+   skills by *"filter `skills` array by `tags` matching task domain"* — but **only 16 of 154
+   manifest entries carry any tags at all.** The other 138 are unreachable by the documented
+   method, and the filter returns **empty**, which reads exactly like *"no relevant skill
+   exists."* Same shape as the `jsdom` and font-import traps: **a test that did not run is
+   indistinguishable from a test that found nothing.** Until it is regenerated, match on
+   `name` + `description`, not `tags`.
+   Two smaller defects in the same file: four security skills sit at
+   `.claude/skills/security/aws-*/SKILL.md`, so the documented
+   `.claude/skills/[skill-name]/SKILL.md` **404s for them** — use the manifest's `path`
+   field, which is correct for all 154. And seven entries are self-nested unpack artifacts
+   (`vercel-*/vercel-*/SKILL.md`, `deploy-to-vercel`, `emilkowal-animations`), which is why
+   the manifest counts 154 against `CLAUDE.md`'s 147 — **147 is the true skill count.**
 
 ## §7 · How to see it
 
@@ -215,7 +228,7 @@ from a transcript.** Every branch below is pushed.
 
 | Branch | On origin | Gate | Do what |
 |---|---|---|---|
-| `main` | ✅ `0e51e8e` | PASS ×2 | nothing — Wave 4 is merged and verified here |
+| `main` | ✅ `0e51e8e` is the **last code commit**; anything after it is documentation | PASS ×2 | nothing — Wave 4 is merged and verified here |
 | `feat/lay-probe` | ✅ `c372bdd` | none — throwaway | **founder judges it on a phone.** Delete on a NO; that is success |
 | `feat/dates-cardcopy` | ✅ | **none** | **QA gate before merge.** 33 card pairs, `tsc` clean |
 | `integration/wave4` | ✅ | PASS ×2 | already merged to main; kept for provenance |
