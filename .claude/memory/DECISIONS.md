@@ -520,3 +520,29 @@ fourth is why CEO caught it in the delta review.
 **Reversibility:** reversible. Retirements should move assets rather than delete them until the drawer set is settled.
 **Owner:** ceo (session ceo-4), rule authored by design-lead
 **Affects:** anyone adding ornament assets (the rule is now the gate); whoever builds hand-composition (pressed flowers unblock only there); anyone touching `seededPick` or `TapeVariant`.
+
+## 2026-08-06 — QA-Lead PASS on feat/dates-cardcopy (Lite) — and the gate's own reviewer wrote a wrong test
+
+*Ported by the CEO from QA-Lead's verdict. QA-Lead had appended it to a `DECISIONS.md` five commits stale — committing that file would have silently deleted four of today's entries. The verdict is QA-Lead's and unaltered; one factual claim is corrected inline and marked.*
+
+**Context:** `feat/dates-cardcopy` (33-entry display-copy fixture) gated independently. The branch forked at `860d2c7`, **50 commits behind `origin/main`** — diffing against `origin/main` as the CEO's brief instructed produces ~2,900 lines of phantom deletions from Wave 4 that this branch never touched. **The correct diff is against the true merge-base:** 2 files. QA-Lead caught the CEO's bad instruction rather than following it.
+
+**Verdict: PASS. 0 P0, 0 P1.** All nine windows now covered — **w2/w5/w6/w7, the four that were permanently empty, including Saturday (w7) with 40 real library entries showing nothing** — go to 6/6/6/9. Caps verified by parsing the file rather than trusting the author's count (max title 33/34, max description 66/66). Zero window-code leaks, zero Eva-before-Adam violations, zero emoji. `tsc` and `eslint` clean. `git merge-tree` against current `origin/main` is conflict-free and both consumer contracts are unchanged since the fork, so the staleness carries no integration risk.
+
+**The finding that matters — a reviewer inside the gate produced a wrong test.** `qa-engineer`, spawned as part of this gate, added a regression test asserting the previously-empty windows were *"w2, w5, w6, w9."* Counting `windowFit` at the fork point settles it: **w9 had one entry and was never empty; w7 was.** The test guards a window that never broke and **leaves the flagship regression unguarded — it would keep passing if w7 broke again tomorrow.** The file is **uncommitted and never entered the branch**, so the gated diff is clean. It must be corrected (w9→w7) or discarded, never committed as-is. *This is the third instance on this project of a green check pointed at the wrong target, after an e2e route array that measured the wrong page and `jsdom` letting two test files silently not run.*
+
+**⚠️ CORRECTED BY CEO — QA-Lead filed a P2 on `TonightCard.tsx` describing it as "a second, unprompted home-screen consumer of SUGGESTIONS" with no `intimacyLevel` filter. `TonightCard.tsx` is DEAD CODE — zero importers repo-wide, verified; it renders nowhere, and it is one of five v7-idiom residue files scheduled for deletion in the shared-shell branch. There is no live unprompted surface. The P2 as written would send someone to fix a component that is being removed.**
+
+**But the reasoning behind it survives the component and is kept as a forward constraint (P3):** the founder's ruling permitting the two intimacy-5 entries was **scoped to Dates — a screen someone deliberately opens and selects a window on.** An unprompted surface is a materially lower-friction context and that permission does not automatically extend to it. **Any future surface rendering `SUGGESTIONS` without the user choosing to look must filter on `intimacyLevel`.** Whoever builds the next home surface should meet that sentence before they meet the bug.
+
+**P3 — pre-existing, filed so it does not evaporate:** `suggestions.ts:90`, `b1-mirrored-errand` reads *"…the same small errand **today** and compare receipts."* A relative-time word, breaching absolute-timestamps-only. Not part of this diff; must not block it.
+
+**P3 — ruled inert, not a prepared place.** Five new entries set `costConditional: true` with `costNote: ""`. Neither consumer references either field — nothing renders, so there is **no affordance for a user to form an expectation around**, which is what the prepared-place law actually governs. Dead data, not a UI defect. The real consumer is `lib/ai/activity-library.ts:158-159` for the eventual 98-entry library, so **the fields are live contract and must not be "cleaned up" by deletion.**
+
+**P3 — code-reviewer's second finding, supplied by the CEO because it never reached QA-Lead:** `suggestions.ts:354`, `ldr-shareplay-film-night` has `costTier: "paid"` with `costConditional: false` and empty `costNote` — no cost context beyond the tier badge.
+
+**Not assessed, explicitly:** the copy was **never seen rendered**, at any viewport, in either mode — no browser access, `/review/*` still gated. Whether it *reads well* is not this gate's call: **the slop test belongs to the founder alone**, and a design-critic's PASS on it was struck during the Wave 4 gate.
+
+**Reversibility:** fixture data only, additive, no schema/auth/billing surface. Fully reversible.
+**Owner:** qa-lead (session ceo-4); ported and corrected by ceo
+**Affects:** whoever corrects or discards the uncommitted test file (w9→w7); whoever builds the next unprompted surface (the intimacy constraint); CTO (P3s as tech-debt). **Merge still requires founder confirmation — PASS is necessary, not sufficient.**
