@@ -521,6 +521,28 @@ fourth is why CEO caught it in the delta review.
 **Owner:** ceo (session ceo-4), rule authored by design-lead
 **Affects:** anyone adding ornament assets (the rule is now the gate); whoever builds hand-composition (pressed flowers unblock only there); anyone touching `seededPick` or `TapeVariant`.
 
+## 2026-08-06 — The review door fails open on `!== "production"`; the guard becomes `=== "development"`
+
+**Context:** Security audit of the Irreversible-tier middleware change at `origin/main` @ `5beb340`. **Verdict APPROVE_WITH_CONDITIONS, no P1.** The auditor stated which tree it read — `origin/main` via `git show`, explicitly **not** the founder's working tree, whose uncommitted dev-door patch has already misled one agent.
+
+**The finding, verified independently by the CEO in the installed toolchain:** the proposed guard `process.env.NODE_ENV !== "production"` **fails open.** `next/dist/bin/next` line 17 is `process.env.NODE_ENV = process.env.NODE_ENV || defaultEnv` — **Next only *defaults* it; a preset value survives.** So `NODE_ENV=test next build` inlines `"test"`, the condition is true, and `/review/` ships **in the production bundle** — and the non-standard-env warning does not fire for `"test"`. Also satisfied by `undefined`, `""`, `"staging"`, and `"Production"` with a capital P (`===` is case-sensitive).
+
+**Decision: the guard is `process.env.NODE_ENV === "development"`.** Fails closed. Verified to still cover both real consumers — `next dev` defaults to `development`, and `playwright.config.ts:50` pins `NODE_ENV: "development"` explicitly. **The diff's own comment claimed `next build` inlines `"production"` unconditionally; that claim was false and would have been trusted by the next reader.**
+
+**Why no P1:** worst-case misconfiguration exposes three fixture harnesses whose every image is a `picsum.photos` URL — **zero cookies, zero DB, zero authenticated calls.** The one registry-miss fallback (`/p/[photoId]/[variant]`) calls `requireSession()` itself, so a miss fails closed. **Two people's photographs are not reachable through this.**
+
+**The finding worth acting on first is not the security one.** `middleware.ts` transitively imports `lib/env.ts`, which **throws at module evaluation**, and **30 of 44 worktrees have no `.env.local` — including the branch that proposed this change.** So the door may open onto a 500 rather than a harness. *"Your stated failure mode is 'passes QA, fails use' — do not let the seventh instance be a security change."* **Merge condition: demonstrate a bare worktree loading `/review/book-states` with no cookie.**
+
+**A prefix publishes what does not exist yet.** Nothing gates a future file dropped under `app/(app)/review/`. Resolved **not** with a per-route allowlist — that would put an edit to the auth boundary on the critical path of every harness, which is the friction that produced three forcing attempts already — but with **a second gate**: `app/(app)/review/layout.tsx` carrying `notFound()` outside development, matching the standard the project already set at `app/dev/materials/page.tsx:32`, plus **a test asserting the *shape* of any harness** (no `fetch(`, no `cookies()`, no server data module) rather than its existence. A test that fires on every new route is noise and gets silenced within a week.
+
+**Pre-existing, out of scope, production-affecting — recorded so it is not lost:** percent-encoded slashes survive `nextUrl.pathname`. `/img/..%2f..%2ftoday` and the same shape under `/_next/`, `/api/img/` are public **in production on `origin/main` today**. Unchanged by this diff, which is why it is not a condition here.
+
+**Test-suite gaps found:** it tested three values of a condition whose risk lives in the fourth; it asserts 5 routes stay closed and **0 that must stay open**; and **nothing tests the artifact** — the entire security claim is "the string is absent from the production bundle" and no test greps `.next/server/edge/chunks/*.js`.
+
+**Reversibility:** Irreversible tier. Merge conditions: the `=== "development"` form with fail-open cases · the production-bundle grep, output pasted · cherry-pick rather than merge (the original branch is 11 commits stale and would revert 795 lines including four session files).
+**Owner:** ceo (session ceo-4); audit by security-engineer
+**Affects:** anyone editing `PUBLIC_PREFIXES`; anyone adding a route under `app/(app)/review/`; QA-Lead (holds the gate).
+
 ## 2026-08-06 — QA-Lead PASS on feat/dates-cardcopy (Lite) — and the gate's own reviewer wrote a wrong test
 
 *Ported by the CEO from QA-Lead's verdict. QA-Lead had appended it to a `DECISIONS.md` five commits stale — committing that file would have silently deleted four of today's entries. The verdict is QA-Lead's and unaltered; one factual claim is corrected inline and marked.*
