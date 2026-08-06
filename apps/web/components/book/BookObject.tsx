@@ -5,7 +5,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnimationEvent, CSSProperties } from "react";
-import { ChevronLeft } from "lucide-react";
 
 import type { IsoDate } from "@/lib/types";
 import type { Return } from "@/lib/resurface";
@@ -22,7 +21,9 @@ import {
   foreEdgePx,
 } from "./BookCover";
 import { BookSheet } from "./BookSheet";
+import { BookTurnControls, BookTurnStage } from "./BookTurnStage";
 import { ResurfacedItem } from "./ResurfacedItem";
+import { useBookTurn } from "./useBookTurn";
 import type { BookLeaf } from "./leaves";
 
 /**
@@ -51,9 +52,11 @@ import type { BookLeaf } from "./leaves";
  *             you square a book as you open it.
  *   open      Inside. The ribbon's page first — `whatCameBack` is
  *             the live wiring — then the kept days, newest first, on
- *             the same scroll-driven leaf-turn rail as /book/days:
- *             the turn follows the thumb here too. The ribbon lies
- *             on its page, under everything mounted: a bookmark,
+ *             the same spine-hinged BookTurnStage /book/days shares:
+ *             the turn follows the thumb here too, hinged at
+ *             BOOK_LEFT_MARGIN_PX with a real back face past
+ *             edge-on (turn.ts). The ribbon lies on its page, under
+ *             everything mounted: a bookmark,
  *             which is its real job. The fore-edge stays at the
  *             right — an open book still shows the rest of its pages
  *             stacked under your thumb (the anti-counter, in both
@@ -101,6 +104,11 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
   const coverRef = useRef<HTMLButtonElement>(null);
   const prevPhase = useRef<Phase>("closed");
   const edge = foreEdgePx(leafCount);
+  // +1: the ribbon's own page is leaf zero, ahead of the kept days —
+  // called unconditionally (before the closed-phase early return
+  // below) because it's a hook; it costs nothing while the book is
+  // shut, and phase never controls whether it runs.
+  const turn = useBookTurn(leaves.length + 1);
 
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -198,20 +206,22 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
           <LampShade />
 
           <div className="relative flex items-stretch pr-1.5">
-            {/* The pages — the same scroll-driven leaf turn the days
-                rail proved. The vertical padding is headroom for
-                lifted corners and shows the cloth above and below
-                the page block: the boards' squares. */}
-            <div
-              className="flex min-w-0 flex-1 snap-x snap-mandatory gap-6 overflow-x-auto pb-4 pt-3 [perspective:1200px]"
-              style={{ scrollbarWidth: "none" }}
-              aria-label="The pages — swipe to turn"
-            >
-              {/* Leaf one: the page the ribbon held. The ribbon lies
-                  on it — under everything mounted — because marking
-                  this place is its job. */}
-              <div className="leaf-turn w-full shrink-0 snap-center">
+            {/* The pages — a spine-hinged turn (BookTurnStage.tsx),
+                not a scroll-snap carousel: the leaf rotates around
+                the fixed hinge at the gutter instead of translating
+                across the screen. The vertical padding is headroom
+                for the lift before it rotates and shows the cloth
+                above and below the page block: the boards' squares. */}
+            <BookTurnStage
+              className="min-w-0 flex-1 pb-4 pt-3"
+              ariaLabel="The pages"
+              turn={turn}
+              leaves={[
+                /* Leaf one: the page the ribbon held. The ribbon lies
+                   on it — under everything mounted — because marking
+                   this place is its job. */
                 <BookSheet
+                  key="ribbon"
                   className="h-full"
                   underlay={
                     <>
@@ -261,15 +271,14 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                        rectangle. */
                     <div className="h-[42dvh]" aria-hidden="true" />
                   )}
-                </BookSheet>
-              </div>
+                </BookSheet>,
 
-              {/* Then the kept days, newest first — the same leaves
-                  /book/days turns, reachable without leaving the
-                  object. */}
-              {leaves.map((leaf) => (
-                <div key={leaf.day.date} className="leaf-turn w-full shrink-0 snap-center">
+                /* Then the kept days, newest first — the same leaves
+                   /book/days turns, reachable without leaving the
+                   object. */
+                ...leaves.map((leaf) => (
                   <BookSheet
+                    key={leaf.day.date}
                     className="h-full"
                     underlay={
                       <div
@@ -281,9 +290,9 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                   >
                     <Spread day={leaf.day} evaPhoto={leaf.evaPhoto} adamPhoto={leaf.adamPhoto} />
                   </BookSheet>
-                </div>
-              ))}
-            </div>
+                )),
+              ]}
+            />
 
             <ForeEdge
               width={edge}
@@ -293,21 +302,21 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
           </div>
         </div>
 
-        {/* Under the object: turn hint and the way out, in the same
-            quiet register as the days rail's caption. */}
-        <div className="mt-1 flex items-center justify-between">
-          <p className="type-caption flex items-center gap-1.5 pl-1 text-mute" aria-hidden="true">
-            <ChevronLeft size={14} strokeWidth={2} aria-hidden="true" />
-            swipe to turn back
-          </p>
-          <button
-            type="button"
-            onClick={close}
-            className="type-caption press py-3.5 pl-6 pr-1 text-mute"
-          >
-            close the book
-          </button>
-        </div>
+        {/* Under the object: the turn controls (the WCAG 2.5.7 path —
+            drag turns the page too, but this is the one that doesn't
+            need a thumb) and the way out. */}
+        <BookTurnControls
+          turn={turn}
+          footer={
+            <button
+              type="button"
+              onClick={close}
+              className="type-caption press py-3.5 pl-1 pr-1 text-mute"
+            >
+              close the book
+            </button>
+          }
+        />
       </div>
 
       {/* The cloth above the pages closes the book — tapping the
