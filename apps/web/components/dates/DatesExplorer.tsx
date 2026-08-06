@@ -20,6 +20,20 @@ import { SUGGESTIONS } from "@/lib/fixtures/suggestions";
 const SPRING = { type: "spring" as const, stiffness: 420, damping: 34 };
 const WINDOW_IDS = ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9"];
 
+/**
+ * Window strings read grammatically mid-sentence lowercased ("fits
+ * saturday — …") — except the two names, which the law never
+ * lowercases. `\b` still finds "Eva"/"Adam" inside the curly-quote
+ * possessive ("eva’s") because the apostrophe is a non-word
+ * character, so the boundary falls exactly where the name ends.
+ */
+function midSentence(windowString: string): string {
+  return windowString
+    .toLowerCase()
+    .replace(/\beva\b/gi, "Eva")
+    .replace(/\badam\b/gi, "Adam");
+}
+
 export function DatesExplorer() {
   const [nowWindow, setNowWindow] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -119,7 +133,8 @@ export function DatesExplorer() {
         <div className="card rounded-[1.125rem] px-6 py-10 text-center">
           <p className="type-card text-ink">A thin window</p>
           <p className="type-caption mx-auto mt-1.5 max-w-[28rem] text-mute">
-            Nothing on the shelf fits {WINDOW_STRINGS[active]?.toLowerCase()} —
+            Nothing on the shelf fits{" "}
+            {midSentence(WINDOW_STRINGS[active] ?? "")} —
             some windows are for sleeping, not planning. Another window has more.
           </p>
         </div>
