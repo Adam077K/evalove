@@ -47,4 +47,25 @@ describe("Band", () => {
     const header = container.querySelector("header");
     expect(header?.style.height).toBe("var(--band-height)");
   });
+
+  /**
+   * Eva first, everywhere the two of them appear in sequence — the
+   * same rule `MEMBERS: readonly [Member, Member] = [EVA, ADAM]`
+   * (lib/fixtures/members.ts) and Today's own DECO section already
+   * hold ("New York first; the gold is hers"). New York is Eva's city
+   * (`EVA.homeTimezone === "America/New_York"`); Tel Aviv is Adam's.
+   * This is the most visible surface in the app — on every route — so
+   * asserted, not left to be remembered: New York must precede Tel
+   * Aviv in the rendered order, and Eva's reading carries the gold
+   * tone, both by DOM order and by document position.
+   */
+  it("holds Eva-first: New York precedes Tel Aviv, gold is hers", () => {
+    const { container } = render(<Band />);
+    const text = container.textContent ?? "";
+    expect(text.indexOf("NEW YORK")).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf("TEL AVIV")).toBeGreaterThan(text.indexOf("NEW YORK"));
+
+    const gold = container.querySelector(".text-night-gold");
+    expect(gold?.textContent).toBe("NEW YORK");
+  });
 });
