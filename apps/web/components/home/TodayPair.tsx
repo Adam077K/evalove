@@ -233,15 +233,16 @@ function HeroItem({
 
   return (
     <div>
-      {/* pl-6 keeps the tear's 30px overhang on the page; -mr-10 runs
-          the mount's clean side off the viewport edge. The page root
-          carries overflow-x-clip so the bleed never becomes a
-          horizontal scroll. */}
+      {/* ml-12 lands the mount's torn left edge at the table edge the
+          Book also uses (~34px, design-lead 2026-08-06 §2); -mr-12
+          keeps the mount's clean right side bleeding off the viewport.
+          The page root carries overflow-x-clip so the bleed never
+          becomes a horizontal scroll. */}
       <Mounted
         id={photo.id}
         context="today-hero"
         elevation={4}
-        className="ml-6 -mr-10"
+        className="ml-12 -mr-12"
       >
         <Torn variant={8}>
           <img
@@ -327,7 +328,7 @@ function PairSpread({
       id={lead.id}
       context="today-hero"
       elevation={4}
-      className={`ml-6 -mr-10 ${evaLeads ? "" : overlap}`}
+      className={`ml-12 -mr-12 ${evaLeads ? "" : overlap}`}
     >
       <Torn variant={8}>
         <img

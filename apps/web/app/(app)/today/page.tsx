@@ -66,8 +66,11 @@ export default function TodayPage() {
         <TodayPair />
 
         {/* The sealed thing, when one is waiting. An object among
-            objects — its own offset, never a full-width row. */}
-        <div className="ml-3 mr-12 mt-12">
+            objects — its own offset, never a full-width row. ml-8
+            keeps the washi tape's torn end on the table instead of
+            being sliced by the viewport's left edge (design-lead
+            2026-08-06 §2). */}
+        <div className="ml-8 mr-12 mt-12">
           <SealedCard />
         </div>
       </Paper>
