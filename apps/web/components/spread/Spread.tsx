@@ -200,6 +200,28 @@ function PageCaption({ photo, className }: { photo: Photo; className?: string })
  * The pair — unequal by law. The newer leads; the other tucks under.
  * ------------------------------------------------------------------ */
 
+/**
+ * The washi assets that exist, by their post-rename names (Wave 1's
+ * QA-gate rename, now on main; floral-pressed/floral-blue added Wave
+ * 5). Exported so the coverage test in `__tests__/tape-pick-list.test.ts`
+ * can assert every entry here resolves to a registered TAPE_ASSETS
+ * plate without duplicating this list — a variant added here with no
+ * matching plate renders no strip at all, silently.
+ *
+ * Going from 2 options to 4 changes seededPick's result for
+ * essentially every existing day — accepted deliberately here and
+ * only here, while the archive is entirely fixtures with no real
+ * photograph in it yet. Once real posts exist, changing this list
+ * again would silently rewrite what the past looked like; do not
+ * touch it casually after that point.
+ */
+export const SPREAD_TAPE_VARIANTS = [
+  "washi-ochre-dots",
+  "washi-terracotta",
+  "floral-pressed",
+  "floral-blue",
+] as const satisfies readonly TapeVariant[];
+
 function PairComposition({
   evaPhoto,
   adamPhoto,
@@ -221,12 +243,7 @@ function PairComposition({
   const leadWidth = Math.round(seededIn(`${daySeed}:lw`, 66, 76));
   const followWidth = Math.round(seededIn(`${daySeed}:fw`, 46, 55));
   const tuck = Math.round(seededIn(`${daySeed}:tk`, 56, 88));
-  /* The two washi assets that exist, by their post-rename names
-     (Wave 1's QA-gate rename, now on main). */
-  const tape = seededPick(`${daySeed}:tape`, [
-    "washi-ochre-dots",
-    "washi-terracotta",
-  ] as const);
+  const tape = seededPick(`${daySeed}:tape`, SPREAD_TAPE_VARIANTS);
 
   const row = (photo: Photo, secondInDom: boolean) => {
     const isLead = photo === lead;
