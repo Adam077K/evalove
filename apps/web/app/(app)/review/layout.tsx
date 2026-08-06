@@ -18,6 +18,21 @@ import { notFound } from "next/navigation";
  * production is how dev surfaces become permanent. Auth already covers this
  * tree twice over (the middleware above, and every real route still
  * requiring a session) — this check is hygiene, not the security boundary.
+ *
+ * WHAT THIS DOES AND DOES NOT DO. `notFound()` changes the response status
+ * to 404 and swaps in the not-found UI — it does not, by itself, stop a
+ * page under here from being rendered. Both review pages are prerendered
+ * static routes by default, and `next build` computes a page's RSC tree
+ * before this guard has any say in the matter: the resulting build artifact
+ * embeds the full fixture content — every caption, every photo URL —
+ * alongside the 404 boundary, in the same file, regardless of what this
+ * function returns. Measured directly, not assumed: `.next/server/app/
+ * review/*.html` contained the fixture strings verbatim even with this
+ * guard correctly returning 404. Each review page under this layout
+ * therefore also sets `export const dynamic = "force-dynamic"` — that is
+ * the line that actually stops anything from being baked into a static
+ * artifact in the first place. This comment and that export are a pair;
+ * removing one without the other reopens the gap.
  */
 export default function ReviewLayout({ children }: { children: ReactNode }) {
   if (process.env.NODE_ENV !== "development") notFound();
