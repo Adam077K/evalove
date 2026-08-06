@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Column } from "@/components/chrome/Column";
 import { DatesExplorer } from "@/components/dates/DatesExplorer";
 import { HostedDates } from "@/components/dates/HostedDates";
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
  */
 export default function DatesPage() {
   return (
-    <div>
+    <Column>
       <header className="mb-8">
         <p className="type-micro text-mute">for the two of them</p>
         <h1 className="type-hero mt-1.5 text-ink">Dates</h1>
@@ -27,6 +28,6 @@ export default function DatesPage() {
         <HostedDates />
         <DatesExplorer />
       </div>
-    </div>
+    </Column>
   );
 }
