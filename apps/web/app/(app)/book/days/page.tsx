@@ -71,18 +71,32 @@ export default function DaysPage() {
         <div aria-hidden="true" />
       ) : (
         <div>
+          {/* The turn follows the thumb: each leaf's tilt, lift,
+              shadow and sheen are a pure function of its scroll
+              position (`.leaf-turn`, globals §8b), and scroll is
+              the finger while it is down. The shared perspective
+              sits on the rail so every leaf turns in one room; the
+              vertical padding is headroom for lifted corners
+              (overflow-x auto forces overflow-y auto, which would
+              clip them). */}
           <div
-            className="-mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto px-5 pb-4 md:-mx-8 md:px-8"
+            className="-mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto px-5 pb-4 pt-3 [perspective:1200px] md:-mx-8 md:px-8"
             style={{ scrollbarWidth: "none" }}
             aria-label="The kept days — swipe to turn"
           >
             {pages.map((leaf) => (
               <div
                 key={leaf.day.date}
-                className="w-[88%] shrink-0 snap-center sm:w-full"
+                className="leaf-turn w-full shrink-0 snap-center"
               >
                 {/* Each day is a leaf of the book — bone stock, free
-                    composition inside (the evolved Spread). */}
+                    composition inside (the evolved Spread). w-full,
+                    not 88%: the rail's own px is then exactly the
+                    inset snap-center needs, so the open page RESTS
+                    FLAT at 0° (measured: an 88% slot could never
+                    quite centre and held a permanent -3.7° tilt —
+                    paper at rest lies flat, law §5). The next leaf
+                    waits just offscreen instead of peeking. */}
                 <BookSheet>
                   <Spread
                     day={leaf.day}

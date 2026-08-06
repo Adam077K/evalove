@@ -925,6 +925,116 @@ textarea[aria-invalid="true"] {
   animation-delay: calc(var(--i, 0) * 50ms);
 }
 
+/* ------------------------------------------------------------
+   8b · The page turn — the days rail (/book/days).
+
+   The turn that follows the thumb. Mechanism per the standing
+   rulings, none of them mine to reopen:
+
+     - RIGID CSS 3D LEAF, not a WebGL mesh (Design-Lead
+       2026-08-02): a leaf that tracks the finger 1:1 at 60fps
+       and is grabbable mid-flight reads as more physical than a
+       curl that drops frames. Apple demoted the iBooks curl from
+       default; same deal taken here.
+     - SCROLL-DRIVEN, no JS (architecture §8.1, adopted at the
+       iOS 26 floor): scroll IS the gesture. The animation is a
+       pure function of scroll position, so while a finger is
+       down the sheet is bound to it by the platform's own pan —
+       no pointer handler, no rAF loop, no velocity threshold,
+       and the settle on release is the snap rail's native
+       deceleration (high damping, no bounce, well inside 400ms).
+     - THE FIRST PIXELS OF DRAG LIFT, NOT ROTATE (Design-Lead's
+       cheapest, highest-yield detail): the 48.5–51.5% wedge
+       around the resting keyframe is translateY-dominant — the
+       sheet picks up off the table before it starts to turn.
+
+   Geometry: transform-origin left = the gutter. Turning forward
+   (sheet exiting left) lifts its right edge toward the viewer —
+   positive rotateY under the rail's shared perspective. The next
+   leaf peeks at the right edge already tilted away, lying the
+   way the rest of an open book lies. Angle caps at 24°: the leaf
+   stays a readable page, never a spinning card.
+
+   Light: the sheet's own contact shadow deepens as it lifts
+   (drop-shadow follows the cut; box-shadow would animate paint),
+   and `.leaf-sheen` — a hinge-shade + grazing-highlight gradient
+   INSIDE the sheet, above the stock, below every mounted thing —
+   fades in with tilt. That layering is the lamp precedent (§6):
+   light is painted on the substrate only, so no photograph is
+   ever dimmed, washed, or filtered, mid-turn or otherwise. The
+   bend of the paper is this shading, not a mesh deformation —
+   the leaf itself is rigid, per the ruling above.
+
+   Reduced motion: the global kill below removes both animations
+   wholesale — flat rail, no sheen. Browsers without
+   animation-timeline get the same flat rail via @supports.
+   ------------------------------------------------------------ */
+
+@supports (animation-timeline: view()) {
+  .leaf-turn {
+    animation: leaf-turn linear both;
+    animation-timeline: view(inline);
+    transform-origin: left center;
+  }
+  .leaf-turn .leaf-sheen {
+    animation: leaf-sheen linear both;
+    animation-timeline: view(inline);
+  }
+}
+
+/* Base state carries the gradient and stays invisible: without
+   @supports, or under reduced motion, the sheen never appears. */
+.leaf-sheen {
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    rgb(41 32 24 / 0.1) 0%,
+    rgb(255 251 240 / 0.6) 8%,
+    rgb(255 251 240 / 0) 34%
+  );
+}
+
+@keyframes leaf-turn {
+  0% {
+    transform: translateY(-7px) rotateY(-24deg);
+    filter: drop-shadow(0 12px 16px rgb(41 32 24 / 0.18));
+  }
+  48.5% {
+    transform: translateY(-3px) rotateY(-3deg);
+    filter: drop-shadow(0 5px 8px rgb(41 32 24 / 0.1));
+  }
+  50% {
+    transform: translateY(0) rotateY(0deg);
+    filter: drop-shadow(0 0 0 rgb(41 32 24 / 0));
+  }
+  51.5% {
+    transform: translateY(-3px) rotateY(3deg);
+    filter: drop-shadow(0 5px 8px rgb(41 32 24 / 0.1));
+  }
+  100% {
+    transform: translateY(-7px) rotateY(24deg);
+    filter: drop-shadow(0 12px 16px rgb(41 32 24 / 0.18));
+  }
+}
+
+@keyframes leaf-sheen {
+  0% {
+    opacity: 1;
+  }
+  48.5% {
+    opacity: 0.16;
+  }
+  50% {
+    opacity: 0;
+  }
+  51.5% {
+    opacity: 0.16;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 /* Reduced motion: full removal, not a degrade to opacity.
 
    Our animation skill says degrade; Sonner's own shipped CSS
