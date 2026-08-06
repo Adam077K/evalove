@@ -148,7 +148,8 @@ pixels.**
 ## §5 · Ready but NOT gated — do not merge without QA
 
 **`feat/dates-cardcopy`** (2 commits) — 33 display-copy pairs, all nine windows, caps
-honoured (33/34, 66/66), zero window-codes, `tsc` clean. **No QA gate has run on it.**
+honoured (33/34, 66/66), zero window-codes, `tsc` clean. ✅ **QA-Lead PASS at Lite tier,
+0 P1, every finding P3. Cleared to merge; awaiting founder confirmation only.**
 
 It exists because **four windows (w2, w5, w6, w7) rendered the thin-window empty state
 permanently** — the fixture only covered five. w7 is Saturday, the flagship, with 40 real
@@ -268,3 +269,74 @@ files above survive branch switches; check they are still modified afterwards.
    ready.
 4. **`/send`** — still two-tier; folding it into the pen changes the core interaction.
 5. **The auth-verification wall** and **installing semgrep** — both structural, §6.
+
+---
+
+## §10 · Wave 5 — the founder's feel list. Specced, gated, blocked on one human write.
+
+He used the app and named seven things. **Five were measured and confirmed; none were
+taken from his wording.** Nothing shipped — the whole wave is parked behind an 18-line
+edit only a human can make.
+
+### What is true, measured
+- **The page turn is a scroll-snap carousel** (`BookObject.tsx:206`) with a decorative
+  `perspective`. ⚠️ **It is NOT broken** — it was built, is live, and does follow the thumb
+  (QA-verified 2026-08-06). The keyframes cap `rotateY` at **±24°** with no back face, so it
+  can never read as paper folding. **He is reopening a documented "none of them mine to
+  reopen" ruling** (`globals.css:962-966`, scroll-driven/no-JS). Try CSS-only first; if you
+  fall back to JS, say so loudly.
+- **The tab-switch jump is structural.** `(app)/layout.tsx:38` pads every route; Today and
+  Book each cancel it and re-apply *different* top insets (1.75 vs 2.25rem); Dates and Send
+  don't cancel at all. Zero `AnimatePresence` at any route level.
+- **`DualClocks.tsx` was built and has been dead in the tree** since the foundation review.
+  He asked for "the clocks we used to have" not knowing they still exist.
+- **The probe's lag is not where anyone guessed.** The drag path is already
+  compositor-only. Real causes: a **250 ms hold with no feedback for its first 120 ms**, and
+  an **un-eased pop** to `scale(1.05) rotate(-3.5°)` at commit. Both reproduce on mouse.
+- **27 of 44 assets have never rendered** — the dev bench `notFound()`s in production, so
+  bench-only references don't count. **Zero stickers have ever appeared on a page**,
+  including Eva's sunflower.
+
+### Two founder decisions
+- **§0 is overridden.** It becomes *nothing above the item may be **about** the item.* Every
+  route gets one band: **DECO, `--night-sky`, Seam rotated 180° (not mirrored), 56px + safe
+  area, identical contents everywhere, never a skeleton.** He first chose a taped paper band
+  from three sketches, then **reversed himself on Design-Lead's argument**: paper is what
+  they *made*; the clocks are the distance *between* them. Refused outright: a search bar
+  (Wave 4 deleted one as a prepared place) and a hamburger (opens onto nothing).
+- **The ornament rule:** *a material earns its place by doing a job, or by being placed by a
+  hand. "The page looked empty" is never a job.* Fasteners may be app-placed; ornaments never.
+  So pressed flowers wait for hand-composition — but **floral washi ships now**, because a
+  flower printed on a fastener is one nobody had to fake placing.
+  ⚠️ **Widening the tape pick list re-rolls every existing item's tape** (`seededPick` uses
+  `floor(seed × length)`). Free on fixtures. **Destructive after the first real photograph.**
+
+### ⚠️ The trap that bit three times in one day
+**A fact true in one checkout, assumed global.** Same species each time:
+1. `jsdom` declared by one branch, installed only in that worktree — two test files silently
+   didn't run and the suite still read green.
+2. `middleware.ts` read in the main repo, where the dev-door patch exists **in the working
+   tree only** — produced a brief telling three workers there was no auth wall. There is.
+3. `DECISIONS.md` written by an agent into a checkout **five commits stale** — committing it
+   would have deleted four of that day's entries.
+**Before writing to any shared file, confirm the checkout is current. Before trusting any
+test count, `pnpm install`.**
+
+### State
+| Branch | Gate | Status |
+|---|---|---|
+| `feat/dates-cardcopy` | ✅ **PASS** (Lite, 0 P1) | **cleared — needs founder merge confirmation only** |
+| `feat/review-door-dev-only` | — | **BLOCKED on a human write.** Red test committed (`22cba34`), 23/25 passing, the 2 reds are the proof it exercises the feature |
+| shell + DECO band | not built | full tier · specced · blocked behind the review door |
+| real page turn | not built | full tier · specced · blocked |
+| probe lag | not built | lite · specced · blocked |
+| floral washi | not built | **unblocked — awaiting founder go/no-go** |
+
+**Why everything is blocked:** workers cannot open what they build. `/review/*` is gated, so
+three visual tasks can't be honestly verified. The founder signed off on making `/review/`
+public outside production; **the classifier blocks every agent write to `middleware.ts`,
+correctly** — a worker asked the CEO to land it and that was refused as permission
+laundering. It needs the founder's own hand.
+
+**Still his alone, still unrun: the slop test.** Nothing from this wave has been in front of
+his eyes.
