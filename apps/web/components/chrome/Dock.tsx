@@ -2,51 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { AudioLines, BookOpen, Home, Plus, Sparkles } from "lucide-react";
 
 /**
- * The dock — a floating pill, the app's one piece of fixed chrome.
- * Four destinations and, in the middle, the quick send, because
- * sending something small is the most frequent act of the whole
- * product.
+ * The tool tray — navigation while reading; scissors, tape and the pen
+ * when editing arrives. Founder-directed 2026-08-06.
  *
- * Opaque, not glass. Glass was attempt #2's fingerprint, and it also
- * failed in the window that matters most: a translucent dock at 11pm
- * put low-contrast chrome over whatever happened to be behind it.
- * White stock, a hairline, a real shadow, and it reads the same over
- * a photograph as over an empty page.
+ * The diagnosis it answers: the app renders a physical world and was
+ * navigating it with a SaaS tab bar — a floating black-and-white pill
+ * was the one piece of pure app chrome on screen and it fought
+ * everything above it. So the dock stops floating and becomes an
+ * object: a shallow card-stock tray resting at the near edge of the
+ * table, clipped by the bottom of the screen the way the Book's
+ * corner is clipped by it — partially out of frame because it
+ * physically continues past the frame. Its floor is the same
+ * coldpress stock as the table and it dims under the same lamp
+ * (`.under-lamp`), because at 11pm the tray is in the room too.
  *
- * The active tab is ink-filled with paper text — the one solid
- * control in a palette with no accent colour, taken from SORDJATI's
- * black pill. It slides between destinations on a spring (layoutId),
- * and the active label speaks; inactive tabs are icons only, like a
- * dock should be.
+ * What it keeps from the pill, deliberately:
+ *   - all four destinations plus send — the founder kept four tabs;
+ *   - the ink-filled active pill (SORDJATI's black pill stays the
+ *     system's one solid control, sliding on the chrome spring);
+ *   - opaque material, no glass, no blur;
+ *   - Echo labelled "Echo", never the other person's name (AI spec
+ *     hard line 1: this surface may never be mistakable for him).
  *
- * The fourth tab is Echo, and it is labelled "Echo" — never the
- * other person's name. A tab reading "Adam" is a claim that tapping
- * it reaches Adam, and hard line 1 of the AI spec is that this
- * surface may never be mistakable for him. The pocket is behind its
- * lock at the foot of Today, never one accidental tap away.
+ * Stage 2 (not built, designed for): the editing tools arrive as
+ * additional <TrayTool> children when edit mode is found — the tray
+ * itself does not change. No empty wells are shown for them: a
+ * prepared place is a solicitation, and composing is never solicited.
  */
 
 const SPRING = { type: "spring" as const, stiffness: 420, damping: 34 };
 
 /**
- * How much of the bottom of the screen this dock covers is published
- * as `--dock-footprint`, declared on `<html>` in `app/layout.tsx`:
- * the pill (`p-1.5` twice over plus its tallest child, the 3.25rem
- * send button = 4rem) plus `--dock-offset`, the gap it floats at,
- * which is `max(1rem, env(safe-area-inset-bottom))` so it clears the
- * iOS home indicator.
- *
- * The pill's own offset below reads that same variable, so the 4rem
- * in the footprint is the one number describing this component and it
- * is asserted, not restated: if the pill's height changes, change it
- * in `app/layout.tsx` and every consumer follows. Consumers today are
- * the column's bottom padding and the page's `scroll-padding-bottom`
- * (`app/(app)/layout.tsx`, `app/layout.tsx`), the echo composer's
- * sticky offset, and the pocket gate's column height.
+ * The band this tray covers is published as `--dock-footprint` on
+ * `<html>` in `app/layout.tsx`: the tallest tool (3.25rem send) plus
+ * the tray's own padding (0.5rem lip, max(0.5rem, safe-area) floor).
+ * The tray sits flush to the bottom edge — there is no `--dock-offset`
+ * any more, because an object resting on a table does not hover. If
+ * the tray's height changes, change the footprint in `app/layout.tsx`
+ * and every consumer follows.
  */
 
 export function Dock() {
@@ -65,22 +62,43 @@ export function Dock() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[var(--dock-offset)] pointer-events-none"
+      className="fixed inset-x-0 bottom-0 z-30 flex justify-center pointer-events-none"
     >
       {/* pointer-events-none on the nav so the full-width transparent band
-          does not swallow taps on page content (links, the pocket lock) that
-          fall within the nav's bounding box but outside the pill itself.
-          pointer-events-auto restores interactivity on the pill card only. */}
-      <div className="card flex items-center gap-1 rounded-full p-1.5 shadow-float pointer-events-auto">
+          does not swallow taps on page content that falls within the nav's
+          bounding box but outside the tray itself. */}
+      <div className="tray pointer-events-auto relative flex items-center gap-1 rounded-t-[14px] px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        {/* The tray's floor — the coldpress stock family, but its own
+            tone: a shade of card-board darker than the table, or the
+            tray vanishes into the surface it rests on (measured on the
+            first capture — same stock at the same tone is invisible).
+            The scrim multiplies the texture only; the tools sit above
+            it, so nothing token-styled dims twice (§9.3). Both layers
+            sit under the room's lamp like every other material. */}
+        <div
+          aria-hidden="true"
+          className="under-lamp absolute inset-0 rounded-t-[14px]"
+          style={{
+            backgroundImage: "url(/materials/paper-coldpress-stock-tile.webp)",
+            backgroundSize: "58% auto",
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 rounded-t-[14px] mix-blend-multiply"
+          style={{ background: "rgba(151, 136, 116, 0.22)" }}
+        />
+
         {tabs.slice(0, 2).map((t) => (
           <DockTab key={t.href} tab={t} active={isActive(t.href)} />
         ))}
 
-        {/* Quick send — the raised centre. */}
+        {/* Quick send — the raised centre. Sending something small is
+            the most frequent act of the whole product. */}
         <Link
           href="/send"
           aria-label="Send something small"
-          className="press pill-ink mx-1 flex h-13 w-13 shrink-0 items-center justify-center rounded-full"
+          className="press pill-ink relative mx-1 flex h-13 w-13 shrink-0 items-center justify-center rounded-full"
         >
           <Plus size={24} strokeWidth={2} />
         </Link>
@@ -101,6 +119,11 @@ function DockTab({
   active: boolean;
 }) {
   const Icon = tab.icon;
+  /* JS-driven motion is out of reach of the global reduced-motion CSS
+     kill, so the spring and the label slide remove themselves here —
+     full removal, not a degrade (§5). */
+  const reduce = useReducedMotion();
+  const transition = reduce ? { duration: 0 } : SPRING;
   return (
     <Link
       href={tab.href}
@@ -112,7 +135,7 @@ function DockTab({
       {active ? (
         <motion.span
           layoutId="dock-active"
-          transition={SPRING}
+          transition={transition}
           className="pill-ink absolute inset-0 rounded-full"
         />
       ) : null}
@@ -120,9 +143,9 @@ function DockTab({
         <Icon size={20} strokeWidth={1.9} />
         {active ? (
           <motion.span
-            initial={{ opacity: 0, x: -4 }}
+            initial={reduce ? false : { opacity: 0, x: -4 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={SPRING}
+            transition={transition}
             className="type-label whitespace-nowrap"
           >
             {tab.label}

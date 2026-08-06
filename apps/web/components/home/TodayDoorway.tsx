@@ -72,7 +72,11 @@ function DoorwayCorner({ returned }: { returned: Returned }) {
             (-mr-6 plus rotation), and a symmetric padding put "The
             book ↗" straight into the cut. The label must sit clear of
             the clipped edge. */}
-        <div className="bg-surface pb-[var(--dock-footprint)] pl-5 pr-12 pt-4">
+        {/* pb: the tray's footprint plus 0.5rem — the sheet is seeded
+            with up to ±5° of note rotation, and a rotated corner dips
+            ~17px below where the flat measure ends. Without the buffer
+            the label's corner can graze the tray's rim on some seeds. */}
+        <div className="bg-surface pb-[calc(var(--dock-footprint)+0.5rem)] pl-5 pr-12 pt-4">
           <div className="flex items-baseline justify-between gap-4">
             <p className="type-micro text-mute">{label}</p>
             <span className="type-micro flex shrink-0 items-center gap-1 text-mute">

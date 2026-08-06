@@ -606,6 +606,34 @@ body {
   border: 1px solid var(--line);
 }
 
+/* The tool tray — the one object that rests at the near edge of the
+   table, holding the navigation now and the editing tools later. A
+   shallow card-stock box seen from above-front, so its physics are:
+
+     inset 0 1px 0    the rim catching the lamp
+     inset 0 …        the rim's soft shadow falling on the tray floor
+                      (what says "shallow box" instead of "flat card")
+     0 -2px / 0 -14px contact and ambient shadow cast on the table
+                      BEYOND the tray — upward, because the tray sits
+                      at the bottom edge and everything else on screen
+                      is further away, not underneath
+
+   No bottom edge: the tray is clipped by the screen the way the
+   Book's corner is — it continues past the frame. The floor texture
+   is painted by the component (it needs `.under-lamp`, and a utility
+   cannot carry an image); this utility carries the box. */
+@utility tray {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 12px 18px -10px rgba(41, 32, 24, 0.28),
+    inset 3px 0 8px -6px rgba(41, 32, 24, 0.2),
+    inset -3px 0 8px -6px rgba(41, 32, 24, 0.2),
+    0 -2px 6px -2px rgba(41, 32, 24, 0.1),
+    0 -16px 32px -12px rgba(41, 32, 24, 0.18);
+}
+
 /* An invalid field is red, and it is red from here rather than from a
    utility class.
 
