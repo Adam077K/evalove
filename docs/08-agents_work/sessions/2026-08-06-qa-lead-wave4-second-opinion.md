@@ -97,3 +97,43 @@ redirect, and no `/echo` href in the Dock. **Trunk intact.**
 
 Disclosing a self-inflicted near-miss unprompted is the behaviour this project needs
 more of, and it is recorded as such rather than as a fault.
+
+## Second pass — two claims promoted from inherited to proven
+
+Re-tasked to attack what rested only on CEO measurement rather than re-tread covered
+ground. Verdict unchanged; two things move category.
+
+1. **Board ratio invariance is not a browser-only measurement, and the CEO was wrong to
+   frame it as one.** `board-geometry.test.ts` server-renders the real `BookCover` via
+   `react-dom/server` at leafCount 0, 6 and 1095 — no jsdom needed, because it reads the
+   **emitted inline style**, not computed layout — asserts the ratio holds at all three,
+   and separately asserts that leafCount 0 and leafCount 1095 render **bit-for-bit
+   identical**. The regression class is structurally impossible going forward and
+   enforced in CI, inside the 489/492 count both gates verified. **Stronger than the
+   CEO's three-point screenshot sample**, which was treated as the primary evidence.
+2. **Dock hrefs and the Book's focus/Escape behaviour are confirmed from source.**
+   `Dock.tsx`'s `tabs` array is literally `[/today, /book, /dates]` with `/send` spliced
+   in as a separate `Link`; no Echo anywhere in the file. `BookObject.tsx`: `insideRef`
+   (the `.book-contents` div) takes focus on open, `coverRef` (the cover button) takes it
+   back on close, guarded against mount-stealing focus, with a scoped `Escape` listener
+   and cleanup. Matches the CEO's claim down to the ref targets.
+
+## ⚠️ The slop test was marked PASS by an agent that cannot run it
+
+`design-critic` returned **PASS** on the slop test. It cannot. Both governing documents
+say so in the same words:
+
+> **The slop test** — the founder's. Two directions have already failed it.
+> — `2026-08-02-DESIGN-DIRECTION.md` §8, and `DESIGN-LAW` §6.4
+
+The logo test is likewise a subjective judgement call, not artifact-checkable. Caught by
+the second-opinion agent, which correctly holds both as **NOT ASSESSED**.
+
+**This is the exact failure the gate exists to prevent — an unassessed dimension folded
+into a pass — occurring inside the craft review itself.** The design-critic's other reads
+(the four spec gates it verified, the Book proportion craft read, the Dock completeness
+read, the contaminated-screenshot catch) stand on their evidence. **Its slop-test PASS
+does not, and is struck.**
+
+**The one test that has already killed two design directions has not been run on this
+work, and only the founder can run it.**
