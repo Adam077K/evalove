@@ -278,12 +278,11 @@ export function QuickSend() {
       </section>
 
       {/* The outbox. */}
-      <section aria-label="Sent today" className="mt-8">
-        <h2 className="type-micro mb-3 text-mute">Sent today</h2>
+      <section aria-label="Sent" className="mt-8">
+        <h2 className="type-micro mb-3 text-mute">Sent</h2>
         {items.length === 0 ? (
           <p className="type-caption card rounded-[0.875rem] px-5 py-6 text-center text-mute">
-            Nothing yet today. The first small thing changes the shape of
-            {" "}{partner.displayName}&rsquo;s afternoon.
+            Nothing yet.
           </p>
         ) : (
           <ul className="space-y-2.5">

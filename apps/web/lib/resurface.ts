@@ -37,7 +37,7 @@
 import type { Photo } from "@/lib/types";
 import { PHOTOS } from "@/lib/fixtures/photos";
 import { MEMBER_PROFILES, localPartsOf, isoDateOfUtcMs, MS_UTC_DAY } from "@/lib/shared-day";
-import { monthOf } from "@/lib/time";
+import { longDate, monthOf } from "@/lib/time";
 
 /* ------------------------------------------------------------------
  * Types
@@ -46,8 +46,9 @@ import { monthOf } from "@/lib/time";
 /**
  * One item from the archive that is relevant right now, plus why it came back.
  *
- * `label` is displayable directly: "A year ago today", "Left at this hour,
- * in June", "Left in the evening, in June", or "From June".
+ * `label` is displayable directly: "From 1 August 2025", "Left at this hour,
+ * in June", "Left in the evening, in June", or "From June". Absolute always —
+ * the date match states the photograph's own date, never how long ago that is.
  */
 export type Return =
   | { reason: "date"; label: string; photo: Photo }
@@ -126,7 +127,10 @@ function findDateMatch(now: Date, photos: Photo[]): Return | null {
     p.createdAt > best.createdAt ? p : best,
   );
 
-  return { reason: "date", label: "A year ago today", photo };
+  // Absolute always — state the photograph's own date, not how long ago it
+  // was. "From {date}" continues the same "From {month}" idiom resolution 3
+  // uses below, at the finer resolution a same-day match affords.
+  return { reason: "date", label: `From ${longDate(photo.sharedDay)}`, photo };
 }
 
 function findHourMatch(now: Date, photos: Photo[]): Return {

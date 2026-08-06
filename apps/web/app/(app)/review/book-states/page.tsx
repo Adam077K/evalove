@@ -51,7 +51,9 @@ export const dynamic = "force-dynamic";
 
 const DATE_MATCH: Return = {
   reason: "date",
-  label: "A year ago today",
+  // Absolute — the photograph's own date, matching lib/resurface.ts's
+  // "From {longDate}" label. d0729-eva's sharedDay is "2026-07-29".
+  label: "From 29 July 2026",
   photo: PHOTOS["d0729-eva"],
 };
 
