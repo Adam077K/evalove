@@ -255,31 +255,107 @@ def rekey_polaroid_empty() -> Image.Image:
     )
 
 
-def clean_ribbon() -> None:
-    """Post-process the KEYED real ribbon (book-ribbon-sage.webp).
+# The strip's meander inside each keyed ribbon's trim box, measured
+# from dark-pixel alpha. Everything outside the band is junk by
+# construction. The sage band is in POST-TRIM box fractions of the
+# (never re-trimmed) shipped webp; burgundy/brass are fractions of
+# key_assets.py's fresh trim boxes.
+RIBBON_BANDS = {
+    "book-ribbon-sage": (0.40, 0.63),
+    "book-ribbon-burgundy": (0.37, 0.68),
+    "book-ribbon-brass": (0.09, 0.46),
+}
 
-    key_assets.py left a cloud of semi-opaque near-white shadow across
-    the lower half — invisible on paper, obvious on midnight (the
-    proof-sheet principle). The strip itself meanders inside a narrow
-    column band (measured 44.7–57.7% of the trim box), so everything
-    outside x ∈ [40%, 63%] is junk by construction and is cleared.
+
+def clean_ribbon(path: Path, band: tuple[float, float], retrim: bool = True) -> Image.Image:
+    """Post-process a KEYED real silk ribbon.
+
+    key_assets.py leaves the backdrop's shadow scallops: their
+    near-white interiors die at the WHITE threshold, but their
+    OUTLINES sit just below it and survive — invisible on paper,
+    obvious on midnight (the proof-sheet principle), and at 2x they
+    read as pencil smudges even on paper. Three rules, each earned
+    on a capture:
+
+      band     the strip meanders inside a narrow column band
+               (measured per asset from dark alpha) — everything
+               outside is junk by construction
+      white+grey  in the lower half, where the shadow cloud lives:
+               near-white pixels (mn >= 225, the sage rule) and grey
+               pixels (max-min < 30 at mn >= 160) both die. Silk
+               sheen is SATURATED everywhere, even burgundy's
+               highlights — value alone cannot separate silk from
+               scallop outline (sheen reaches mn 209, outlines start
+               near 160), saturation can.
+      blobs    a ribbon is ONE connected piece — after the colour
+               kills disconnect the cloud, whatever is not the main
+               component is junk regardless of colour. Order matters:
+               blob-dropping BEFORE the colour kills misses junk the
+               semi-opaque cloud still bridges to the strip.
     """
     import numpy as np
+    from scipy import ndimage
 
-    path = PUBLIC / "book-ribbon-sage.webp"
     im = Image.open(path).convert("RGBA")
     a = np.asarray(im).copy()
     h, w, _ = a.shape
-    a[:, : int(w * 0.40), 3] = 0
-    a[:, int(w * 0.63) :, 3] = 0
-    # In-band junk at the tail: the shadow cloud also sits BEHIND the
-    # strip's cut end (a white patch in the first capture). The silk
-    # is dark sage everywhere — near-white pixels in the lower half
-    # are shadow remnant, never ribbon.
+    lo, hi = band
+    a[:, : int(w * lo), 3] = 0
+    a[:, int(w * hi) :, 3] = 0
+
     lower = a[int(h * 0.5) :, :, :]
-    mn = lower[:, :, :3].min(axis=2)
-    lower[:, :, 3] = np.where(mn >= 225, 0, lower[:, :, 3])
-    Image.fromarray(a, "RGBA").save(path, quality=90)
+    mn = lower[:, :, :3].min(axis=2).astype(int)
+    mx = lower[:, :, :3].max(axis=2).astype(int)
+    grey = ((mx - mn) < 30) & (mn >= 160)
+    lower[:, :, 3] = np.where((mn >= 225) | grey, 0, lower[:, :, 3])
+
+    vis = a[:, :, 3] > 8
+    lbl, n = ndimage.label(vis)
+    if n > 1:
+        sizes = ndimage.sum(np.ones_like(lbl), lbl, range(1, n + 1))
+        a[:, :, 3] = np.where(lbl == int(np.argmax(sizes)) + 1, a[:, :, 3], 0)
+
+    if retrim:
+        ys, xs = np.nonzero(a[:, :, 3] > 8)
+        pad = 6
+        a = a[
+            max(0, ys.min() - pad) : min(h, ys.max() + 1 + pad),
+            max(0, xs.min() - pad) : min(w, xs.max() + 1 + pad),
+        ]
+    return Image.fromarray(a, "RGBA")
+
+
+def clean_shipped_ribbon() -> None:
+    """Rebuild the SHIPPED ribbon (book-ribbon.webp, burgundy silk)
+    from its keyed master. The web derivative in ASSETS/web and the
+    shipped file are the same pixels at <=1024.
+
+    Expects the keyed master FRESH from key_assets.py — the band
+    fractions are measured on ITS trim box. clean_ribbon re-trims, so
+    running this twice over the same master would clear the band
+    against the wrong box and eat the strip. To reproduce from
+    scratch: key_assets.py 'book-ribbon-burgundy.png' first, then
+    this.
+
+    The filename carries no colour on purpose: the shipped teal spent
+    a wave named "sage", and a name that says one colour while
+    shipping another is the stale-migration-header defect wearing a
+    different hat. Rejected colourways (sage/teal, brass) stay in
+    ASSETS under their colour names.
+    """
+    cleaned = clean_ribbon(
+        ASSETS / "keyed" / "book-ribbon-burgundy.png",
+        RIBBON_BANDS["book-ribbon-burgundy"],
+    )
+    tw, th = cleaned.size
+    scale = min(1.0, 1024 / max(tw, th))
+    web = (
+        cleaned.resize((round(tw * scale), round(th * scale)), Image.LANCZOS)
+        if scale < 1.0
+        else cleaned
+    )
+    web.save(ASSETS / "web" / "book-ribbon-burgundy.webp", quality=90, method=6)
+    web.save(PUBLIC / "book-ribbon.webp", quality=90, method=6)
 
 
 def main() -> None:

@@ -41,10 +41,20 @@ import { longDate } from "@/lib/time";
  * colourway, never in public/). Olive sits further from
  * --night-burgundy than wine-red does: the Book is the one surface
  * the window never reaches, and a cover echoing the Deco palette
- * would blur that line. The ribbon is the generated silk; the
- * fore-edge is the stock-derived standin, which beat the generated
- * asset on sight (fine pitch reads as hundreds of pages). Cloth,
- * pages and ribbon all carry the lamp; nothing here is a photograph.
+ * would blur that line. The ribbon is BURGUNDY silk — judged against
+ * the olive in situ, day and lamp-dimmed, against two rivals: the
+ * teal ("sage") fought the cloth, two greens missing each other and
+ * nearly merging in value under the lamp; the brass merged with the
+ * lamplit table instead — same defect, different neighbour. Burgundy
+ * is the classic complement to olive bookcloth, separates cleanly at
+ * both light levels, and keeps the rejected cover colourway alive
+ * inside the object's own logic. Both losers stay in the assets
+ * folder. The file ships as book-ribbon.webp — a name that says
+ * "sage" while shipping burgundy is the stale-migration-header
+ * defect wearing a different hat. The fore-edge is the stock-derived
+ * standin, which beat the generated asset on sight (fine pitch reads
+ * as hundreds of pages). Cloth, pages and ribbon all carry the lamp;
+ * nothing here is a photograph.
  */
 
 interface BookCoverProps {
@@ -148,21 +158,25 @@ export function BookCover({ leafCount, begun }: BookCoverProps) {
           lamp curve rides inline because a filter class would be
           overridden (the Pinned precedent).
 
-          Geometry: the keyed silk's trim box is wide (the twist
-          swings sideways) — the strip itself runs at x 44.7–57.7% of
-          the box (measured from alpha). The box is sized by width
-          230px so the strip reads ~26px, and `right` compensates for
-          the box's transparent margins so the STRIP, not the box,
-          lands 47px left of the fore-edge. */}
+          Geometry: the burgundy is trimmed TIGHT (its junk was
+          cleared before trim, unlike the sage's wide box), so the
+          strip fills most of the 221x1024 box. Width 83px puts the
+          silk's cross-section at ~30px, the sage's in-situ scale;
+          `right: edge - 6` lands the hanging tail left of the
+          fore-edge, under the boards. The asset's upper twist drapes
+          the page block's lower corner AT the fore-edge — kept
+          deliberately: seen in situ it reads as the ribbon exiting
+          between the pages, and it explains where the tail comes
+          from. */}
       <img
-        src="/materials/book-ribbon-sage.webp"
+        src="/materials/book-ribbon.webp"
         alt=""
         aria-hidden="true"
-        width={692}
+        width={221}
         height={1024}
-        className="pointer-events-none absolute z-[5] h-auto w-[230px]"
+        className="pointer-events-none absolute z-[5] h-auto w-[83px]"
         style={{
-          right: edge - 67,
+          right: edge - 6,
           bottom: -150,
           transform: "rotate(2.4deg)",
           filter:
