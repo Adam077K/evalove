@@ -27,7 +27,7 @@ const WINDOW_IDS = ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9"];
  * possessive ("eva’s") because the apostrophe is a non-word
  * character, so the boundary falls exactly where the name ends.
  */
-function midSentence(windowString: string): string {
+export function midSentence(windowString: string): string {
   return windowString
     .toLowerCase()
     .replace(/\beva\b/gi, "Eva")
