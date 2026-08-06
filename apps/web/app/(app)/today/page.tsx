@@ -53,16 +53,16 @@ export default function TodayPage() {
   const { stampPhoto } = todaysObject();
 
   return (
-    /* Escape the (app) column on all four sides: the room runs edge
-       to edge and the deco floor replaces the layout's dock padding
-       with its own night-sky run. overflow-x-clip keeps the single-
-       edge bleeds from becoming a horizontal scroll. */
-    <div className="-mx-5 -mt-[max(1.5rem,env(safe-area-inset-top))] -mb-[calc(var(--dock-footprint)+4rem)] overflow-x-clip md:-mx-8">
+    /* The shell (`app/(app)/layout.tsx`) is edge-to-edge by default and
+       already reserves the band's top clearance and seats this room
+       flush against the shared torn edge — there is nothing left to
+       escape here. overflow-x-clip keeps the shore images' single-edge
+       bleeds (below) from becoming a horizontal scroll; the deco floor
+       replaces the dock's own bottom padding with its own night-sky
+       run on purpose (Today's corner runs under the tray). */
+    <div className="overflow-x-clip">
       {/* ---- PAPER — the table ---- */}
-      <Paper
-        stock="coldpress"
-        className="px-5 pb-16 pt-[max(1.75rem,env(safe-area-inset-top))] md:px-8"
-      >
+      <Paper stock="coldpress" className="px-5 pb-16 md:px-8">
         <TodayPair />
 
         {/* The sealed thing, when one is waiting. An object among

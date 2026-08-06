@@ -98,14 +98,12 @@ export default function BookPage() {
   const pages = bookLeaves();
 
   return (
-    /* Escape the (app) column on all four sides — the room runs edge
-       to edge, like Today's. overflow-x-clip keeps the spine's
-       off-screen bleed from becoming a horizontal scroll. */
-    <div className="-mx-5 -mt-[max(1.5rem,env(safe-area-inset-top))] -mb-[calc(var(--dock-footprint)+4rem)] overflow-x-clip md:-mx-8">
-      <Paper
-        stock="coldpress"
-        className="pb-[calc(var(--dock-footprint)+3rem)] pt-[max(2.25rem,env(safe-area-inset-top))]"
-      >
+    /* The shell is edge-to-edge by default and already seats this room
+       flush against the shared band's torn edge — nothing to escape
+       here, like Today's. overflow-x-clip keeps the spine's off-screen
+       bleed from becoming a horizontal scroll. */
+    <div className="overflow-x-clip">
+      <Paper stock="coldpress" className="pb-[calc(var(--dock-footprint)+3rem)]">
         {/* isolate: the lamplight needs a stacking context so -z-10
             lands above the Paper stock and under all content. */}
         <div className="relative isolate">
