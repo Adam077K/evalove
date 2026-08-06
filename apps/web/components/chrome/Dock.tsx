@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
-import { AudioLines, BookOpen, Home, Plus, Sparkles } from "lucide-react";
+import { BookOpen, Home, Plus, Sparkles } from "lucide-react";
 
 /**
  * The tool tray — navigation while reading; scissors, tape and the pen
@@ -21,12 +21,17 @@ import { AudioLines, BookOpen, Home, Plus, Sparkles } from "lucide-react";
  * (`.under-lamp`), because at 11pm the tray is in the room too.
  *
  * What it keeps from the pill, deliberately:
- *   - all four destinations plus send — the founder kept four tabs;
  *   - the ink-filled active pill (SORDJATI's black pill stays the
  *     system's one solid control, sliding on the chrome spring);
  *   - opaque material, no glass, no blur;
- *   - Echo labelled "Echo", never the other person's name (AI spec
- *     hard line 1: this surface may never be mistakable for him).
+ *   - the pen (the raised centre send) always in the same place,
+ *     never handed to anyone.
+ *
+ * Founder decision, 2026-08-06 (`.claude/memory/DECISIONS.md`): the
+ * surface list is Today · The Book · Dates — three destinations, not
+ * four. Echo is no longer a tab (it returns inside The Book later);
+ * `/echo` itself now redirects rather than serving a page this tray
+ * could point at, so there is nothing left here to link to.
  *
  * Stage 2 (not built, designed for): the editing tools arrive as
  * additional <TrayTool> children when edit mode is found — the tray
@@ -53,7 +58,6 @@ export function Dock() {
     { href: "/today", label: "Today", icon: Home },
     { href: "/book", label: "The book", icon: BookOpen },
     { href: "/dates", label: "Dates", icon: Sparkles },
-    { href: "/echo", label: "Echo", icon: AudioLines },
   ];
 
   const isActive = (href: string) =>
