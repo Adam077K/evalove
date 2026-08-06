@@ -36,12 +36,15 @@ import { longDate } from "@/lib/time";
  * shade above — pressure, not ink. The highlight rides the lamp so at
  * night the stamping dims with the cloth it is pressed into.
  *
- * Materials: the cloth and ribbon are the real generated assets
- * (book-cloth-burgundy, book-ribbon-sage — an olive colourway is on
- * disk for the founder to pick on sight). The fore-edge is chosen
- * between the generated asset and the stock-derived stand-in by
- * looking at both in situ. Cloth, pages and ribbon all carry the
- * lamp; nothing here is a photograph.
+ * Materials: OLIVE cloth — the founder's pick, on sight, over the
+ * burgundy (which stays in the assets folder as the rejected
+ * colourway, never in public/). Olive sits further from
+ * --night-burgundy than wine-red does: the Book is the one surface
+ * the window never reaches, and a cover echoing the Deco palette
+ * would blur that line. The ribbon is the generated silk; the
+ * fore-edge is the stock-derived standin, which beat the generated
+ * asset on sight (fine pitch reads as hundreds of pages). Cloth,
+ * pages and ribbon all carry the lamp; nothing here is a photograph.
  */
 
 interface BookCoverProps {
@@ -69,11 +72,14 @@ function foreEdgePx(leaves: number): number {
   return Math.round(Math.min(soft, 132));
 }
 
-/** The blind-stamp impression: light under the stroke, shade above. */
+/** The blind-stamp impression: light under the stroke, shade above.
+    Tuned against the olive cloth: the highlight is warm neutral (a
+    red-leaning highlight looked borrowed from the burgundy) and the
+    shade is a deep olive-neutral rather than wine-dark. */
 const EMBOSS: CSSProperties = {
   color: "transparent",
   textShadow:
-    "0 1px 1px rgb(240 219 205 / calc(0.42 - var(--lamp-dim, 0) * 0.20)), 0 -1px 1px rgb(24 8 12 / 0.62)",
+    "0 1px 1px rgb(236 228 208 / calc(0.42 - var(--lamp-dim, 0) * 0.20)), 0 -1px 1px rgb(16 16 8 / 0.60)",
 };
 
 export function BookCover({ leafCount, begun }: BookCoverProps) {
@@ -88,7 +94,7 @@ export function BookCover({ leafCount, begun }: BookCoverProps) {
         <div
           className="under-lamp relative z-10 -ml-9 h-[min(540px,58dvh)] flex-1 rounded-[3px] rounded-r-none bg-cover bg-center"
           style={{
-            backgroundImage: "url(/materials/book-cloth-burgundy.webp)",
+            backgroundImage: "url(/materials/book-cloth-olive.webp)",
             boxShadow:
               "0 4px 12px rgba(41,32,24,0.18), 0 10px 28px rgba(41,32,24,0.13), 7px 0 12px -5px rgba(41,32,24,0.35)",
           }}

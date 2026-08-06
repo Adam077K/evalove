@@ -221,12 +221,12 @@ function PairComposition({
   const leadWidth = Math.round(seededIn(`${daySeed}:lw`, 66, 76));
   const followWidth = Math.round(seededIn(`${daySeed}:fw`, 46, 55));
   const tuck = Math.round(seededIn(`${daySeed}:tk`, 56, 88));
-  /* The two washi assets that exist. Main still names them by the
-     patterns they are NOT (houndstooth/kraft); Wave 1's QA-gate rename
-     (832d685) fixes the union on its branch — when it merges, these
-     two identifiers become "washi-ochre-dots" / "washi-terracotta".
-     Kept as main's names here so this branch stands alone. */
-  const tape = seededPick(`${daySeed}:tape`, ["houndstooth", "kraft"] as const);
+  /* The two washi assets that exist, by their post-rename names
+     (Wave 1's QA-gate rename, now on main). */
+  const tape = seededPick(`${daySeed}:tape`, [
+    "washi-ochre-dots",
+    "washi-terracotta",
+  ] as const);
 
   const row = (photo: Photo, secondInDom: boolean) => {
     const isLead = photo === lead;
