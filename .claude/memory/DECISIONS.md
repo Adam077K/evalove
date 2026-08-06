@@ -449,3 +449,23 @@ fourth is why CEO caught it in the delta review.
 **Reversibility:** decisions only, no code. Once built, Irreversible tier — composed layouts are new persisted user state.
 **Owner:** ceo (session ceo-4), founder-decided, spec by cpo
 **Affects:** Design-Lead (one shared object with two hands in it; one visibility channel only; state must be plain data); CTO (persistence, offline/outbox for edits, conflict handling across a seven-hour gap); QA-Lead (Irreversible tier); anyone touching the export path (§6 promise unchanged).
+
+## 2026-08-06 — §0 is overridden by the founder: every screen gets a taped paper band, and it carries the two clocks
+
+**Context:** The founder used the app on a phone and said the top of the home screen is *"filled empty"* — it needs *"an access section that starts with an image, maybe the times, the clocks like we used to had, or a headline… something well designed."* And between screens, *"a header or a strip… something up there and not just continue the page, because it needs the structure, the layout."* Four of his other observations were measured and all four are true: the page turn is a scroll-snap carousel (`BookObject.tsx:206` — `snap-x snap-mandatory overflow-x-auto` with a decorative `perspective`), the tab-switch jump is structural (`(app)/layout.tsx:38` pads every route, then Today and Book each cancel it and re-apply *different* top padding while Dates and Send do not), 22 of 44 generated assets are never rendered, and the lay probe is laggy in his hand.
+
+**The rule being overridden:** `today/page.tsx` carries *"No masthead, no greeting, nothing above the item (§0). The photograph is Today's masthead."* The bare top was **deliberate law, not an oversight.** The founder overrode it knowingly, having been told it was a rule.
+
+**Decision:** **§0 becomes: nothing above the item except the band.** One physical object — a paper strip taped across the top with washi, torn lower edge — present on **every** route at a **constant height**, contents varying by place. It carries **both city times and the date**. It is explicitly **not** chrome: not a nav bar, not a toolbar, not a floating header.
+
+**Two forms refused, and why they are refusals rather than preferences:**
+- **A search bar** — the founder offered it as an option. Wave 4 *deleted* the Book's search control four days ago on the ruling that **a search control that does not search is a prepared place**, which the law bans outright. Re-adding one re-commits the violation we just paid to fix.
+- **A hamburger ("three lines")** — the app is three places plus the pen, all already present in the dock. The menu would open onto nothing, which is the same violation wearing a different icon.
+
+**Why the clocks, specifically:** `components/home/DualClocks.tsx` **is already built** — both cities, `type-masthead` live-measured at 58.95px, the largest type in the product — and **is imported by nothing.** It has been dead code in the tree since the foundation review. The founder asked for "the clocks like we used to had" without knowing they still exist. This also resolves the standing finding that nothing on any authenticated surface takes the large end of the type scale. The clock **displays**; it still does not **select** — the 2026-08-02 rule that the clock does not drive what is shown is untouched.
+
+**The band is also the fix for the tab-switch jump.** A constant-height object present on every route forces the shared shell that does not currently exist. One structure answers two of the founder's complaints; they were never separate problems.
+
+**Reversibility:** reversible — presentation only, no schema, no persisted state. Expected `risk:full` on LOC and cross-route blast radius, not on data.
+**Owner:** ceo (session ceo-4), founder-decided from three options shown as sketches
+**Affects:** Design-Lead (band material, height, per-route contents, what §0 becomes in the law text); CTO (shared shell, route transition, must host a fixed-height band); frontend-engineer (every route's top offset changes); QA-Lead (cross-route diff, and the band must not introduce a control that does nothing).
