@@ -69,9 +69,29 @@ trunk"* did not happen this time; it was checked, not assumed.
   measurement exactly (−5.3 → 73.2 at y 579 on `main`). **An element that does not render
   in the state you happen to be in is not an element that does not render.**
 
+- **The Tuesday test (LAW §6.1) — PASS.** Run at the trunk via `/review/today-pair`,
+  which carries both states.
+  - **`pair-tuesday`** — nothing arrived; the last photograph is still there, full size,
+    `filter: none`, with no "old" marker, no relative stamp, no empty-state copy and
+    nothing soliciting a post. Underneath it the *previous* day's caption is pressed
+    through the paper — *"Deli guy drew a cat on my coffee"* — history shown without
+    being counted. This is §4.4 rendered literally: *a lamp that has been on since
+    yesterday is still on.*
+  - **`pair-empty`** — a genuinely empty archive renders as **bare textured paper**.
+    Zero images, zero elements, no container, no dashed rectangle, no prompt, no
+    plus-in-a-well. *"Bare paper is a clear table, not an empty container."*
+  - Test criterion — *"if it reads as an empty container waiting to be filled, it
+    fails"* — met in both states.
+  - **A near-miss worth recording:** my automated check reported `solicits: true` on the
+    empty state. That was **my regex matching the review harness's own heading**
+    ("EMPTY ARCHIVE…"), not app copy — the section contains no app text at all. Caught
+    by looking at the capture. Instrumenting a judgment test is useful; trusting the
+    instrument over the picture is not.
+
 **NOT ASSESSED — declared, not folded into a pass**
 
-- The **Tuesday test** (every surface with no photograph) and the **11pm test**.
+- The **11pm test** — a subjective walkthrough, not a measurement. Night captures are
+  committed for whoever runs it; QA-Lead's design-critic is judging from artefacts.
 - The **e2e suite**. Beyond the auth gate, `e2e/playwright.config.ts` injects `TEST_ENV`
   and the dual-sourcing failure is structural: process-env alone boots, `.env.local`
   alone boots, **both together fail "malformed"**. Unfixed, flagged for CTO.
