@@ -353,3 +353,12 @@ fourth is why CEO caught it in the delta review.
 **Reversibility:** reversible
 **Owner:** frontend-engineer (deco-tray)
 **Affects:** any branch touching dock geometry or `--dock-offset`; any agent keying non-white-ground plates; whoever builds the date card or the Tape.
+
+## 2026-08-06 — Law §9.6 corrected: the seam fog was in both modes; the acceptance had profiled only the endpoints
+
+**Context:** The seam falloff still hazed after Wave 0/1. Luminance profiling on `feat/deco-and-tray` showed the fog in BOTH modes (day 129→18 over ~104 CSS px, night 97→18, same shape) — not the day-only mechanism §9.6 recorded. The mid-band held 0.55–0.8 opacity for ~45px; the CEO-approved acceptance measured the steep start and the deep end and assumed the middle.
+**Decision:** §9.6 superseded in place, original kept legible (§1 precedent). Stops shipped in Seam.tsx: 0.6@55%, 0.9@63%, 0.97@74%, sky@93%. Re-measured: fog band 104→24 CSS px; night's slow deepening survives between luminance 40 and 18.
+**Lesson:** A measurement can be as unexamined as a report — checking the ends of a curve is not checking the curve.
+**Reversibility:** reversible
+**Owner:** frontend-engineer (deco-tray), correcting a CEO-approved acceptance
+**Affects:** every design agent loading the law as authoritative; anyone tuning the Seam falloff.

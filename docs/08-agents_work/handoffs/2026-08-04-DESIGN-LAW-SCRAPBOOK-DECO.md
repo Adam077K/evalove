@@ -695,7 +695,13 @@ Scaling matches *density* and cannot fix *character*. Bone-laid was tuned to 134
 
 ### 9.6 Day and night disagree about a light falloff
 
-A slow, long falloff reads correctly at night and as **fog** by day, because the difference is what sits *behind* the transparency — over a bright canvas a long semi-transparent run leaks page-light under the torn edge. The accepted geometry is asymmetric: steep under the fibre (0→0.6 over ~15px), then a long deep end (~90px into `--night-sky`). Light stays on the torn lip; a lip that goes straight to dark reads as a mask rather than an object.
+> **SUPERSEDED 2026-08-06 (measured on `feat/deco-and-tray`).** The mechanism below is half right, and the acceptance behind it was incomplete. The fog was never day-only: profiled at 393×852 in both modes, luminance under the tear fell 129→18 over ~104 CSS px by day and 97→18 by night — the same shape, night simply leaking a dimmer page (behind the transparency sits the canvas: `#F8F5F1` by day, `#BAB1A2` by night, both bright next to the sky). The fog lived in the mid-band, where the accepted stops held 0.55–0.8 opacity for ~45px.
+>
+> The original acceptance — approved by the CEO on endpoint measurements — profiled the steep start and the deep end and assumed the middle. That is the transferable lesson, worth more than the numbers: **a measurement can be as unexamined as a report. Checking the ends of a curve is not checking the curve.**
+>
+> What survives, re-verified: light stays on the torn lip (the steep start was correct), and a lip that goes straight to dark still reads as a mask. What changes: the mid-band must commit (0.6→0.9 over ~20px), and the long deep end runs nearly opaque (0.9→0.97→sky), so the slow deepening that gives night its distance happens between luminance 40 and 18 instead of 129 and 18. Re-measured after the change: the fog band went 104→24 CSS px, and the 24 that remain are the lit lip itself. Stops as shipped in `Seam.tsx`: 0 to 47%, 0.6 @ 55%, 0.9 @ 63%, 0.97 @ 74%, `--night-sky` @ 93% (of the 256px Seam).
+
+**Original finding (superseded, kept legible):** A slow, long falloff reads correctly at night and as **fog** by day, because the difference is what sits *behind* the transparency — over a bright canvas a long semi-transparent run leaks page-light under the torn edge. The accepted geometry is asymmetric: steep under the fibre (0→0.6 over ~15px), then a long deep end (~90px into `--night-sky`). Light stays on the torn lip; a lip that goes straight to dark reads as a mask rather than an object.
 
 ### 9.7 Keying: luminance is wrong for pale objects
 
