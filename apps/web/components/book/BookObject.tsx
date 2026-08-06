@@ -141,14 +141,20 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
         aria-label="Open the book"
         className="block w-full cursor-pointer rounded-[3px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40 focus-visible:ring-offset-2"
       >
-        {/* The held page's photograph starts fetching while the book
-            is still closed: the pages only mount on tap, and a
-            photograph arriving AFTER its page is revealed reads as
-            broken (measured: an empty polaroid frame 260ms into the
-            swing). React hoists this to <head>. */}
+        {/* The held page's photograph and the bone stock start
+            fetching while the book is still closed: the pages only
+            mount on tap, and a material arriving AFTER its page is
+            revealed reads as broken (measured twice: an empty
+            polaroid frame 260ms into the swing; a cold open painting
+            the composition on bare cloth while the bone PNG's first
+            progressive rows were all that had arrived). Every other
+            open-pose material is already warm from the closed pose —
+            bone is the one the cover never shows. React hoists these
+            to <head>. */}
         {returned !== null && returned.photo.width > 0 && (
           <link rel="preload" as="image" href={photoSrc(returned.photo)} />
         )}
+        <link rel="preload" as="image" href="/materials/paper-bone-v2.png" />
         <BookCover leafCount={leafCount} begun={begun} />
       </button>
     );
