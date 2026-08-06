@@ -443,9 +443,22 @@ as a possible prepared place. **It is not.** It is `<Link href="/send">` with
 finding. Those are not the same thing and only one of them is the gate's business.
 
 ### Still open, none blocking
-- **The security audit's last condition is unclosed:** a production build proving the literal
-  `/review/` is absent from `.next/server/edge/chunks/*.js`. **The whole security argument
-  rests on it and it is still reasoning, not evidence.**
+- ~~The security audit's last condition~~ **CLOSED — measured, verdict PASS.** A production
+  build was run and the edge chunk grepped: it contains **every other allowlist literal**
+  (`/_next/`, `/icons/`, `/api/img/`, `/img/`, `/manifest.webmanifest`, `/offline`) and
+  **zero occurrences of `"/review/"`**, plus **zero `NODE_ENV` reads at all** — the ternary
+  was constant-folded and dead-code-eliminated at build time. **A host that sets
+  `NODE_ENV=development` at runtime cannot reopen the prefix, because there is no branch left
+  to take.** `force-dynamic` also verified: no prerendered HTML exists for either harness and
+  the fixture caption is absent from the client bundle. The diff is `+23/−0`, `PUBLIC_PATHS`
+  untouched.
+  Full traversal/encoding matrix run — `..`, `%2e%2e`, `%2F`, case, backslash, double-slash —
+  **all fail closed.** One curiosity, harmless: `/review/İx` (dotted capital I) does match the
+  prefix, but only two routes exist under it so it 404s.
+  **Two P3s, neither blocking:** the traversal test asserts Node's URL parser rather than the
+  deployed server, and the *layout's* `NODE_ENV` read was verified only in the edge bundle,
+  not the Node-runtime one. Impact nil either way — the prefix is physically absent from the
+  production artifact.
 - **Percent-encoded slashes survive `nextUrl.pathname`** — `/img/..%2f..%2ftoday` is public
   **in production on `main` today.** Pre-existing, unowned, unmeasured whether the router
   then resolves it. Task #62.
