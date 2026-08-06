@@ -20,13 +20,15 @@ import { useViewer } from "@/lib/viewer";
  * which the spec rejects outright — so no copy on this surface may
  * suggest the thing knows what the other one *would* say.
  *
- * Bubbles: the viewer speaks in their own colour, the echo answers in
- * the partner's — the colour is a citation, not a voice. The header
- * carries the partner's live presence, because the hours when they're
- * asleep are the hours this surface is for.
+ * Bubbles: the viewer's own words, in their own colour, one per
+ * question sent. The header carries the partner's live presence,
+ * because the hours when they're asleep are the hours this surface
+ * is for.
  *
- * Until the model lands the echo holds the question and says so — a
- * designed limitation, not a fake answer.
+ * Until the model lands, Echo holds the question and says so — a
+ * designed limitation stated once as a fact about the surface, never
+ * simulated as a reply arriving after Echo has "thought". There is no
+ * model behind this yet, so there is no latency to perform.
  */
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
@@ -54,7 +56,7 @@ function presenceLine(
 
 interface Bubble {
   id: number;
-  from: "viewer" | "echo";
+  from: "viewer";
   body: string;
 }
 
@@ -67,7 +69,6 @@ export function EchoChat() {
   const [presence, setPresence] = useState<PresenceGuess | null>(null);
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [draft, setDraft] = useState("");
-  const [thinking, setThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const nextId = useRef(1);
 
@@ -80,25 +81,18 @@ export function EchoChat() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [bubbles, thinking]);
+  }, [bubbles]);
 
+  /* No thinking delay, no fake reply: Echo isn't wired to the record,
+     so it doesn't perform a latency it doesn't have. Sending only
+     holds the question — the viewer's own bubble — in the list;
+     that it isn't answered is a fact about the surface, said once
+     below, not a bubble dressed up as Echo's turn. */
   const send = () => {
     const body = draft.trim();
-    if (body === "" || thinking) return;
+    if (body === "") return;
     setDraft("");
     setBubbles((b) => [...b, { id: nextId.current++, from: "viewer", body }]);
-    setThinking(true);
-    window.setTimeout(() => {
-      setThinking(false);
-      setBubbles((b) => [
-        ...b,
-        {
-          id: nextId.current++,
-          from: "echo",
-          body: `Echo isn't wired to the record yet — the book, the captions, the dates are all still on the other side of that. Until they're joined up it holds the question rather than inventing an answer, so nothing asked here is lost.`,
-        },
-      ]);
-    }, 1100);
   };
 
   const prompts = [
@@ -182,54 +176,41 @@ export function EchoChat() {
             </div>
           </div>
         ) : (
-          <ul className="space-y-3 pb-4">
-            <AnimatePresence initial={false}>
-              {bubbles.map((b) => (
-                <motion.li
-                  key={b.id}
-                  initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={SPRING}
-                  className={`flex ${b.from === "viewer" ? "justify-end" : "justify-start"}`}
-                >
-                  <p
-                    className={`type-body max-w-[80%] rounded-[1rem] px-4 py-2.5 ${
-                      b.from === "viewer"
-                        ? "pill-ink rounded-br-md"
-                        : "card rounded-bl-md text-ink"
-                    }`}
+          <>
+            {/* The honest state — said once, plainly, as a fact about
+                this surface, not a bubble dressed up as Echo's reply.
+                No delay before it: it is true the instant there is a
+                question to hold, so it renders in the same tick as
+                the viewer's first bubble below, not after one. */}
+            <p
+              role="status"
+              className="type-caption mb-3 text-mute"
+            >
+              Echo isn&rsquo;t wired to the record yet — the book, the
+              captions, the dates are all still on the other side of
+              that. Until they&rsquo;re joined up it holds the question
+              rather than inventing an answer, so nothing asked here is
+              lost.
+            </p>
+            <ul className="space-y-3 pb-4">
+              <AnimatePresence initial={false}>
+                {bubbles.map((b) => (
+                  <motion.li
+                    key={b.id}
+                    initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={SPRING}
+                    className="flex justify-end"
                   >
-                    {b.body}
-                  </p>
-                </motion.li>
-              ))}
-              {thinking ? (
-                <motion.li
-                  key="thinking"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={SPRING}
-                  className="flex justify-start"
-                  aria-label="Echo is looking through the record"
-                >
-                  <span className="card flex items-center gap-1.5 rounded-[1rem] rounded-bl-md px-4 py-3.5">
-                    {[0, 1, 2].map((i) => (
-                      <span
-                        key={i}
-                        className="h-1.5 w-1.5 rounded-full bg-mute"
-                        style={{
-                          animation: "breathe 1.2s var(--ease-io) infinite",
-                          animationDelay: `${i * 0.18}s`,
-                        }}
-                      />
-                    ))}
-                  </span>
-                </motion.li>
-              ) : null}
-            </AnimatePresence>
-            <div ref={endRef} />
-          </ul>
+                    <p className="type-body pill-ink max-w-[80%] rounded-[1rem] rounded-br-md px-4 py-2.5">
+                      {b.body}
+                    </p>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+              <div ref={endRef} />
+            </ul>
+          </>
         )}
       </div>
 
@@ -254,7 +235,7 @@ export function EchoChat() {
         <button
           type="submit"
           aria-label="Send"
-          disabled={draft.trim() === "" || thinking}
+          disabled={draft.trim() === ""}
           className="press pill-ink flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
         >
           <ArrowUp size={19} strokeWidth={2.2} />

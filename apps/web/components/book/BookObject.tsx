@@ -11,7 +11,16 @@ import type { IsoDate } from "@/lib/types";
 import type { Return } from "@/lib/resurface";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Spread } from "@/components/spread/Spread";
-import { BookCover, CoverBoard, ForeEdge, LampShade, foreEdgePx } from "./BookCover";
+import {
+  BOARD_HEIGHT_PX,
+  BOARD_WIDTH_PX,
+  BOOK_LEFT_MARGIN_PX,
+  BookCover,
+  CoverBoard,
+  ForeEdge,
+  LampShade,
+  foreEdgePx,
+} from "./BookCover";
 import { BookSheet } from "./BookSheet";
 import { ResurfacedItem } from "./ResurfacedItem";
 import type { BookLeaf } from "./leaves";
@@ -26,8 +35,9 @@ import type { BookLeaf } from "./leaves";
  * for discoverability (two users who will never read a tooltip). The
  * tap must still look like an object opening, not a route changing,
  * so the cover SWINGS on the same rigid-leaf mechanism the days rail
- * proved: a hinged plane, hinge at the spine (off the screen's left
- * edge, where the closed spine already bled), high damping, resting
+ * proved: a hinged plane, hinge at the spine — the board's own left
+ * edge, BOOK_LEFT_MARGIN_PX in from the table's edge, on-screen and
+ * no longer bled off it (proportion spec §1) — high damping, resting
  * inside the drawer-class duration.
  *
  * Four phases, one object:
@@ -172,10 +182,14 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
         className="book-contents outline-none"
       >
         {/* The back board — the open book lies on its own cover.
-            Same cloth, same lamp; the pages sit inside its squares. */}
+            Same cloth, same lamp; the pages sit inside its squares.
+            Sits on the same real 34px table margin as the closed
+            cover and the flap — no bleed to escape any more, so the
+            pages wrapper below no longer needs a compensating pl-9. */}
         <div
-          className="under-lamp relative -ml-9 rounded-[3px] bg-cover bg-center"
+          className="under-lamp relative rounded-[3px] bg-cover bg-center"
           style={{
+            marginLeft: BOOK_LEFT_MARGIN_PX,
             backgroundImage: "url(/materials/book-cloth-olive.webp)",
             boxShadow:
               "0 4px 12px rgba(41,32,24,0.18), 0 10px 28px rgba(41,32,24,0.13)",
@@ -183,7 +197,7 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
         >
           <LampShade />
 
-          <div className="relative flex items-stretch pl-9 pr-1.5">
+          <div className="relative flex items-stretch pr-1.5">
             {/* The pages — the same scroll-driven leaf turn the days
                 rail proved. The vertical padding is headroom for
                 lifted corners and shows the cloth above and below
@@ -308,15 +322,20 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
         />
       )}
 
-      {/* ---- The flap: the front board, swinging on its hinge ---- */}
+      {/* ---- The flap: the front board, swinging on its hinge ----
+          Same BOARD_WIDTH_PX × BOARD_HEIGHT_PX rectangle as the closed
+          cover, at the same BOOK_LEFT_MARGIN_PX — the board is the
+          same board, pixel for pixel, in both poses. `edge` no longer
+          sizes the flap (it used to widen the flap to cover the
+          fore-edge during the swing); the flap is the board only. */}
       <div
         data-phase={phase}
         onAnimationEnd={onFlapAnimationEnd}
         className={`cover-flap absolute top-0 z-20 ${phase === "open" ? "pointer-events-none" : ""}`}
         style={{
-          left: -36,
-          width: `calc(100% + ${36 - edge - 6}px)`,
-          height: "min(540px, 58dvh)",
+          left: BOOK_LEFT_MARGIN_PX,
+          width: BOARD_WIDTH_PX,
+          height: BOARD_HEIGHT_PX,
         }}
       >
         {/* Front face: the same board that lay closed. */}
