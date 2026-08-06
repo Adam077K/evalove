@@ -82,7 +82,13 @@ export function Paper({ stock = "coldpress", children, className }: PaperProps) 
           backgroundSize: spec.size,
         }}
       />
-      <div className="relative">{children}</div>
+      {/* h-full so absolutely-positioned children measure against the
+          whole sheet when a caller stretches the Paper (the opened
+          book's pages): anchored to a content-height box, the
+          bookmark's "bottom of the page" was 175px above the page's
+          bottom. Unstretched Papers are untouched — h-full of an
+          auto parent is auto. */}
+      <div className="relative h-full">{children}</div>
     </div>
   );
 }

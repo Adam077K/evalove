@@ -85,11 +85,6 @@ const GUTTER: CSSProperties = {
     "linear-gradient(to right, rgb(41 32 24 / 0.15), rgb(41 32 24 / 0.05) 14px, rgb(41 32 24 / 0) 36px)",
 };
 
-/** The lamp curve every image material carries, inline because a
-    filter class would be overridden (the Pinned precedent). */
-const RIBBON_FILTER =
-  "drop-shadow(0 2px 4px rgba(41,32,24,0.30)) brightness(calc(1 - var(--lamp-dim, 0) * var(--lamp-brightness-drop, 0.27))) sepia(calc(var(--lamp-dim, 0) * var(--lamp-sepia-saturation, 0.22)))";
-
 export function BookObject({ returned, leaves, leafCount, begun }: BookObjectProps) {
   const [phase, setPhase] = useState<Phase>("closed");
   const insideRef = useRef<HTMLDivElement>(null);
@@ -205,11 +200,21 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                         className="pointer-events-none absolute inset-y-0 left-0 w-10"
                         style={GUTTER}
                       />
-                      {/* The bookmark, resting where the closed tail
-                          hung: the right side, coming over the head
-                          of the page, under everything mounted. On
-                          rightward compositions it disappears under
-                          the figure — a ribbon does. */}
+                      {/* The bookmark, exactly where the closed pose
+                          taught it to be: exiting between the pages
+                          at the foot, lower-right. Draped down the
+                          page from the head it crossed the caption
+                          and the stamp on the Tuesday (text-only)
+                          test — text over burgundy is legible in
+                          neither direction, and a text page has no
+                          figure for the silk to slip under. Down
+                          here the lower page is bare on every
+                          composition. Mirrored (scaleY) so the
+                          asset's twist sits AT the exit — the ribbon
+                          folds as it leaves the pages — and its cut
+                          end rests on the paper; the drop-shadow
+                          offset is negated because the filter is
+                          drawn before the flip. */}
                       <img
                         src="/materials/book-ribbon.webp"
                         alt=""
@@ -218,10 +223,11 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                         height={1024}
                         className="pointer-events-none absolute h-auto w-[68px]"
                         style={{
-                          right: "9%",
-                          top: -12,
-                          transform: "rotate(2.2deg)",
-                          filter: RIBBON_FILTER,
+                          right: "2%",
+                          bottom: -26,
+                          transform: "rotate(1.8deg) scaleY(-1)",
+                          filter:
+                            "drop-shadow(0 -2px 4px rgba(41,32,24,0.30)) brightness(calc(1 - var(--lamp-dim, 0) * var(--lamp-brightness-drop, 0.27))) sepia(calc(var(--lamp-dim, 0) * var(--lamp-sepia-saturation, 0.22)))",
                         }}
                       />
                     </>
