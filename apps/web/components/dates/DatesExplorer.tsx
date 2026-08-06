@@ -146,7 +146,7 @@ export function DatesExplorer() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...SPRING, delay: i * 0.05 }}
-              className="card hover-lift rounded-[1.125rem] p-5"
+              className="card rounded-[1.125rem] p-5"
             >
               <div className="flex items-start gap-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center well rounded-full text-ink">

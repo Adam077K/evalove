@@ -64,7 +64,7 @@ function SessionCard({
   const last = turns[turns.length - 1];
 
   return (
-    <li className="card hover-lift rounded-[1.125rem] p-5">
+    <li className="card rounded-[1.125rem] p-5">
       <div className="flex items-start gap-4">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center well rounded-full text-ink">
           <Icon size={17} strokeWidth={1.8} />
