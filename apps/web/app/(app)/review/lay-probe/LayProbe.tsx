@@ -66,6 +66,16 @@ import { SHADOW, SPRING, mulberry32, seedFromId, toRotation } from "@/components
  * rest from is Mounted's own second PRNG draw for that id — the same
  * drift that photograph would carry if it were ever composed for
  * real. See `settleDrift` below for why only the second draw is used.
+ *
+ * REACH is instrumented, not just built to: §9 gate #1 says the region
+ * under the held object stays within 495 CSS px of the pivot
+ * (355,790) at every moment. A bare "it didn't feel right" from the
+ * founder doesn't say whether the MODEL is wrong or the IMPLEMENTATION
+ * drifted from the geometry it was built to — those are different
+ * problems with different fixes. handleMove tracks the running
+ * farthest-corner distance of the held object's box for the whole
+ * gesture; layDown logs it once, on release, via console.debug — no
+ * UI, nothing visible, nothing shipped, per team-lead/Design-Lead.
  */
 
 // ---------------------------------------------------------------------
@@ -85,6 +95,10 @@ const BOOK_SLIDE_PX = 332;
 // extreme top-left pixel, at full page width, sits a few mm past the
 // circle — a pre-existing approximation in the spec's own measurement,
 // not one this file introduces. Flagged in the return, not hidden.
+// Instrumented at runtime (see reachDistance/maxReachRef) so a NO from
+// the founder is interpretable: model wrong vs. implementation drifted.
+const PIVOT = { x: 355, y: 790 };
+const REACH_PX = 495;
 
 // The open page, §1's measured rectangle, unchanged by the slide —
 // only its own transform moves it.
@@ -129,6 +143,24 @@ function settleDrift(id: string): number {
   const rand = mulberry32(seedFromId(id));
   rand(); // discard — Mounted's own first draw, a rotation this probe fixes instead.
   return toRotation(rand(), -2, 2);
+}
+
+/**
+ * §9 gate #1 (REACH): distance from the thumb pivot to the FARTHEST
+ * corner of the held object's box, at this instant — the whole
+ * region under the object, not just its centre. Called every
+ * pointermove while held; handleMove folds the result into a running
+ * max for the gesture, which layDown logs once on release.
+ */
+function reachDistance(x: number, y: number, w: number, h: number): number {
+  let max = 0;
+  for (const cx of [x, x + w]) {
+    for (const cy of [y, y + h]) {
+      const d = Math.hypot(cx - PIVOT.x, cy - PIVOT.y);
+      if (d > max) max = d;
+    }
+  }
+  return max;
 }
 
 interface PileLayout {
@@ -204,6 +236,7 @@ export function LayProbe() {
   const laidRefs = useRef(new Map<string, HTMLDivElement>());
   const pressRef = useRef<PressBook | null>(null);
   const dragRef = useRef<DragBook | null>(null);
+  const maxReachRef = useRef(0); // §9 gate #1 — running max for the current held gesture.
 
   const registerLaidRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) laidRefs.current.set(id, el);
@@ -245,6 +278,7 @@ export function LayProbe() {
       startX,
       startY,
     };
+    maxReachRef.current = reachDistance(rect.left, rect.top - 6, TILE_W, TILE_H);
     setRisingId(null);
     setLiftedOnce(true); // the first lift — the book/page gap starts closing.
     setHeld({ id: photo.id, photo, originLeft: rect.left, originTop: rect.top });
@@ -275,6 +309,18 @@ export function LayProbe() {
 
     setLaid((prev) => [...prev, { id: d.photo.id, photo: d.photo, xPct, yPct }]);
     setPile((prev) => prev.filter((p) => p.id !== d.photo.id));
+
+    // §9 gate #1 — logged once per gesture, on release. No UI, nothing
+    // visible, nothing shipped: this is so a founder "no" is
+    // interpretable (model wrong vs. implementation drifted), not a
+    // shipped diagnostic.
+    console.debug("[lay-probe] reach", {
+      photoId: d.photo.id,
+      maxReachPx: Math.round(maxReachRef.current),
+      limitPx: REACH_PX,
+      withinLaw: maxReachRef.current <= REACH_PX,
+    });
+
     dragRef.current = null;
     setHeld(null);
   }, []);
@@ -309,6 +355,11 @@ export function LayProbe() {
         if (layer) {
           layer.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.05) rotate(${HAND_ANGLE}deg)`;
         }
+
+        // §9 gate #1 — running max, cheap (no DOM read, reuses x/y
+        // already computed above).
+        const reach = reachDistance(x, y, TILE_W, TILE_H);
+        if (reach > maxReachRef.current) maxReachRef.current = reach;
 
         // Neighbour shift — direct DOM writes only, no React state, so
         // this stays cheap at 60fps with up to two laid neighbours.
