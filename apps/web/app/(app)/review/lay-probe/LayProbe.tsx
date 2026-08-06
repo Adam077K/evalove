@@ -76,6 +76,32 @@ import { SHADOW, SPRING, mulberry32, seedFromId, toRotation } from "@/components
  * farthest-corner distance of the held object's box for the whole
  * gesture; layDown logs it once, on release, via console.debug — no
  * UI, nothing visible, nothing shipped, per team-lead/Design-Lead.
+ *
+ * RESPONSIVENESS FIX (2026-08-06) — founder verdict on phone AND web:
+ * "in the edit mode it's very laggy… and it needs to actually work."
+ * The gesture (take/lift/lay) was not rejected; the implementation
+ * was. Two causes, both read directly in code, neither a per-frame
+ * React state update nor a layout-triggering animated property (both
+ * were already correct and stay that way):
+ *
+ *   1. A 250ms dead hold. The pile tile used to show almost no
+ *      feedback until RISE_START_MS (120ms) fired a 2px rise — a
+ *      quarter-second of near-total unresponsiveness on every single
+ *      pickup. RISE_START_MS is gone: handleDown now starts that same
+ *      rise at pointerdown itself (0ms; see the comment there), still
+ *      eased over a CSS transition, so it is immediate AND continuous
+ *      rather than a sudden jump. PRESS_MS (250ms) is UNCHANGED — it
+ *      still gates commit, so the scroll-vs-pickup distinction
+ *      SLOP_PX/PRESS_MS defend together is intact.
+ *   2. An un-eased pop at commit. The held layer used to jump
+ *      instantly to scale(1.05) rotate(HAND_ANGLE) with zero
+ *      interpolation and hold there, unchanging, for the rest of the
+ *      gesture. handleMove now eases scale/rotate/lift in from a
+ *      neutral resting pose (scale 1, rotate 0, no lift) over
+ *      LIFT_EASE_MS, computed from elapsed-time-since-commit INLINE in
+ *      the same transform string that tracks the finger — see
+ *      handleMove's own comment for why that computation cannot move
+ *      to a CSS transition or a motion/react `animate`.
  */
 
 // ---------------------------------------------------------------------
@@ -83,11 +109,23 @@ import { SHADOW, SPRING, mulberry32, seedFromId, toRotation } from "@/components
 // Measured on integration/wave4 @ a6fbde6, 393×852. Do not re-derive.
 // ---------------------------------------------------------------------
 
-const PRESS_MS = 250;
-const RISE_START_MS = 120;
+// PRESS_MS/LIFT_EASE_MS exported (additive) so a test can assert the
+// timing directly rather than by eye — see __tests__/timing.test.ts.
+export const PRESS_MS = 250; // the hold that tells a pickup apart from a
+// scroll/tap — unchanged by the responsiveness fix below.
 const SLOP_PX = 10;
 const HAND_ANGLE = -3.5; // deg — fixed. It never squares up.
 const BOOK_SLIDE_PX = 332;
+
+// Responsiveness fix (see the file's top docblock). RISE_START_MS (a
+// 120ms gate before the pile tile showed ANY feedback) is gone
+// outright — handleDown starts the rise at pointerdown instead. These
+// three replace the held layer's old instant, un-eased pop: handleMove
+// eases scale/rotate/lift in from a neutral resting pose over
+// LIFT_EASE_MS, computed inline from elapsed-time-since-commit.
+export const LIFT_EASE_MS = 130; // matches the pile tile's own rise transition.
+const HELD_SCALE = 1.05;
+const HELD_LIFT_PX = 6; // the old fixed offset — now eased in, not instant.
 
 // §9 gate #1 (REACH): the pivot is (355,790), the law is 495 CSS px.
 // The working band below (PAGE_SLID_TOP..BAND_BOTTOM) satisfies it for
@@ -128,6 +166,34 @@ const PILE_PHOTOS: Photo[] = [
   PHOTOS["seed-eva-2"],
   PHOTOS["seed-adam-1"],
 ];
+
+/** Cubic ease-out, clamped to [0, 1]. */
+function easeOutCubic(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return 1 - Math.pow(1 - clamped, 3);
+}
+
+/**
+ * The held layer's eased scale/rotate/lift, as a pure function of
+ * elapsed-time-since-commit — the fix for the un-eased pop at commit
+ * (see the file's top docblock, cause #2). Returns numbers only;
+ * handleMove (the one caller) writes them into its OWN transform
+ * string, in the same assignment that tracks the finger 1:1, never
+ * through a CSS transition or a motion/react `animate` — see
+ * handleMove's own comment for why a competing animation system on
+ * this node is exactly the hazard this file's docblock already warns
+ * LaidPhotoView about, and why it applies here too. Exported so the
+ * curve is a plain, testable function of time rather than something
+ * only inspectable by eye.
+ */
+export function easedHeldPose(elapsedMs: number): { scale: number; rotate: number; lift: number } {
+  const eased = easeOutCubic(elapsedMs / LIFT_EASE_MS);
+  return {
+    scale: 1 + (HELD_SCALE - 1) * eased,
+    rotate: HAND_ANGLE * eased + 0, // `+ 0` folds -0 (eased=0, HAND_ANGLE<0) to 0.
+    lift: HELD_LIFT_PX * eased,
+  };
+}
 
 /**
  * The settle drift a laid photograph comes to rest from — Mounted's
@@ -198,7 +264,6 @@ interface PressBook {
   photoId: string;
   startX: number;
   startY: number;
-  riseTimer: number;
   commitTimer: number;
 }
 
@@ -208,6 +273,7 @@ interface DragBook {
   originTop: number;
   startX: number;
   startY: number;
+  commitTime: number; // performance.now() at commit — easedHeldPose's clock.
 }
 
 /** What the FIRST paint of the held layer needs — set once, at commit,
@@ -246,22 +312,17 @@ export function LayProbe() {
   useEffect(
     () => () => {
       const p = pressRef.current;
-      if (p) {
-        window.clearTimeout(p.riseTimer);
-        window.clearTimeout(p.commitTimer);
-      }
+      if (p) window.clearTimeout(p.commitTimer);
     },
     [],
   );
 
   const cancelPress = useCallback(() => {
     const p = pressRef.current;
-    if (p) {
-      window.clearTimeout(p.riseTimer);
-      window.clearTimeout(p.commitTimer);
-    }
+    if (p) window.clearTimeout(p.commitTimer);
     pressRef.current = null;
-    setRisingId(null);
+    setRisingId(null); // eases straight back to rest — same CSS transition
+    // that started the rise; no separate "cancel" animation needed.
   }, []);
 
   /* Commit — the 250ms mark. The object comes up into the hand: lift,
@@ -277,8 +338,9 @@ export function LayProbe() {
       originTop: rect.top,
       startX,
       startY,
+      commitTime: performance.now(), // easedHeldPose's t=0 — the resting pose.
     };
-    maxReachRef.current = reachDistance(rect.left, rect.top - 6, TILE_W, TILE_H);
+    maxReachRef.current = reachDistance(rect.left, rect.top - HELD_LIFT_PX, TILE_W, TILE_H);
     setRisingId(null);
     setLiftedOnce(true); // the first lift — the book/page gap starts closing.
     setHeld({ id: photo.id, photo, originLeft: rect.left, originTop: rect.top });
@@ -294,7 +356,7 @@ export function LayProbe() {
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
     const centerX = d.originLeft + dx + TILE_W / 2;
-    const centerY = d.originTop + dy - 6 + TILE_H / 2;
+    const centerY = d.originTop + dy - HELD_LIFT_PX + TILE_H / 2;
 
     const bandLeft = PAGE.left;
     const bandRight = PAGE.left + PAGE.width;
@@ -333,12 +395,18 @@ export function LayProbe() {
       const startX = e.clientX;
       const startY = e.clientY;
 
-      const riseTimer = window.setTimeout(() => setRisingId(photo.id), RISE_START_MS);
+      // Immediate, not gated behind a 120ms timer: the print starts
+      // lifting the instant the thumb lands (§ responsiveness fix,
+      // top docblock, cause #1). The lift itself still eases in over
+      // the pile tile's own CSS transition (130ms, unchanged below) —
+      // immediate AND continuous, never a sudden jump. PRESS_MS still
+      // gates commit, so a tap/scroll under 250ms never gets this far.
+      setRisingId(photo.id);
       const commitTimer = window.setTimeout(
         () => commit(photo, el, startX, startY),
         PRESS_MS,
       );
-      pressRef.current = { photoId: photo.id, startX, startY, riseTimer, commitTimer };
+      pressRef.current = { photoId: photo.id, startX, startY, commitTimer };
     },
     [commit],
   );
@@ -349,11 +417,26 @@ export function LayProbe() {
       if (d && held?.id === photo.id) {
         const dx = e.clientX - d.startX;
         const dy = e.clientY - d.startY;
-        const x = d.originLeft + dx;
-        const y = d.originTop + dy - 6; // the constant lift offset.
+        const x = d.originLeft + dx; // never eased — tracks the finger 1:1.
+
+        // The pop fix (§ responsiveness fix, top docblock, cause #2):
+        // scale/rotate/lift eased from the resting pose, computed
+        // right here from elapsed-time-since-commit and folded into
+        // THIS SAME transform string alongside x/y. Deliberately not a
+        // CSS transition: this string is rewritten on every
+        // pointermove, and a transition would then be perpetually
+        // chasing a moving target — visible LAG, the exact complaint
+        // this fix answers. Deliberately not motion/react's `animate`
+        // either: the file's own docblock (LaidPhotoView, below)
+        // already explains why a competing animation on this node
+        // stomps the tracked position back to origin — same hazard,
+        // same fix, one node, one string.
+        const elapsed = performance.now() - d.commitTime;
+        const pose = easedHeldPose(elapsed);
+        const y = d.originTop + dy - pose.lift;
         const layer = heldLayerRef.current;
         if (layer) {
-          layer.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.05) rotate(${HAND_ANGLE}deg)`;
+          layer.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${pose.scale}) rotate(${pose.rotate}deg)`;
         }
 
         // §9 gate #1 — running max, cheap (no DOM read, reuses x/y
@@ -475,6 +558,11 @@ export function LayProbe() {
                     zIndex: i + 1,
                     opacity: isHeld ? 0 : 1,
                     boxShadow: SHADOW[2],
+                    // isRising flips at pointerdown itself (handleDown,
+                    // 0ms) — this transition is what makes that flip
+                    // read as a rise instead of a jump; it is the ONLY
+                    // feedback for the first PRESS_MS, so it must never
+                    // go back to being gated behind a timer.
                     transform: `rotate(${L.rotation}deg) translateY(${isRising ? -2 : 0}px)`,
                     transition: "transform 130ms var(--ease-out)",
                     touchAction: "none",
@@ -496,9 +584,15 @@ export function LayProbe() {
 
           {/* ---- THE HELD OBJECT — its own fixed layer, own
               compositor layer, tracks the finger 1:1. First paint
-              reads `held` (render-safe state, set once at commit);
-              every frame after that, handleMove writes straight to
-              this node's style — never through React again. ---- */}
+              reads `held` (render-safe state, set once at commit) and
+              renders the NEUTRAL resting pose — scale 1, rotate 0, no
+              lift, same position the pile tile was already at —
+              because that first paint IS elapsed≈0 for easedHeldPose.
+              Every frame after that, handleMove writes straight to
+              this node's style — never through React again — easing
+              scale/rotate/lift up to the full picked-up pose over
+              LIFT_EASE_MS. See handleMove's own comment for why that
+              computation lives there and not here. ---- */}
           {held && (
             <div
               ref={heldLayerRef}
@@ -512,7 +606,7 @@ export function LayProbe() {
                 zIndex: 50,
                 willChange: "transform",
                 boxShadow: SHADOW[4],
-                transform: `translate3d(${held.originLeft}px, ${held.originTop - 6}px, 0) scale(1.05) rotate(${HAND_ANGLE}deg)`,
+                transform: `translate3d(${held.originLeft}px, ${held.originTop}px, 0) scale(1) rotate(0deg)`,
                 WebkitTouchCallout: "none",
                 userSelect: "none",
               }}
