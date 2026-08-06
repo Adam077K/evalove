@@ -521,6 +521,28 @@ fourth is why CEO caught it in the delta review.
 **Owner:** ceo (session ceo-4), rule authored by design-lead
 **Affects:** anyone adding ornament assets (the rule is now the gate); whoever builds hand-composition (pressed flowers unblock only there); anyone touching `seededPick` or `TapeVariant`.
 
+## 2026-08-07 — Every photograph in the Book was dimmed at night, and every gate was structurally blind to it
+
+**Context:** A whole-app law sweep — the first ever run on this codebase; every prior gate checked only the diff in front of it — found that `.under-lamp` was applied to `BookObject.tsx:198`, the cloth wrapper, which is an **ancestor** of every `img.photo` in the open Book. `.under-lamp` applies `filter: brightness(…)`. **A CSS filter on an ancestor filters the entire composited subtree, and `filter: none` on a descendant cannot undo it** — the child renders, then the ancestor's filter is applied to the result.
+
+**So every photograph in the Book dimmed at night**, in direct breach of the rule `globals.css` states in its own words: *"Photographs are the sole exception and are NEVER dimmed — never give a photograph `.under-lamp`, per the standing rule that at 11pm the brightest thing on the screen is the other one's face."* The code obeyed the letter — no photograph carried the class — and broke the rule by giving it to their parent.
+
+**⚠️ THE LESSON, which is bigger than the bug:** **every QA gate that ever checked this verified that `.photo` computes `filter: none`. It genuinely does.** The check was **structurally incapable** of detecting the defect, and it passed, repeatedly, for the entire life of the Book. This is the same species as the e2e route array that measured the wrong page and the `jsdom` gap that let two files silently not run — **a green check pointed at the wrong thing** — but it is the most consequential instance, because the law it silently broke is the one this product is arguably built on.
+
+**Fix:** the cloth, box-shadow and LampShade move onto an `aria-hidden` sibling layer; the page block is that layer's sibling, painted above it. **This is `Paper.tsx`'s existing pattern — the reason every other paper surface never had this bug.** The lamp is re-aimed, not retuned: `globals.css` untouched, the ×0.73 curve unchanged.
+
+**Second-order catch that would have turned a correct fix into a visible regression:** the removed filter was **silently providing the stacking context**. `useBookTurn.zIndexFor` hands turning leaves z-index 1000+, which would then have escaped over the cover flap (z-20) and the close affordance (z-30). `isolation: isolate` added and tested.
+
+**Corrections to the CEO's brief, all right:** there are **four** inline readers of the lamp curve (`Pinned.tsx:93`, `Polaroid.tsx:99`, `BookCover.tsx:365`, `BookObject.tsx:260`), not the one named — a drift assertion now pins all four to their `:root` tokens. And **`drop-shadow` is a legitimate exemption**: it composites behind an already-rendered subtree and never touches source pixels, which `globals.css` also states in words. **The distinction is encoded in the test rather than banning all ancestor filters** — a blanket ban would have been easier and would eventually have been deleted as a nuisance.
+
+**The regression test is the durable artifact.** It **walks UP** from every `img.photo`; it **parses the dimming class set out of the real `globals.css`**, so a new dimming utility is caught with nobody remembering to update it; it **fails if any surface rendered zero photographs**, so it cannot pass vacuously; and it carries a **trap case** that rebuilds the shipped structure, asserts `.photo` computes `filter: none`, and then proves the walker catches it anyway — *executable documentation of why every previous gate passed.*
+
+**Filed separately, out of scope:** `lib/fixtures/photos.ts` calls `uuid()` at module load, so seeded mounts re-roll every process and `compose.ts`'s documented *"same photograph wears the same frame on every surface, forever"* rule is **unenforceable on fixtures** — on one run all nine fixture photographs drew the polaroid chin.
+
+**Reversibility:** presentation only. Risk tier full (touches every Book surface).
+**Owner:** ceo (session ceo-4); found by code-reviewer's law sweep, fixed and proven by frontend-engineer
+**Affects:** anyone applying `.under-lamp` (put it on a sibling layer, never an ancestor of content); anyone writing a photograph-integrity check (**assert on ancestors, not on the element**); QA-Lead (the diff-only habit is what let this live).
+
 ## 2026-08-06 — The review door fails open on `!== "production"`; the guard becomes `=== "development"`
 
 **Context:** Security audit of the Irreversible-tier middleware change at `origin/main` @ `5beb340`. **Verdict APPROVE_WITH_CONDITIONS, no P1.** The auditor stated which tree it read — `origin/main` via `git show`, explicitly **not** the founder's working tree, whose uncommitted dev-door patch has already misled one agent.
