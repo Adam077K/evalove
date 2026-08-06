@@ -342,3 +342,14 @@ fourth is why CEO caught it in the delta review.
 **Reversibility:** the merges are reversible in principle; the exemption-voiding is a standing process fact, not a code change, and should not be re-litigated without new evidence that the dev server or build have regressed.
 **Owner:** qa-lead
 **Affects:** every future QA-Lead cycle (do not cite dev-hydration or the sw.ts build blocker as accepted noise), any agent relying on a historical Playwright/e2e "it worked" claim (re-verify, don't inherit), CTO (post-merge dependency-install gap on `main`, now fixed).
+
+## 2026-08-06 — The dock is a tray, `--dock-offset` is deleted, and the deco plates each have one home
+
+**Context:** Founder-directed: real deco art in Today's DECO band, and the floating pill dock rebuilt as a physical tool tray (`feat/deco-and-tray`).
+**Decisions:**
+1. `--dock-offset` no longer exists. The tray sits flush to the bottom edge; `--dock-footprint` (declared in `app/layout.tsx`) is now `calc(3.75rem + max(0.5rem, env(safe-area-inset-bottom)))` and is the only dock geometry variable. Any branch reading `--dock-offset` (e.g. `feat/dock-footprint-flow-reserve`) must rebase onto the footprint alone.
+2. `key_assets.py` gained a ground-colour mode: same border-connected flood fill as the white path (§9.7 — never luminance), keyed to a measured flat ground with the unpremultiply target swapped to that ground. Overrides carry the measured values; measure before trusting a tolerance.
+3. Plate placement: the two skylines ship on Today as **two shores with the space between** (display crops from the keyed masters; interleaving the full panoramas inverts depth at phone width — tried twice, failed twice). The ornament border is reserved for the one-card date suggestion. The window interior is reserved for the Tape's playing scene ("dims the room, brings the city up") — cropped fragments of it read as pasted slivers and it must be used whole.
+**Reversibility:** reversible
+**Owner:** frontend-engineer (deco-tray)
+**Affects:** any branch touching dock geometry or `--dock-offset`; any agent keying non-white-ground plates; whoever builds the date card or the Tape.
