@@ -1,0 +1,214 @@
+"use client";
+
+import type { CSSProperties, ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { SETTLE_MS, useBookTurn } from "./useBookTurn";
+
+/**
+ * The stack a spine-hinged turn needs — and the one piece both
+ * `/book` (BookObject.tsx) and `/book/days` share, so the mechanism
+ * exists exactly once. See turn.ts for why this replaced the
+ * scroll-snap carousel, and useBookTurn.ts for the gesture/settle
+ * state machine driving it.
+ *
+ * Split into two exports rather than one bundled component because
+ * the two call sites need the stage and its Prev/Next controls in
+ * different places in the DOM: BookObject.tsx keeps ForeEdge as a
+ * flex sibling of the stage (`items-stretch`, so the fore-edge
+ * matches the page block's own height) while the controls sit below
+ * the whole board, outside that row. `useBookTurn` is lifted to the
+ * caller so both exports share one turn state instead of each owning
+ * a private, disagreeing copy of it.
+ *
+ * Leaves are stacked, not laid in a row: every leaf occupies the
+ * SAME grid cell (`gridArea: "1 / 1"`), which is what lets the
+ * hinge sit at a fixed on-screen point while whatever is under the
+ * turning leaf is already exactly where it needs to be — nothing
+ * slides in from off-screen. CSS Grid's own stacking (rather than
+ * `position: absolute`) is deliberate: an absolutely positioned
+ * stack has no intrinsic height of its own (nothing in normal flow
+ * to measure), which would collapse the whole stage to 0px: a grid
+ * cell auto-sizes to its tallest un-transformed item, which is
+ * exactly BookSheet's own documented contract ("its slots stretch to
+ * the tallest leaf," BookSheet.tsx) — carried over from the old flex
+ * row without a hidden sizing element. (CSS `transform` never
+ * affects layout size, so live rotation never resizes the track.)
+ *
+ * Each leaf is two faces on one hinge, matching `.cover-flap`'s
+ * proven pattern (BookCover.tsx/BookObject.tsx) rather than
+ * inventing a second one: a `transform-style: preserve-3d` wrapper
+ * holding a front face (the caller's BookSheet, `backface-visibility:
+ * hidden`) and a back face (plain bone paper, baked `rotateY(180deg)`,
+ * `backface-visibility: hidden`) — reusing paper-bone-v2.png with the
+ * identical hinge-shade treatment BookObject.tsx's endpaper already
+ * uses, not a new asset. The drop-shadow `filter` sits on an outer,
+ * non-3D wrapper: putting it on the preserve-3d element itself would
+ * force that element flat (the same constraint `.cover-flap`'s own
+ * comment documents), which would silently break the two-face trick.
+ *
+ * Photographs are unaffected: `.photo`'s own `filter: none` (globals
+ * §—"Photographs. Full strength, always") isn't touched by an
+ * ancestor's `drop-shadow`, which only adds a shadow around the
+ * already-rendered subtree and never dims, desaturates or blurs it —
+ * the retired keyframes already proved this coexistence for years
+ * with zero regression.
+ */
+
+export type BookTurn = ReturnType<typeof useBookTurn>;
+
+export interface BookTurnStageProps {
+  /** One already-composed leaf (a `<BookSheet>` element) per page. */
+  leaves: ReactNode[];
+  /** Read by screen readers for the stage as a whole. */
+  ariaLabel: string;
+  className?: string;
+  turn: BookTurn;
+}
+
+const FACE_STYLE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+};
+
+export function BookTurnStage({ leaves, ariaLabel, className, turn }: BookTurnStageProps) {
+  return (
+    <div
+      className={cn("relative touch-pan-y select-none [perspective:1200px]", className)}
+      style={{ display: "grid" }}
+      role="group"
+      aria-label={ariaLabel}
+      onPointerDown={turn.stageHandlers.onPointerDown}
+      onPointerMove={turn.stageHandlers.onPointerMove}
+      onPointerUp={turn.stageHandlers.onPointerUp}
+      onPointerCancel={turn.stageHandlers.onPointerCancel}
+    >
+      {leaves.map((leaf, index) => {
+        const { pose, transition } = turn.poseFor(index);
+        const wrapperStyle: CSSProperties = {
+          gridArea: "1 / 1",
+          position: "relative",
+          zIndex: turn.zIndexFor(index),
+          filter:
+            pose.shadow > 0.004
+              ? `drop-shadow(0 ${(12 * pose.shadow).toFixed(1)}px ${(16 * pose.shadow).toFixed(
+                  1,
+                )}px rgb(41 32 24 / ${(0.18 * pose.shadow).toFixed(3)}))`
+              : "none",
+          transition: transition
+            ? `transform ${SETTLE_MS}ms var(--ease-out), filter ${SETTLE_MS}ms var(--ease-out)`
+            : "none",
+        };
+        const flipStyle = {
+          // Both faces must fill the grid cell exactly, not their own
+          // natural content height: `transform` (below) makes this
+          // element a containing block for the absolutely positioned
+          // back face regardless of `position`, so the back face
+          // already sizes to THIS element's box — but this element's
+          // own box only stretches to match the grid cell's height
+          // (see the file comment) if it, and the front face inside
+          // it, both explicitly claim height: 100% rather than
+          // shrink-to-fit their own content. Without this, a leaf
+          // shorter than the tallest one in the stack would leave the
+          // leaf behind it visible in the gap.
+          height: "100%",
+          transformOrigin: "left center",
+          transformStyle: "preserve-3d",
+          willChange: "transform",
+          transform: `translateY(${pose.translateY}px) rotateY(${pose.rotateY}deg)`,
+          "--leaf-sheen-opacity": pose.sheen,
+        } as CSSProperties;
+
+        return (
+          <div
+            key={index}
+            data-leaf-index={index}
+            style={wrapperStyle}
+            onTransitionEnd={(e) => {
+              if (e.propertyName !== "transform") return;
+              turn.onSettleTransitionEnd(index);
+            }}
+          >
+            <div style={flipStyle}>
+              {/* Front face — the caller's own page. Normal flow: this
+                  is what the grid cell actually measures. height:
+                  100% so a caller's own `h-full` BookSheet (see
+                  BookSheet.tsx) actually reaches a definite height to
+                  fill, instead of resolving to `auto` against a
+                  shrink-to-fit ancestor. */}
+              <div style={{ height: "100%", backfaceVisibility: "hidden" }}>{leaf}</div>
+
+              {/* Back face — plain bone paper, the endpaper treatment
+                  `.cover-flap` already uses (BookObject.tsx), not a new
+                  asset. Visible only once the leaf has rotated past
+                  edge-on. */}
+              <div
+                aria-hidden="true"
+                className="under-lamp"
+                style={{
+                  ...FACE_STYLE,
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                  borderRadius: 2,
+                  backgroundImage: "url(/materials/paper-bone-v2.png)",
+                  backgroundSize: "cover",
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-[inherit]"
+                  style={{
+                    background:
+                      "linear-gradient(to left, rgb(41 32 24 / 0.18), rgb(41 32 24 / 0.04) 22%, rgb(41 32 24 / 0) 45%)",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export interface BookTurnControlsProps {
+  turn: BookTurn;
+  className?: string;
+  /** Rendered in the same row, after the Prev/Next buttons — each
+      caller's own caption or "close the book" affordance. */
+  footer?: ReactNode;
+}
+
+/**
+ * The WCAG 2.5.7 path: a real, single-pointer, keyboard-operable way
+ * to turn the page that isn't the drag gesture. Not optional polish —
+ * every caller of BookTurnStage renders this alongside it.
+ */
+export function BookTurnControls({ turn, className, footer }: BookTurnControlsProps) {
+  return (
+    <div className={cn("mt-1 flex items-center justify-between gap-2", className)}>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={turn.prev}
+          disabled={turn.isFirst}
+          aria-label="Previous page"
+          className="press flex h-11 w-11 items-center justify-center rounded-full text-mute disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+        >
+          <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={turn.next}
+          disabled={turn.isLast}
+          aria-label="Next page"
+          className="press flex h-11 w-11 items-center justify-center rounded-full text-mute disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+        >
+          <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
+        </button>
+      </div>
+      {footer}
+    </div>
+  );
+}
