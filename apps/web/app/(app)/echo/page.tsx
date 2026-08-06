@@ -1,9 +1,4 @@
-import type { Metadata } from "next";
-import { EchoChat } from "@/components/echo/EchoChat";
-
-export const metadata: Metadata = {
-  title: "Echo — Eva & Adam",
-};
+import { redirect } from "next/navigation";
 
 /**
  * Echo — the surface that reads the record back, for the hours when
@@ -16,10 +11,13 @@ export const metadata: Metadata = {
  * (quote the record, never predict the person) folded into the name,
  * so the name does some of the work the copy would otherwise have to.
  *
- * The surface is real; the model behind it is being specced in
- * parallel, and until it lands the echo answers honestly about what
- * it can't yet do rather than inventing an answer.
+ * Founder decision, 2026-08-06 (`.claude/memory/DECISIONS.md`): the
+ * surface list is Today · The Book · Dates — Echo is no longer a
+ * destination, so this route redirects rather than serving `EchoChat`
+ * directly. The component and this file stay on disk (nothing here is
+ * deleted): the strictly-quoting search returns later inside The Book,
+ * once it's wired to the record it quotes from.
  */
 export default function EchoPage() {
-  return <EchoChat />;
+  redirect("/today");
 }
