@@ -105,3 +105,21 @@ export function leafTurnPose(progress: number): LeafTurnPose {
     sheen: arc,
   };
 }
+
+/**
+ * Exact-equality check between two poses. useBookTurn.ts's
+ * `releaseDrag` uses this to detect a settle that would animate
+ * nothing on screen: a released drag can land exactly on the pose it
+ * is about to be told to settle toward (dragged out and back to the
+ * origin, or dragged all the way to the far pose and released right
+ * there). When that happens, no CSS property differs between the
+ * last live frame and the settle's first frame, so no transition
+ * starts and no `transitionend` ever fires — the exact event
+ * `settling` otherwise waits on forever. Exact equality, not a
+ * tolerance: both sides always come from this same pure function
+ * applied to the same or clamp-equal progress values, so there is no
+ * floating-point drift to tolerate.
+ */
+export function posesEqual(a: LeafTurnPose, b: LeafTurnPose): boolean {
+  return a.rotateY === b.rotateY && a.translateY === b.translateY && a.shadow === b.shadow && a.sheen === b.sheen;
+}
