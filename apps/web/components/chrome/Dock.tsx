@@ -128,18 +128,35 @@ function DockTab({
     <Link
       href={tab.href}
       aria-current={active ? "page" : undefined}
-      className={`press relative flex h-11 items-center justify-center rounded-full transition-colors duration-200 ${
-        active ? "px-4 text-on-ink" : "w-11 text-mute"
+      className={`press relative flex h-11 items-center justify-center rounded-[10px] transition-colors duration-200 ${
+        active ? "px-4 text-ink" : "w-11 text-mute"
       }`}
     >
       {active ? (
+        /* The tool you picked up — a paper chip sitting proud of the
+           tray floor, 3px high (static offsets, never animated ones),
+           its face catching the lamp along the top edge, a tight
+           contact shadow beneath it on the floor. Ink on paper: the
+           chip is an object in the light, not a filled control. The
+           old ink capsule was a tab-bar affordance riding on a tray;
+           a capsule that slides is Linear, a lifted tool is a
+           scrapbook. Cut corner (radius-md) because paper is cut —
+           pills are for controls, which this no longer is. */
         <motion.span
           layoutId="dock-active"
           transition={transition}
-          className="pill-ink absolute inset-0 rounded-full"
+          className="absolute inset-x-0 -top-[3px] bottom-[3px] rounded-[10px] border border-line bg-surface"
+          style={{
+            boxShadow:
+              "inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 1px rgba(41, 32, 24, 0.1), 0 4px 10px -2px rgba(41, 32, 24, 0.2)",
+          }}
         />
       ) : null}
-      <span className="relative flex items-center gap-1.5">
+      <span
+        className={`relative flex items-center gap-1.5 ${
+          active ? "-translate-y-[3px]" : ""
+        }`}
+      >
         <Icon size={20} strokeWidth={1.9} />
         {active ? (
           <motion.span
