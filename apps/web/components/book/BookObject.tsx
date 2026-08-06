@@ -193,17 +193,53 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
             Same cloth, same lamp; the pages sit inside its squares.
             Sits on the same real 34px table margin as the closed
             cover and the flap — no bleed to escape any more, so the
-            pages wrapper below no longer needs a compensating pl-9. */}
+            pages wrapper below no longer needs a compensating pl-9.
+
+            THE BOARD IS A LAYER, NOT A WRAPPER. `.under-lamp` used to
+            sit on this element, with the pages inside it. A CSS
+            `filter` composites its entire subtree and then filters the
+            result: every photograph in the open book was dimmed ×0.73
+            and sepia'd at night, and no child-side `filter: none` can
+            undo that — `.photo` genuinely computed `none`, which is
+            why every check that measured the <img> passed. It broke
+            the one rule this product treats as absolute: at 11pm the
+            brightest thing on the screen is the other one's face.
+
+            So the cloth is now a SIBLING layer beneath the pages
+            (Paper.tsx's own precedent, which is why the table never
+            had this bug), and the lamp reaches the cloth alone. The
+            board's LampShade stays INSIDE that layer so the cloth and
+            the shade composite exactly as before — the lamp is not
+            retuned, only re-aimed. The box-shadow moves with it, so
+            the board's cast shadow still dims with the room.
+
+            Two things stop being dimmed besides the photographs, both
+            correctly: the page block's own text (already dim through
+            the night token swap — `.under-lamp` on top was the double
+            dim globals.css §6 forbids) and the mounted items' contact
+            shadows. Both now behave exactly as they do on every other
+            paper surface in the product.
+
+            `isolation: isolate` replaces the stacking context the
+            filter used to create. Not cosmetic: the turning leaves
+            carry z-index 1000+ (useBookTurn.zIndexFor), and without a
+            context here they would paint over the flap (z-20) and the
+            close affordance (z-30) mid-swing. */}
         <div
-          className="under-lamp relative rounded-[3px] bg-cover bg-center"
-          style={{
-            marginLeft: BOOK_LEFT_MARGIN_PX,
-            backgroundImage: "url(/materials/book-cloth-olive.webp)",
-            boxShadow:
-              "0 4px 12px rgba(41,32,24,0.18), 0 10px 28px rgba(41,32,24,0.13)",
-          }}
+          className="relative rounded-[3px]"
+          style={{ marginLeft: BOOK_LEFT_MARGIN_PX, isolation: "isolate" }}
         >
-          <LampShade />
+          <div
+            aria-hidden="true"
+            className="under-lamp absolute inset-0 rounded-[inherit] bg-cover bg-center"
+            style={{
+              backgroundImage: "url(/materials/book-cloth-olive.webp)",
+              boxShadow:
+                "0 4px 12px rgba(41,32,24,0.18), 0 10px 28px rgba(41,32,24,0.13)",
+            }}
+          >
+            <LampShade />
+          </div>
 
           <div className="relative flex items-stretch pr-1.5">
             {/* The pages — a spine-hinged turn (BookTurnStage.tsx),

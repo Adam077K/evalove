@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   title: "Review: today pair — dev",
 };
 
+// Forces this route to render per-request rather than being prerendered at
+// build time. Without this, `next build` still statically generates this
+// page — the layout's `notFound()` changes the response status to 404 and
+// the visible UI, but Next still serializes this page's RSC tree into the
+// static build artifact, embedding every fixture caption and photo URL
+// below in `.next/server/app/review/today-pair.html` regardless of the
+// 404. `force-dynamic` is what actually stops that: with no static artifact
+// to bake anything into, there is nothing to leak from a build output.
+export const dynamic = "force-dynamic";
+
 /**
  * Development review surface — not reachable from the dock.
  *
