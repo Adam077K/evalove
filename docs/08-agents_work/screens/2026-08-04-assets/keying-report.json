@@ -1,39 +1,39 @@
 [
   {
-    "name": "seam-tear-bone",
+    "name": "book-ribbon-brass",
     "action": "keyed",
-    "bg_frac": 0.406,
-    "kept_frac": 0.593,
+    "bg_frac": 0.828,
+    "kept_frac": 0.166,
     "size": [
-      1344,
-      768
+      832,
+      1280
     ],
     "trimmed": [
-      1344,
-      507
+      539,
+      1245
     ],
     "web": [
-      1344,
-      507
+      443,
+      1024
     ],
     "flag": null
   },
   {
-    "name": "seam-tear-coldpress",
+    "name": "book-ribbon-burgundy",
     "action": "keyed",
-    "bg_frac": 0.418,
-    "kept_frac": 0.581,
+    "bg_frac": 0.733,
+    "kept_frac": 0.251,
     "size": [
-      1344,
-      768
+      832,
+      1280
     ],
     "trimmed": [
-      1344,
-      497
+      832,
+      1223
     ],
     "web": [
-      1344,
-      497
+      697,
+      1024
     ],
     "flag": null
   }
