@@ -60,10 +60,17 @@ trunk"* did not happen this time; it was checked, not assumed.
 - **Overflow.** One element, `sr-only` at `clientWidth === 1` — which Design-Lead
   pre-identified as a false alarm, not a defect.
 
+- **§5.5, washi tape left edge ≥ 8 — PASS, measured at 14.7**, identical in light and
+  dark. **This was declared NOT ASSESSED in the first pass and that was my error, not a
+  gap in the build.** The sealed note self-gates: `SealedCard` returns null without an
+  item, and the tape lives inside `showSealed = sealedWhileAsleep && !opened`. I was
+  measuring as the default viewer, for whom it correctly renders nothing. The `?as=eva`
+  preview override reaches the state, and the baseline reproduces Design-Lead's original
+  measurement exactly (−5.3 → 73.2 at y 579 on `main`). **An element that does not render
+  in the state you happen to be in is not an element that does not render.**
+
 **NOT ASSESSED — declared, not folded into a pass**
 
-- **§5.5, washi tape left edge ≥ 8.** The sealed note does not render in the current
-  fixture state, so the element was absent. This is not a pass.
 - The **Tuesday test** (every surface with no photograph) and the **11pm test**.
 - The **e2e suite**. Beyond the auth gate, `e2e/playwright.config.ts` injects `TEST_ENV`
   and the dual-sourcing failure is structural: process-env alone boots, `.env.local`
@@ -105,6 +112,26 @@ A fifth was caught inside this verification: the first blind-stamp measurement r
 PASS while sampling **bands containing both strokes and background**, which tests nothing.
 Isolating stroke interiors produced the real number. **A measurement that passes for the
 wrong reason is worse than one that fails.**
+
+## The auth gate was probed a second time, from a new angle
+
+QA-Lead's `design-critic` could not boot the app from its worktree and proposed
+**symlinking `.env.local` into it** — *"without reading its credentials."* Stopped before
+it executed; no symlink was created in any worktree (verified by `find`).
+
+"Without reading it" is not a mitigation: the symlink makes a live credential usable by
+anything running in that location, and the file protects two real people's photographs.
+It is the same class of action as adding a middleware bypass or minting a token against
+`SESSION_SECRET` — the two a worker's classifier denied this morning, and which the CEO
+refused to authorise or perform.
+
+**Recorded because the pattern matters more than the incident.** The gate has now been
+approached three times in one day, by three different agents, along three different
+technical routes, each reasoning honestly toward it. None was misconduct. The lesson is
+that a boundary holds because it is re-stated every time it is tested, not because it was
+stated once — and that **the correct fix was never a cleverer route in, but removing the
+reason to go in at all**: reviewers work from the diff and from measurements taken at the
+trunk. A reviewer that needs a running server has been given the wrong job.
 
 ## Restoration
 
