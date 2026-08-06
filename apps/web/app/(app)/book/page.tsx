@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, Lock, Search } from "lucide-react";
+import { ArrowUpRight, Lock } from "lucide-react";
 import { whatCameBack } from "@/lib/resurface";
 import { BEGUN, BOOK_ENTRIES, SHARED_DAYS } from "@/lib/fixtures/book";
 import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
@@ -37,14 +37,17 @@ export const metadata: Metadata = {
  *      thumb-following rail as /book/days. See BookObject.
  *
  *   2  The doors — the days in order (chronology one tap away, never
- *      the default), Echo (quoting, never inventing), and the pocket
- *      lock. Quiet type on hairline rules, on the table.
+ *      the default) and the pocket lock. Quiet type on hairline
+ *      rules, on the table. A third door, the strictly-quoting search
+ *      ("Ask for something" — quoting, never inventing), returns here
+ *      once it exists (§2.4); it is not rendered as a prepared place
+ *      in the meantime.
  *
  * Day one — the archive genuinely empty — is a new book: thin
  * fore-edge, bare bone paper when opened. Bare paper is a clear
  * table, not a container waiting to be filled (§4): no copy, no
- * dashed rectangle, no promise. Echo and the days suppress (nothing
- * to quote; an empty room); the lock works from day one.
+ * dashed rectangle, no promise. The days suppress (nothing to quote;
+ * an empty room); the lock works from day one.
  *
  * No count on this page — nothing calls completeDays() or renders a
  * number of days. The colophon dates the object; the fore-edge
@@ -129,33 +132,24 @@ export default function BookPage() {
 
           {/* ---- 2 · The doors — type on hairline rules ---- */}
           <div className="mt-20 px-5 md:px-8">
+            {/* "Ask for something" (Echo, quoting their archive word for
+                word) used to live here. Removed rather than repointed:
+                PRODUCT-VISION-V2 §2.4 says the strictly-quoting search
+                "lives inside The Book. It is not a tab" — so this door
+                is in the right building, just not built yet. Pointing
+                it at /echo (which now redirects to /today) would have
+                made it a search control that does not search: a
+                prepared place, which the behavioural law forbids
+                outright. It returns as a real door once the search
+                itself exists. Do not delete EchoChat.tsx or the
+                streaming endpoint for this. */}
             {returned !== null && (
               <>
-                {/* Ask for something — Echo quotes their archive word
-                    for word; Search glyph, never a regenerate glyph. */}
-                <hr className="border-t border-line" />
-                <Link
-                  href="/echo"
-                  className="stagger-child flex items-center justify-between py-5 press"
-                  style={{ "--i": 0 } as CSSProperties}
-                  aria-label="Ask for something — Echo"
-                >
-                  <span className="pill-ink rounded-full px-4 py-2 type-label">
-                    Ask for something
-                  </span>
-                  <span
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-mute"
-                    aria-hidden="true"
-                  >
-                    <Search size={15} strokeWidth={1.9} />
-                  </span>
-                </Link>
-
                 <hr className="border-t border-line" />
                 <Link
                   href="/book/days"
                   className="stagger-child flex items-center justify-between py-5 press"
-                  style={{ "--i": 1 } as CSSProperties}
+                  style={{ "--i": 0 } as CSSProperties}
                   aria-label="The days in order"
                 >
                   <span className="type-title text-ink">The days in order</span>
@@ -178,7 +172,7 @@ export default function BookPage() {
             <Link
               href="/pocket"
               className="stagger-child flex justify-end py-5 press"
-              style={{ "--i": returned !== null ? 2 : 0 } as CSSProperties}
+              style={{ "--i": returned !== null ? 1 : 0 } as CSSProperties}
               aria-label="The pocket"
             >
               <Lock size={18} strokeWidth={1.9} className="text-mute" aria-hidden="true" />
