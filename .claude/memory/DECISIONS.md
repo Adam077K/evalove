@@ -451,6 +451,7 @@ fourth is why CEO caught it in the delta review.
 **Affects:** Design-Lead (one shared object with two hands in it; one visibility channel only; state must be plain data); CTO (persistence, offline/outbox for edits, conflict handling across a seven-hour gap); QA-Lead (Irreversible tier); anyone touching the export path (§6 promise unchanged).
 
 ## 2026-08-06 — §0 is overridden by the founder: every screen gets a taped paper band, and it carries the two clocks
+> ⚠️ **THE MATERIAL IN THIS ENTRY IS SUPERSEDED.** The band is DECO (night sky), not paper-and-tape — see *"The band is the night, not a piece of paper"* below. Everything else here (that §0 is overridden, that the clocks are its contents, that search and hamburger are refused, that one band also fixes the tab-switch jump) still stands.
 
 **Context:** The founder used the app on a phone and said the top of the home screen is *"filled empty"* — it needs *"an access section that starts with an image, maybe the times, the clocks like we used to had, or a headline… something well designed."* And between screens, *"a header or a strip… something up there and not just continue the page, because it needs the structure, the layout."* Four of his other observations were measured and all four are true: the page turn is a scroll-snap carousel (`BookObject.tsx:206` — `snap-x snap-mandatory overflow-x-auto` with a decorative `perspective`), the tab-switch jump is structural (`(app)/layout.tsx:38` pads every route, then Today and Book each cancel it and re-apply *different* top padding while Dates and Send do not), 22 of 44 generated assets are never rendered, and the lay probe is laggy in his hand.
 
@@ -487,3 +488,35 @@ fourth is why CEO caught it in the delta review.
 **Reversibility:** Irreversible tier — middleware is the app's only real security boundary. Gate: backend-engineer implements → security-engineer audits → QA-Lead verdict → founder confirms merge. **CEO and CTO cannot override a BLOCK here.**
 **Owner:** ceo (session ceo-4), founder-signed-off
 **Affects:** every future worker (browser verification stops being a blocker); QA-Lead (may now require live verification as gate evidence rather than accepting source review); security-engineer (owns the audit); anyone tempted to widen `PUBLIC_PREFIXES` later — do not.
+
+## 2026-08-06 — The band is the night, not a piece of paper
+
+**Context:** The founder chose the top band from three sketches and picked *"the two clocks, as a taped paper band."* Design-Lead was briefed to design into that choice and **argued against it instead.** The founder heard the argument and ruled for Design-Lead, reversing his own earlier pick.
+
+**The argument, which is the whole point:** **paper is what they MADE. The clocks are the distance BETWEEN them, which is DECO by the law's own allocation table.** A clock printed on paper claims the hours apart are something they made. They are not — the distance is the one thing in this product neither of them chose. Putting it on paper is a category error, not a style preference.
+
+**Decision:** the band is `--night-sky` with the current screen's paper **torn down away from it** — the page hangs below the night rather than a strip sitting on the page. `Seam.tsx` **rotated 180°, not flipped**: a mirrored meander would twin Today's existing lower tear, and two identical tear profiles on one screen read as a repeat rather than as material. **No washi tape on the band at all — tape belongs to paper.** Height **56px + safe area**. **Contents identical on every route** — Design-Lead explicitly rejected the CEO's "contents varying by place"; one invariant object on Today, The Book, Dates and Send.
+
+**§0 becomes:** *nothing above the item may be **about** the item.* The band is the single exception: invariant, never empty, **and never a skeleton.** `DualClocks.tsx` currently renders shimmer in a `.well` before hydrate — Design-Lead flags it as precisely the component a future agent will wrongly reach for. The band must never show a loading state; hydration-safety has to be solved another way.
+
+**Unchanged from the superseded entry:** that §0 is overridden at all, that the clocks are the contents, that a search bar and a hamburger are refused, and that one constant-height band is simultaneously the fix for the tab-switch layout jump.
+
+**Reversibility:** presentation only, no schema. Risk tier raised **lite → full** when folded into `feat/shared-route-shell`: it touches every authenticated route and adds always-on, founder-visible UI.
+**Owner:** ceo (session ceo-4) · argued by design-lead · founder reversed his own pick on the argument
+**Affects:** CTO + frontend-engineer (`Seam.tsx` reusability inverts — it hardcodes a `--night-sky` falloff that was a mismatch for a paper band and may now be a direct fit; re-verify rather than carrying forward the earlier "strip the gradient" instruction).
+
+## 2026-08-06 — What earns a flower: a job, or a hand — never an empty-looking page
+
+**Context:** The founder: *"in the book we generated a lot more stuff like the flowers and a lot more visuals that we can add to make it look prettier — think about how we actually do it correctly."* The CEO counted 22 unused assets by grepping for source references. **Design-Lead counted from behaviour instead and found 27 of 44** — `app/dev/materials/page.tsx` calls `notFound()` in production, so every asset whose only reference is that bench has never rendered in the product. **Zero stickers of any kind have ever appeared on a page, including the rose and Eva's sunflower.** Eva's motif — one of the only first-person facts that exists about her — has never been on screen.
+
+**Decision — the rule, which governs every future ornament:** **a material earns its place by doing a job, or by being placed by a hand. "The page looked empty" is never a job.** Fasteners (tape, pins, ties) may be placed by the app, because fastening is a job. **Ornaments may never be app-placed, ever.**
+
+**The consequence, and the elegant part:** no pressed flower can ship before hand-composition exists — **but floral washi tape can**, because a flower printed on a fastener is a flower nobody had to fake placing. `TapeVariant` already declares `floral-pressed` and `floral-blue`; only the image plates are missing. **Eva's sunflower reaches the table this week for the cost of two assets and no change to the law.**
+
+**Dispositions:** 3 place · 6 keep as source (keyed masters and grade steps — retiring them destroys the ability to re-crop) · 10 retire · 8 hold for the drawer. The three sunflower renders are an unconcluded generator bakeoff; **`-v3` won.**
+
+**⚠️ Trap for whoever adds the floral plates:** widening the tape pick list **re-rolls the tape on every item that already exists**, because `seededPick` uses `floor(seed × length)`. Free today because the archive is fixtures. **Not free after the first real photograph** — after that, changing the list silently rewrites history.
+
+**Reversibility:** reversible. Retirements should move assets rather than delete them until the drawer set is settled.
+**Owner:** ceo (session ceo-4), rule authored by design-lead
+**Affects:** anyone adding ornament assets (the rule is now the gate); whoever builds hand-composition (pressed flowers unblock only there); anyone touching `seededPick` or `TapeVariant`.
