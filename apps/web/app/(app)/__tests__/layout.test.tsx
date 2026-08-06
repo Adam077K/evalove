@@ -17,7 +17,10 @@ import type { PropsWithChildren } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/today",
@@ -114,5 +117,43 @@ describe("AppLayout — the shared shell", () => {
     expect(headers).toHaveLength(1);
     expect(headers[0]?.className).toContain("fixed");
     expect(headers[0]?.className).toContain("top-0");
+  });
+
+  /**
+   * The App Router does not unmount a shared layout between sibling
+   * routes; `rerender` into the same container — changing only
+   * `children`, exactly as a route change would — is the in-tree
+   * equivalent of that. `<Band />` and `<Dock />` sit at the same
+   * position in the tree on both renders, so React must reuse the
+   * same component instances rather than tear down and recreate them:
+   * the masthead's own `<header>` node is checked for reference
+   * equality (not just equal markup), and `setInterval` is spied on to
+   * prove the band's 10s tick was armed exactly once — never
+   * re-armed, which is what "must not flicker or re-tick" requires.
+   */
+  it("keeps the band as the same DOM node across a route change, clock uninterrupted", () => {
+    vi.useFakeTimers();
+    const intervalSpy = vi.spyOn(globalThis, "setInterval");
+
+    const { container, rerender } = render(
+      <AppLayout>
+        <div data-testid="today">Today</div>
+      </AppLayout>,
+    );
+    const headerBefore = container.querySelector("header");
+    expect(headerBefore).not.toBeNull();
+    const armsBeforeNav = intervalSpy.mock.calls.length;
+    expect(armsBeforeNav).toBeGreaterThan(0);
+
+    rerender(
+      <AppLayout>
+        <p data-testid="dates">for the two of them — Dates</p>
+      </AppLayout>,
+    );
+
+    expect(container.querySelector("header")).toBe(headerBefore);
+    expect(intervalSpy.mock.calls.length).toBe(armsBeforeNav);
+
+    intervalSpy.mockRestore();
   });
 });
