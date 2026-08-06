@@ -376,9 +376,16 @@ with `picsum.photos` images, zero cookies, zero DB; the one fallback path calls
 ### ⚠️ The finding worth acting on before the security one
 `middleware.ts` transitively imports `lib/env.ts`, which **throws at module evaluation**, and
 **30 of 44 worktrees have no `.env.local` — including the branch that proposed the change.**
-The door may open onto a 500 rather than a harness. *Do not let the seventh "passes QA, fails
-use" be a security change.* **Merge condition: load `/review/book-states` in a bare worktree
-with no cookie and report what happens.**
+**CONFIRMED EMPIRICALLY — no longer a hypothesis.** A worker booted `next dev` both ways and
+hit `/review/book-states` with no cookie: **with** a generated `.env.local` → **`307` to
+`/login`** (correct; the door line is not landed). **Without** one → **`500`,
+`EnvironmentError` thrown at module evaluation in `lib/env.ts` via `lib/session/token.ts`,
+before the request reaches `isPublic()` at all.**
+
+**So the middleware line ALONE does not unblock a worker.** Every worker also needs its own
+`.env.local`, generated from `apps/web/.env.example` — **never copied or symlinked from
+another worktree.** Brief both together, or the door is theatre. *Do not let the seventh
+"passes QA, fails use" be a security change.*
 
 ### Pre-existing, live in production, nobody's ticket yet
 **Percent-encoded slashes survive `nextUrl.pathname`.** `/img/..%2f..%2ftoday` and the same
