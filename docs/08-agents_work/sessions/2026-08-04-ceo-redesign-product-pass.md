@@ -2,10 +2,10 @@
 date: 2026-08-04
 role: ceo
 task: redesign-product-pass
-status: OPEN — Wave 2 in flight; Waves 3 and 4 queued
-tier: full (four branches merged, incl. API + DB write path)
-qa_verdict: PASS ×3 (today-scrapbook-deco, photo-path after one BLOCK cycle, toolchain)
-merged: f5b6b21 → 0743775 on main, pushed
+status: CLOSED — Waves 1, 1b and 2 merged; Wave 3 partly open (Echo undecided, Pocket decided-unbuilt)
+tier: full (eight branches merged over two days, incl. API + DB write path)
+qa_verdict: PASS ×7 (today-scrapbook-deco, photo-path after one BLOCK cycle, toolchain, the-book, book-opens, deco-and-tray; env-example docs-only)
+merged: f5b6b21 → 0743775 → b0f9e12 on main, pushed
 supersedes: nothing; continues 2026-08-04-ceo-stage-1-build.md
 ---
 
@@ -81,3 +81,71 @@ Every browser-automated interaction check ever run on this project was performed
 - `tools/` has never had `pnpm install` run in it — one pre-existing test failure, trivial, separate package
 - Rate limiting on the photo endpoints against a six-month session lifetime — filed as tech debt
 - Eva has still never been asked a question
+
+---
+
+# Continued 2026-08-06 — Wave 2 and the founder's walkthrough
+
+## The ninety seconds that mattered
+
+The founder opened the app and found three things in about a minute and a half: **you cannot open the Book**, the movement between places needs rethinking, and the Deco sections had no real Deco art. Two full QA cycles, six sub-agent reviews and a CEO screenshot pass had surfaced none of them — because everyone was checking whether the code was correct, and he was checking whether the thing worked.
+
+That is the most important line in this file.
+
+## Merged (b0f9e12, 100 files, +2693/−632)
+
+| Branch | What |
+|---|---|
+| `feat/the-book` | cover, thickening fore-edge, spread, burgundy ribbon, the page turn |
+| `feat/book-opens` | **the Book opens on tap**, pages turn inside, three ways out, none the back button |
+| `feat/deco-and-tray` | four real Deco plates as a two-shore composition, dock → physical tray |
+| `fix/env-example` | the dual-source env trap, measured and documented |
+
+## Founder decisions
+
+1. **The Book opens on tap**, not by pulling the ribbon — discoverability over elegance, for two users who will never read a tooltip. CEO recommended the ribbon and was overruled; the call was right.
+2. **The dock becomes the tool tray.** Not a floating pill over a paper table.
+3. **Olive** cover cloth over burgundy.
+4. **The Pocket loses its entrance** — decided, deliberately not built yet to avoid a worktree collision while the Book was under construction.
+5. **Echo remains undecided.** He asked what it was, it was explained, no decision followed. It stays a tab that lies.
+
+## Where the CEO was wrong (three times, all verification)
+
+1. **Briefed a fix that would have re-armed a trap.** Told a worker to replace `.env.example`'s `\$` escaping advice with single-quoting. The worker measured all four quoting forms through both parsers, found backslash is the *only* form that survives, and declined to write the briefed fix. Had it complied it would have broken every future dev boot with the contract's blessing.
+2. **Reported "confirmed it boots" on a log line.** `✓ Ready` is the bundler, not the app — `lib/env.ts` validates on first request. Never made a request. The worker probed the port and found a 500.
+3. **Wrote a raw unescaped env file after accepting the measurement that raw fails.** Twice. Knowing a thing and acting on it are different, and only the artifact tells you which happened.
+
+## §9.6 of the design law was corrected
+
+The recorded finding said day and night disagree about the seam falloff because of what sits behind the transparency. Profiling showed **the fog was in both modes**, same shape, night simply leaking a dimmer page. The CEO-approved acceptance profiled the steep start and the deep end and **assumed the middle**, where ~45px of grey sat.
+
+The original finding is marked superseded and kept legible, §1-style. The transferable lesson, now the headline of that section:
+
+> **A measurement can be as unexamined as a report. Checking the ends of a curve is not checking the curve.**
+
+## The failure, in all six costumes
+
+Same root, six shapes, over two days:
+
+1. A report that was wrong — a branch claimed "no migration needed" while faking the DataGateway.
+2. A report that was absent — a design-critic died mid-sentence; an empty critic return and a clean one are identical in shape and opposite in meaning.
+3. A green check on a broken instrument — every historical Playwright interaction check ran against `127.0.0.1`, which never hydrated.
+4. A correct report written somewhere that does not persist — QA-Lead's entire quality record landed uncommitted in a CEO worktree.
+5. A boot log mistaken for a working app.
+6. A measurement taken in the wrong place.
+
+**The artifact is the only thing that is real.** Every claim about it — including "I measured it" — is still a claim.
+
+## What good looked like
+
+Agents that argued back were right nearly every time. The env worker refused a briefed fix and was correct. QA-Lead held a BLOCK against the CEO, then found a remedy neither party had proposed — reuse the existing byte-scanner server-side. The deco worker rejected three compositions on pixels and reserved two plates for surfaces they suited better than the one they were briefed for. The migration worker returned the dull, correct answer instead of building a story around a gap.
+
+Verification that counted: a held CDP touch with **no `touchEnd` dispatched**, reading live computed style mid-drag. `document.activeElement` read directly rather than inferred from a `useEffect`. Both copies of a shared tool run against the same sources and diffed pixel-by-pixel to max abs diff 0. A guard stashed to watch its own test go red before restoring it.
+
+## Still open
+
+- **Echo** — endpoint works, UI fakes an apology, five founder decisions unresolved in `AI-PARTNER-SPEC.md` §12
+- **The Pocket** — removal decided, unbuilt
+- **Eva has still never been asked a single question**
+- Wave 4 — the design-critic loop never ran; the four tests are partly run
+- `tools/` has never had `pnpm install`; `paper-bone-v2.png` tiles with a faint seam on tall sheets; `.gitignore`'s `*.local` does not match `*.local.mjs`
