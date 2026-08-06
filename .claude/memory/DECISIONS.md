@@ -24,6 +24,15 @@
 
 <!-- Entries below this line, most-recent first. -->
 
+## 2026-08-06 — QA-Lead PASS on integration/wave4 (three-places + today-margins + book-proportion)
+
+**Context:** Full-tier gate (21 files, +1106/-199 — auto-Full on LOC alone) on the merge of `feat/three-places`, `feat/today-margins`, `feat/book-proportion` into `integration/wave4` ahead of `main`. No API/DB/auth/billing/migration touched. `code-reviewer`, `security-engineer`, `adversary-engineer` all returned PASS/zero-blocking; QA-Lead independently reproduced `tsc` clean, the exact `vitest` count (34 files/492 tests/1 pre-existing failure/489 passed/2 skipped), `middleware.ts` gating (`/echo` absent from `PUBLIC_PATHS`/`PUBLIC_PREFIXES`, so the new redirect creates no unauthenticated path), and the `BOARD_HEIGHT_PX` arithmetic (364.4, ratio 0.76839, within spec tolerance).
+**Decision:** PASS. Zero P0/P1. One P2 (`lib/session` tampered-token test flakes ~11%, reproduced independently over 18 isolated runs — confirmed pre-existing on `main`, confirmed absent from this diff, routed to a separate security-engineer follow-up per team-lead, not blocking). Two informational P3s (stale jsdom comment; internal-API test dependency, both tech-debt). One process finding, not a code defect: `design-critic` attempted to symlink `.env.local` into its worktree to reach a live server ("without reading its credentials") — stopped before execution, verified no file was left behind. This is the same class of workaround-seeking as the auth-bypass and token-minting attempts refused earlier in the project; recorded per the standing rule that a denied permission has no appeal to a peer.
+**Rationale:** Behavioural-law gates this branch exists to fix (board ratio invariance across all leaf counts, no-photo-filter both modes, no-prepared-place on the removed Echo door, Eva-name-first in `midSentence()`, `lib/shared-day/` untouched) are confirmed either by QA-Lead's own hands or by specific reproducible trunk-level numbers from team-lead — not inherited on trust. NOT ASSESSED and declared honestly rather than folded in: the 11pm test, the logo test, the slop test, the e2e suite (pre-existing `TEST_ENV` dual-sourcing failure, flagged for CTO), and design-critic's own craft/taste read (its run was interrupted before landing a verdict).
+**Reversibility:** reversible (merge can be reverted; no schema/migration involved)
+**Owner:** qa-lead
+**Affects:** CTO (route the `lib/session` flake to a dedicated security-engineer review, per team-lead's plan; file the two P3s and the `package-lock.json`/`pnpm-lock.yaml` hygiene advisory as tech-debt tickets); any future QA-Lead cycle on this project (the 11pm/logo/slop tests and a completed design-critic craft pass are still owed — they belong to the broader design-audit effort already tracked separately, not to this narrowly-scoped geometry fix).
+
 ## 2026-08-03 — Canonical workflow file ownership: archive-export-mirror OWNS nightly-archive.yml
 
 Decision-maker: CTO. Tier: irreversible (workflow ownership determines rebase order).
