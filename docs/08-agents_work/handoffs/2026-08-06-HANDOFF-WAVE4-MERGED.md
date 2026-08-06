@@ -340,3 +340,64 @@ laundering. It needs the founder's own hand.
 
 **Still his alone, still unrun: the slop test.** Nothing from this wave has been in front of
 his eyes.
+
+---
+
+## §11 · Wave 5 is BUILT — `integration/wave5` @ `d973812`, pushed
+
+**41 files / 544 tests / 541 passed / 1 failed (documented `tools/export`) / 2 skipped ·
+typecheck clean · 33 files, +1886 / −602 · zero merge conflicts across four branches.**
+
+| In the wave | What |
+|---|---|
+| shared shell | one edge-to-edge frame; both hand-rolled escape hatches deleted; `Column` opt-in for Dates/Send |
+| DECO band | `--night-sky`, Seam **rotated 180° (not mirrored)**, `--band-height: calc(56px + safe-area)`, identical every route, **never a skeleton** |
+| page turn | **real spine hinge**, leaves stacked, true back face, Prev/Next for WCAG 2.5.7, reduced-motion honoured |
+| dates debt | wrong regression test corrected (w9→w7), relative-time law breach removed |
+| cleanup | five dead v7 files deleted — **also cleared 3 of 7 pre-existing lint errors** |
+
+**Every worker returned `visual_verification: PENDING` with a specific `needs_eyes` list. Not
+one claimed to have seen a screen.** That is the discipline that was absent when seven PASS
+verdicts landed on an app the founder called unusable.
+
+### ⚠️ The security finding that changes the line you were told to paste
+The review-door guard was going to be `NODE_ENV !== "production"`. **It fails open.**
+`next/dist/bin/next` line 17 is `process.env.NODE_ENV = process.env.NODE_ENV || defaultEnv` —
+Next only *defaults* it. `NODE_ENV=test next build` inlines `"test"`, the condition is true,
+and `/review/` **ships in the production bundle**, with no warning. Also open on `undefined`,
+`""`, `"staging"`, `"Production"`.
+
+**The correct line is `process.env.NODE_ENV === "development"`.** Verified to still cover
+`next dev` and `playwright.config.ts:50`, which pins development explicitly.
+**Audit verdict: APPROVE_WITH_CONDITIONS, no P1** — worst case exposes three fixture pages
+with `picsum.photos` images, zero cookies, zero DB; the one fallback path calls
+`requireSession()` itself.
+
+### ⚠️ The finding worth acting on before the security one
+`middleware.ts` transitively imports `lib/env.ts`, which **throws at module evaluation**, and
+**30 of 44 worktrees have no `.env.local` — including the branch that proposed the change.**
+The door may open onto a 500 rather than a harness. *Do not let the seventh "passes QA, fails
+use" be a security change.* **Merge condition: load `/review/book-states` in a bare worktree
+with no cookie and report what happens.**
+
+### Pre-existing, live in production, nobody's ticket yet
+**Percent-encoded slashes survive `nextUrl.pathname`.** `/img/..%2f..%2ftoday` and the same
+shape under `/_next/` and `/api/img/` are public **in production on `origin/main` today**.
+Unrelated to this wave. Needs its own decision.
+
+### Branches
+`integration/wave5` (pushed, code-complete) · `feat/review-door` (hardened: fail-open
+`NODE_ENV` cases, `ALWAYS_PUBLIC` assertions, `review/layout.tsx` second gate, harness shape
+test; **one red until the line lands, which is the suite working**) ·
+`feat/lay-probe-responsiveness` (separate base) · `feat/floral-washi` (awaiting plate download).
+**Do NOT merge `feat/review-door-dev-only`** — 11 commits stale, would revert 795 lines. The
+test was cherry-picked onto `feat/review-door` instead.
+
+### The two things only the founder can do
+1. **The one line**, in `.worktrees/review-door-2/apps/web/middleware.ts`:
+   `...(process.env.NODE_ENV === "development" ? ["/review/"] : []),`
+2. **Download the washi plates** (URLs in the session log) — CDN egress is blocked from every
+   agent session; confirmed independently from two.
+
+**Then: the visual pass against five `needs_eyes` lists → QA gate → the founder's slop test.
+Nothing in this wave has been seen by a human.**
