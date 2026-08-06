@@ -408,3 +408,59 @@ test was cherry-picked onto `feat/review-door` instead.
 
 **Then: the visual pass against five `needs_eyes` lists → QA gate → the founder's slop test.
 Nothing in this wave has been seen by a human.**
+
+---
+
+## §12 · Wave 5 COMPLETE and gated — `integration/wave5` @ `f23be64`
+
+**Nine merges · 59 files · +3372 / −644 · 47 files / 737 tests / 734 passed · typecheck
+clean · all branches pushed.** With QA-Lead at **Irreversible tier** (`middleware.ts` is in
+the diff).
+
+Shared shell · DECO band · real spine-hinged page turn · the lamp fix · floral washi · the
+review door · dates debt · three law fixes.
+
+### ⚠️ The defect that had survived the entire life of the Book
+**Every photograph in the Book dimmed at night.** `.under-lamp` applies a CSS `filter` and
+sat on an **ancestor** of every `img.photo`; a child cannot escape a parent's filter.
+**Every gate that ever checked this verified `.photo` computes `filter: none` — and it does.**
+The check was structurally incapable of seeing it. Fixed by moving the cloth to a sibling
+layer (`Paper.tsx`'s own pattern). **The regression test walks UP, parses the dimming set out
+of the real `globals.css`, fails if a surface renders zero photographs, and carries a trap
+case that reproduces the shipped structure and proves the old check passes on it.**
+
+### The first pixels anyone has seen
+The review door landed, so `/review/*` is reachable with no session. Verified live:
+`/review/*` → **200**, `/today` and `/book` → **307 `/login`**. Captured at 393×852 both
+modes. **The band renders exactly its specced 56px** — but the Seam falloff runs below it, so
+**paper begins at y=185px (night) / 203px (day) of 852: roughly a quarter of every screen is
+band + falloff, in both modes.** That is the spec working as written (*place, not time*) and
+is a **founder decision, not a defect.**
+
+⚠️ **A CEO error, corrected here so it is not inherited:** the dock's centre `+` was flagged
+as a possible prepared place. **It is not.** It is `<Link href="/send">` with
+`aria-label="Send something small"` — it works. The criticism was aesthetic dressed as a law
+finding. Those are not the same thing and only one of them is the gate's business.
+
+### Still open, none blocking
+- **The security audit's last condition is unclosed:** a production build proving the literal
+  `/review/` is absent from `.next/server/edge/chunks/*.js`. **The whole security argument
+  rests on it and it is still reasoning, not evidence.**
+- **Percent-encoded slashes survive `nextUrl.pathname`** — `/img/..%2f..%2ftoday` is public
+  **in production on `main` today.** Pre-existing, unowned, unmeasured whether the router
+  then resolves it. Task #62.
+- **Fixture photo ids re-roll every process** (`uuid()` at module load), so `compose.ts`'s
+  "same photograph wears the same frame forever" rule is unenforceable on fixtures. Task #69.
+- **`lib/session` token-tamper flake at ~1-in-6** — two independent reproductions.
+- **Register question:** the new resurface label reads *"From 29 July 2026"* against prose-y
+  siblings like *"Left in the evening, in June"*. Anchored to the colophon's `longDate`.
+  Founder's call.
+
+### The environment trap that cost two attempts
+`.env.local` must escape **every `$` in the scrypt hashes as `\$`**. **Quoting does not work**
+— single and double quotes arrive just as mangled in both `@next/env` and Turbopack.
+`.env.example` lines 9-19 document it. The app throws `EnvironmentError` at module
+evaluation, so a wrong `.env.local` looks like a broken app, not a broken env.
+
+**Nothing in this wave has been in front of the founder's eyes. The slop test is his alone
+and remains unrun.**
