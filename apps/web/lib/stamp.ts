@@ -56,7 +56,7 @@ export const STAMP_STRINGS = {
   leftThisEvening: "left in the evening",
   leftLate: "left late",
   // DST note — surfaces once below the window sentence for ~26 days/year
-  dstNote: "Six hours this week, not seven.",
+  dstNote: "Six hours between them, not seven.",
 } as const;
 
 /* ------------------------------------------------------------------
@@ -139,7 +139,7 @@ export function stampFor(leftAt: IsoDateTime, authorSlug: MemberSlug): Stamp {
 }
 
 /**
- * The DST note — "Six hours this week, not seven."
+ * The DST note — "Six hours between them, not seven."
  *
  * Returns the note string during the two windows each year when one zone
  * has changed over to summer time and the other has not (~26 days total).

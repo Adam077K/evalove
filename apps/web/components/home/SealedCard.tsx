@@ -57,7 +57,7 @@ import { Mounted, Taped } from "@/components/materials";
  */
 
 const FIXTURE_NOTE =
-  "The coffee place drew a heart in the foam this morning. Eva should get the better version on Saturday, so Adam left this one unphotographed.";
+  "The coffee place drew a heart in the foam. Eva should get the better version on Saturday, so Adam left this one unphotographed.";
 
 /** This app's own spring. Stiffer than the library default, on purpose. */
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
