@@ -45,8 +45,14 @@ const ROTATION_RANGE: Record<MountedContext, [number, number]> = {
   tape: [-5, 5],
 };
 
-/** Contact shadow spread and opacity per elevation level (1=lightest, 4=heaviest). */
-const SHADOW: Record<1 | 2 | 3 | 4, string> = {
+/**
+ * Contact shadow spread and opacity per elevation level (1=lightest, 4=heaviest).
+ * Exported (additive — no existing behaviour changes) so a caller that must
+ * reuse this exact SHADOW[3]→SHADOW[4] step outside a <Mounted> instance
+ * — the making-metaphor probe's held-object lift — draws the same values
+ * rather than a second, drifting copy.
+ */
+export const SHADOW: Record<1 | 2 | 3 | 4, string> = {
   1: "0 1px 3px rgba(41,32,24,0.08), 0 2px 6px rgba(41,32,24,0.05)",
   2: "0 2px 6px rgba(41,32,24,0.10), 0 4px 12px rgba(41,32,24,0.07)",
   3: "0 2px 8px rgba(41,32,24,0.12), 0 6px 18px rgba(41,32,24,0.09)",
@@ -102,8 +108,13 @@ export interface MountedProps {
 /**
  * Mulberry32 — a compact, high-quality 32-bit PRNG.
  * Returns a float in [0, 1). Deterministic from seed.
+ * Exported (additive) so a caller drawing its OWN sequence from an item's
+ * id — e.g. the making-metaphor probe's seeded settle drift, which needs
+ * the identical second draw this file already makes for `drift` but a
+ * fixed first value instead of a ROTATION_RANGE draw — can replicate it
+ * exactly rather than inventing a second PRNG.
  */
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let s = seed;
   return function () {
     s |= 0;
@@ -117,8 +128,9 @@ function mulberry32(seed: number): () => number {
 /**
  * Derive a deterministic numeric seed from an arbitrary string ID.
  * Uses djb2 — fast, collision-resistant enough for a rotation seed.
+ * Exported alongside {@link mulberry32}, same reason.
  */
-function seedFromId(id: string): number {
+export function seedFromId(id: string): number {
   let hash = 5381;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 33) ^ id.charCodeAt(i);
@@ -128,13 +140,18 @@ function seedFromId(id: string): number {
 
 /**
  * Map a PRNG value in [0, 1) to a rotation in [min, max].
+ * Exported alongside {@link mulberry32}, same reason.
  */
-function toRotation(rand: number, min: number, max: number): number {
+export function toRotation(rand: number, min: number, max: number): number {
   return min + rand * (max - min);
 }
 
-/** Spring for the settle animation — measured from SealedCard.tsx:72. */
-const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
+/**
+ * Spring for the settle animation — measured from SealedCard.tsx:72.
+ * Exported (additive) so a caller settling an item OUTSIDE a <Mounted>
+ * instance still lands on the identical spring rather than a close guess.
+ */
+export const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
 
 export function Mounted({
   id,
