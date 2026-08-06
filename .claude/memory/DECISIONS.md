@@ -539,7 +539,7 @@ fourth is why CEO caught it in the delta review.
 
 **P3 — ruled inert, not a prepared place.** Five new entries set `costConditional: true` with `costNote: ""`. Neither consumer references either field — nothing renders, so there is **no affordance for a user to form an expectation around**, which is what the prepared-place law actually governs. Dead data, not a UI defect. The real consumer is `lib/ai/activity-library.ts:158-159` for the eventual 98-entry library, so **the fields are live contract and must not be "cleaned up" by deletion.**
 
-**P3 — code-reviewer's second finding, supplied by the CEO because it never reached QA-Lead:** `suggestions.ts:354`, `ldr-shareplay-film-night` has `costTier: "paid"` with `costConditional: false` and empty `costNote` — no cost context beyond the tier badge.
+**P3 — the cost UI gap, widened by QA-Lead's final pass beyond what code-reviewer reported.** code-reviewer flagged one entry (`suggestions.ts:354`, `ldr-shareplay-film-night`, `costTier: "paid"` with no note). QA-Lead found the general case: **both consumers special-case only `costTier === "free"`, so `"paid"` and `"cheap"` render no indicator at all** — six new entries are affected. **This is a pre-existing component gap, not introduced by this diff**, and it means the cost model is currently invisible to a user for every tier but free.
 
 **Not assessed, explicitly:** the copy was **never seen rendered**, at any viewport, in either mode — no browser access, `/review/*` still gated. Whether it *reads well* is not this gate's call: **the slop test belongs to the founder alone**, and a design-critic's PASS on it was struck during the Wave 4 gate.
 
