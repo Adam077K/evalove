@@ -1035,6 +1035,128 @@ textarea[aria-invalid="true"] {
   }
 }
 
+/* ------------------------------------------------------------
+   8c · The cover swing — /book opens on tap.
+
+   The founder's ruling: the Book OPENS ON TAP (chosen over
+   dragging the ribbon, for discoverability), but the tap must
+   look like an object opening, not a route changing. So the
+   cover is the same rigid hinged plane as the days rail's leaf
+   (8b) — no second motion vocabulary. The hinge is the spine,
+   which already bleeds off the screen's left edge; the swing is
+   positive rotateY (right edge toward the viewer, per 8b's
+   geometry note), past edge-on at 90°, coming to rest at 172°
+   just short of flat against the table — all of it off-screen
+   left of the hinge by then. The −1.6° table pose unwinds
+   during the swing: you square a book as you open it, and the
+   revealed page block squares up on the same clock
+   (book-square below).
+
+   Timing: 560ms, NOT --dur-4 at --ease-io. Measured on capture:
+   at Vaul's ease the swing was past edge-on (90° — the last
+   visible degree; everything beyond is left of the hinge, off
+   screen) by 120ms, and the cover read as vanishing, not
+   opening. Only the first half of the rotation is ever on
+   screen, so the curve must spend its time there: a 10% pickup
+   (the leaf precedent — the first pixels LIFT, not rotate),
+   then a slow-in, hard-damped sweep. Closing mirrors it, which
+   puts most of the close inside the visible arc — the landing
+   is the readable part. Both rest well under the 400ms law for
+   what is VISIBLE.
+
+   The settled poses ([data-phase="open"]) are PLAIN transforms,
+   not animation fill state: under reduced motion the global
+   kill below removes the animations wholesale, the component
+   jumps phases directly, and the flap must still be off its
+   pages. Filter stays OFF this element — filter forces
+   transform-style: flat and would break the two-face
+   (board/endpaper) backface trick.
+   ------------------------------------------------------------ */
+
+.cover-flap {
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.cover-flap[data-phase="opening"],
+.cover-flap[data-phase="open"] {
+  animation: cover-open 560ms linear both;
+}
+
+.cover-flap[data-phase="open"] {
+  transform: rotateZ(0deg) rotateY(172deg);
+}
+
+.cover-flap[data-phase="closing"] {
+  animation: cover-close 560ms linear both;
+}
+
+/* Per-keyframe timing functions carry the physics; the animation's
+   own function is linear so the segments compose. */
+@keyframes cover-open {
+  0% {
+    transform: rotateZ(-1.6deg) translateY(0px) rotateY(0deg);
+    animation-timing-function: ease-out;
+  }
+  10% {
+    transform: rotateZ(-1.45deg) translateY(-4px) rotateY(9deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.15, 1);
+  }
+  100% {
+    transform: rotateZ(0deg) translateY(0px) rotateY(172deg);
+  }
+}
+
+@keyframes cover-close {
+  0% {
+    transform: rotateZ(0deg) translateY(0px) rotateY(172deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.15, 1);
+  }
+  90% {
+    transform: rotateZ(-1.45deg) translateY(-4px) rotateY(9deg);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: rotateZ(-1.6deg) translateY(0px) rotateY(0deg);
+  }
+}
+
+/* The revealed page block: squares up as the cover opens, re-tilts
+   as it closes. The first 30% carries an opacity ramp so the part
+   of the open book that stands taller than the closed cover arrives
+   with the motion instead of popping in at the tap. */
+.book-contents[data-phase="opening"] {
+  animation: book-square 560ms var(--ease-io) both;
+}
+
+.book-contents[data-phase="closing"] {
+  animation: book-unsquare 560ms var(--ease-io) both;
+}
+
+@keyframes book-square {
+  0% {
+    opacity: 0;
+    transform: rotate(-1.6deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes book-unsquare {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-1.6deg);
+  }
+}
+
 /* Reduced motion: full removal, not a degrade to opacity.
 
    Our animation skill says degrade; Sonner's own shipped CSS

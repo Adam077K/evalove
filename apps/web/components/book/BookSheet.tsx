@@ -22,19 +22,34 @@ import { Paper } from "@/components/materials";
  * inside a page, total freedom). The sheet clips nothing — children
  * may overhang its edges the way a mounted photograph overhangs a
  * real page — so no overflow-hidden here, ever.
+ *
+ * The Paper is h-full so that when a caller stretches the sheet (the
+ * opened book's rail passes className="h-full"; its slots stretch to
+ * the tallest leaf) the PAGE fills the book: pages of one bound book
+ * are the same size, and a short afternoon simply leaves more bare
+ * bone below its content. Callers that don't stretch (a sheet in
+ * flow) are untouched — h-full of an auto parent is auto.
  */
 
 export interface BookSheetProps {
   children: ReactNode;
   className?: string;
+  /**
+   * Things that lie ON the page but UNDER everything composed on it:
+   * the opened book's gutter shade, the ribbon marking a place. They
+   * render between the sheen and the content, so they sit above the
+   * stock and below every mounted item and every line of text — a
+   * photograph is never covered, a caption is never crossed.
+   */
+  underlay?: ReactNode;
 }
 
-export function BookSheet({ children, className }: BookSheetProps) {
+export function BookSheet({ children, className, underlay }: BookSheetProps) {
   return (
     <div className={cn("relative", className)}>
       <Paper
         stock="bone"
-        className="rounded-[2px] border border-line shadow-e2"
+        className="h-full rounded-[2px] border border-line shadow-e2"
       >
         {/* The turn's light — hinge shade and grazing highlight,
             painted on the substrate only, below every mounted thing
@@ -43,6 +58,7 @@ export function BookSheet({ children, className }: BookSheetProps) {
             drives it from scroll position. Both siblings are
             positioned so DOM order keeps content above it. */}
         <div aria-hidden="true" className="leaf-sheen pointer-events-none absolute inset-0" />
+        {underlay}
         <div className="relative px-4 pb-8 pt-6">{children}</div>
       </Paper>
     </div>

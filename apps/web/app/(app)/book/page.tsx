@@ -6,9 +6,8 @@ import { whatCameBack } from "@/lib/resurface";
 import { BEGUN, BOOK_ENTRIES, SHARED_DAYS } from "@/lib/fixtures/book";
 import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
 import { Paper } from "@/components/materials";
-import { BookCover } from "@/components/book/BookCover";
-import { BookSheet } from "@/components/book/BookSheet";
-import { ResurfacedItem } from "@/components/book/ResurfacedItem";
+import { BookObject } from "@/components/book/BookObject";
+import { bookLeaves } from "@/components/book/leaves";
 
 export const metadata: Metadata = {
   title: "The book — Eva & Adam",
@@ -23,26 +22,26 @@ export const metadata: Metadata = {
  * turning away from the window and looking down at your lap: one
  * continuous room, two directions of gaze.
  *
- * One scroll, three moments of one object:
+ * One object and its doors:
  *
- *   1  The closed book — the masthead (§4: "The Book has a cover").
- *      Cloth boards, blind-stamped EVA & ADAM, the colophon, and the
- *      fore-edge whose width is the archive's only expression of
- *      size: felt weight, never a number. The ribbon hangs toward
- *      what it holds.
+ *   1  The book — closed, it is the masthead (§4: "The Book has a
+ *      cover"): cloth boards, blind-stamped EVA & ADAM, the colophon,
+ *      and the fore-edge whose width is the archive's only expression
+ *      of size: felt weight, never a number. TAP IT AND IT OPENS
+ *      (founder's ruling — tap, not a drag, for discoverability) to
+ *      the page the ribbon held: the one item from the archive
+ *      relevant right now. `whatCameBack` (lib/resurface) is the live
+ *      wiring and survives any re-skin. P4's withdrawal condition
+ *      holds: the default view resurfaces by association; absences
+ *      are not addressable. Inside, the kept days turn on the same
+ *      thumb-following rail as /book/days. See BookObject.
  *
- *   2  The opening — scrolling down follows the ribbon to the page it
- *      held: the one item from the archive relevant right now.
- *      `whatCameBack` (lib/resurface) is the live wiring and survives
- *      any re-skin. P4's withdrawal condition holds: the default view
- *      resurfaces by association; absences are not addressable.
- *
- *   3  The doors — the days in order (chronology one tap away, never
+ *   2  The doors — the days in order (chronology one tap away, never
  *      the default), Echo (quoting, never inventing), and the pocket
  *      lock. Quiet type on hairline rules, on the table.
  *
  * Day one — the archive genuinely empty — is a new book: thin
- * fore-edge, bare bone paper at the opening. Bare paper is a clear
+ * fore-edge, bare bone paper when opened. Bare paper is a clear
  * table, not a container waiting to be filled (§4): no copy, no
  * dashed rectangle, no promise. Echo and the days suppress (nothing
  * to quote; an empty room); the lock works from day one.
@@ -80,13 +79,20 @@ function leafCount(): number {
  * full-page captures lie about fixed elements.
  */
 const LAMPLIGHT: CSSProperties = {
+  /* Two layers, both ×--lamp-dim: the amber pool at the lower-left,
+     and the room's shade settling over the top of the view — a lamp
+     that has come DOWN is directional, and the first night capture's
+     uniform dim read as "nothing happened" rather than "the lamp
+     came down" (founder). The shade stays ≤0.12 so night ink never
+     approaches the AA floor set in globals §2. */
   background:
-    "radial-gradient(130% 88% at 6% 102%, rgb(212 137 42 / calc(var(--lamp-dim, 0) * 0.22)), rgb(212 137 42 / 0) 64%)",
+    "radial-gradient(130% 88% at 6% 102%, rgb(212 137 42 / calc(var(--lamp-dim, 0) * 0.30)), rgb(212 137 42 / 0) 64%), linear-gradient(to bottom, rgb(20 16 8 / calc(var(--lamp-dim, 0) * 0.12)), rgb(20 16 8 / 0) 42%)",
 };
 
 export default function BookPage() {
   const returned = whatCameBack(new Date());
   const leaves = leafCount();
+  const pages = bookLeaves();
 
   return (
     /* Escape the (app) column on all four sides — the room runs edge
@@ -108,31 +114,20 @@ export default function BookPage() {
 
           <h1 className="sr-only">The book</h1>
 
-          {/* ---- 1 · The closed book ---- */}
+          {/* ---- 1 · The book — tap to open, swipe to turn ---- */}
           {/* pr-6 keeps the fore-edge fully on screen with room to
               grow; the spine takes the one bleed edge on the left.
               The bottom margin clears the hanging ribbon's tail. */}
           <div className="mb-48 pr-6">
-            <BookCover leafCount={leaves} begun={BEGUN} />
+            <BookObject
+              returned={returned}
+              leaves={pages}
+              leafCount={leaves}
+              begun={BEGUN}
+            />
           </div>
 
-          {/* ---- 2 · The opening ---- */}
-          <div className="px-5 md:px-8">
-            {returned !== null ? (
-              <BookSheet>
-                <ResurfacedItem returned={returned} />
-              </BookSheet>
-            ) : (
-              /* Day one: bare paper. A clear table, not an empty
-                 container — no copy, no reserved rectangle. The
-                 sheet's height is a page's presence, nothing more. */
-              <BookSheet>
-                <div className="h-[42dvh]" aria-hidden="true" />
-              </BookSheet>
-            )}
-          </div>
-
-          {/* ---- 3 · The doors — type on hairline rules ---- */}
+          {/* ---- 2 · The doors — type on hairline rules ---- */}
           <div className="mt-20 px-5 md:px-8">
             {returned !== null && (
               <>

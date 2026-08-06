@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import type { Photo, SharedDay } from "@/lib/types";
 import { Spread } from "@/components/spread/Spread";
 import { BookSheet } from "@/components/book/BookSheet";
-import { SHARED_DAYS } from "@/lib/fixtures/book";
-import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
-import { ADAM, EVA } from "@/lib/fixtures/members";
-import { PHOTOS } from "@/lib/fixtures/photos";
+import { bookLeaves } from "@/components/book/leaves";
 
 export const metadata: Metadata = {
   title: "The days in order — Eva & Adam",
@@ -18,38 +14,12 @@ export const metadata: Metadata = {
  *
  * The existing Spread snap rail moves here unchanged. It is reachable
  * from The Book's default view; the default view is what came back.
- *
- * The guarantee that makes this view safe is already in the fixture:
- * `SHARED_DAYS` is a list of days that happened, never a date range
- * iterated into a grid. A missed day has no row. Nothing here may
- * iterate a date range.
+ * The leaves themselves now live in `components/book/leaves` because
+ * the opened book on /book turns the same pages.
  */
 
-interface Leaf {
-  day: SharedDay;
-  evaPhoto?: Photo;
-  adamPhoto?: Photo;
-}
-
-function leaves(): Leaf[] {
-  const daily = Object.values(PHOTOS).filter((p) => p.kind === "daily");
-  return SHARED_DAYS.filter(
-    (d) => d.date !== FIXTURE_TODAY && (d.evaPosted || d.adamPosted),
-  )
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .map((day) => ({
-      day,
-      evaPhoto: daily.find(
-        (p) => p.sharedDay === day.date && p.authorMemberId === EVA.id,
-      ),
-      adamPhoto: daily.find(
-        (p) => p.sharedDay === day.date && p.authorMemberId === ADAM.id,
-      ),
-    }));
-}
-
 export default function DaysPage() {
-  const pages = leaves();
+  const pages = bookLeaves();
 
   return (
     <div>
