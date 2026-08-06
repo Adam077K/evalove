@@ -20,6 +20,10 @@ export default defineConfig({
     // setup file is harmless for them — it just sets some env vars that go unused.
     setupFiles: ["./lib/__tests__/setup-env.ts"],
     include: [
+      // Root-level tests for files that live at the app root itself
+      // (middleware.ts and friends) rather than under lib/, app/, or
+      // components/ — a sibling __tests__ dir, same convention as the rest.
+      "__tests__/**/*.test.{ts,tsx}",
       "lib/**/*.test.ts",
       "app/**/*.test.{ts,tsx}",
       "components/**/*.test.{ts,tsx}",
