@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Column } from "@/components/chrome/Column";
 import { QuickSend } from "@/components/send/QuickSend";
 
 export const metadata: Metadata = {
@@ -12,5 +13,9 @@ export const metadata: Metadata = {
  * trying; nothing here ever dead-ends.
  */
 export default function SendPage() {
-  return <QuickSend />;
+  return (
+    <Column>
+      <QuickSend />
+    </Column>
+  );
 }
