@@ -31,6 +31,45 @@ describe("RELATIVE_TIME_PATTERN — historical breaches (must fail)", () => {
   });
 });
 
+describe("RELATIVE_TIME_PATTERN — second sweep, 2026-08-07 (must fail)", () => {
+  /**
+   * Two of these are not hypothetical — they were live breaches in the
+   * tree when this sweep started (see lib/copy-law.ts's own header
+   * comment): SealedCard.tsx's "this morning" and stamp.ts's dstNote
+   * "this week". The rest are misses the same sweep verified against the
+   * widened alternation before it shipped, not yet seen live.
+   */
+  const cases: [string, string][] = [
+    ["components/home/SealedCard.tsx (fixed) — was live", "drew a heart in the foam this morning"],
+    ["lib/stamp.ts dstNote (fixed) — was live", "Six hours this week, not seven"],
+    ["spelled-out numeral", "two days ago"],
+    ["vague quantity", "a couple of days ago"],
+    ["vague quantity", "a few hours ago"],
+    ["bare unit, no numeral", "moments ago"],
+    ["bare unit, no numeral", "days ago"],
+    ["last + night", "last night"],
+    ["last + week", "last week"],
+    ["last + month", "last month"],
+    ["last + year", "last year"],
+    ["last + weekend", "last weekend"],
+    ["this + week", "this week"],
+    ["this + weekend", "this weekend"],
+    ["this + month", "this month"],
+    ["this + year", "this year"],
+    ["forward-relative", "tomorrow"],
+    ["forward-relative, spelled-out", "in three days"],
+    ["forward-relative, digit-led", "in 2 weeks"],
+    ["idiom", "the other day"],
+    ["idiom", "a while back"],
+    ["idiom", "a while ago"],
+    ["bare", "earlier"],
+  ];
+
+  it.each(cases)("%s: %j matches", (_site, text) => {
+    expect(text).toMatch(RELATIVE_TIME_PATTERN);
+  });
+});
+
 describe("RELATIVE_TIME_PATTERN — category cases (must pass)", () => {
   /**
    * Four phrases, live from lib/fixtures/suggestions.ts, that name a kind
