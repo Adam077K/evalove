@@ -9,6 +9,7 @@ import { ChevronLeft } from "lucide-react";
 
 import type { IsoDate } from "@/lib/types";
 import type { Return } from "@/lib/resurface";
+import { photoSrc } from "@/lib/fixtures/resolve";
 import { Spread } from "@/components/spread/Spread";
 import { BookCover, CoverBoard, ForeEdge, LampShade, foreEdgePx } from "./BookCover";
 import { BookSheet } from "./BookSheet";
@@ -145,6 +146,14 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
         aria-label="Open the book"
         className="block w-full cursor-pointer rounded-[3px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40 focus-visible:ring-offset-2"
       >
+        {/* The held page's photograph starts fetching while the book
+            is still closed: the pages only mount on tap, and a
+            photograph arriving AFTER its page is revealed reads as
+            broken (measured: an empty polaroid frame 260ms into the
+            swing). React hoists this to <head>. */}
+        {returned !== null && returned.photo.width > 0 && (
+          <link rel="preload" as="image" href={photoSrc(returned.photo)} />
+        )}
         <BookCover leafCount={leafCount} begun={begun} />
       </button>
     );
@@ -209,7 +218,7 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                         height={1024}
                         className="pointer-events-none absolute h-auto w-[68px]"
                         style={{
-                          right: "13%",
+                          right: "9%",
                           top: -12,
                           transform: "rotate(2.2deg)",
                           filter: RIBBON_FILTER,

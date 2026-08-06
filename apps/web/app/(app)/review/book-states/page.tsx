@@ -4,7 +4,9 @@ import type { Photo, SharedDay } from "@/lib/types";
 import { PHOTOS } from "@/lib/fixtures/photos";
 import { SHARED_DAYS } from "@/lib/fixtures/book";
 import { BookCover } from "@/components/book/BookCover";
+import { BookObject } from "@/components/book/BookObject";
 import { BookSheet } from "@/components/book/BookSheet";
+import type { BookLeaf } from "@/components/book/leaves";
 import { ResurfacedItem } from "@/components/book/ResurfacedItem";
 import { Spread } from "@/components/spread/Spread";
 
@@ -70,6 +72,13 @@ const TEXT_MATCH: Return = {
 
 const PAIR_DAY: SharedDay = SHARED_DAYS.find((d) => d.date === "2026-07-30")!;
 const SINGLE_DAY: SharedDay = SHARED_DAYS.find((d) => d.date === "2026-07-31")!;
+
+/* Leaves for the openable book states — a fixed pair so the turn
+   inside the object can be exercised against known compositions. */
+const REVIEW_LEAVES: BookLeaf[] = [
+  { day: SINGLE_DAY, evaPhoto: PHOTOS["d0731-eva"] },
+  { day: PAIR_DAY, evaPhoto: PHOTOS["d0730-eva"], adamPhoto: PHOTOS["d0730-adam"] },
+];
 
 function Label({ id, children }: { id: string; children: string }) {
   return (
@@ -168,6 +177,32 @@ export default function ReviewBookStatesPage() {
           <BookSheet>
             <Spread day={SINGLE_DAY} evaPhoto={PHOTOS["d0731-eva"]} />
           </BookSheet>
+        </section>
+
+        {/* The openable object itself — tap the cover. State 8 forces
+            the Tuesday test (text-only held page) through the whole
+            interaction; state 9 is day one, opening to bare paper. */}
+        <section aria-labelledby="s-book-open" className="overflow-x-clip pb-16">
+          <Label id="s-book-open">
+            State 8 — the book, openable (tap; text-only held page)
+          </Label>
+          <div className="pr-6">
+            <BookObject
+              returned={TEXT_MATCH}
+              leaves={REVIEW_LEAVES}
+              leafCount={6}
+              begun="2026-08-02"
+            />
+          </div>
+        </section>
+
+        <section aria-labelledby="s-book-day-one" className="overflow-x-clip pb-16">
+          <Label id="s-book-day-one">
+            State 9 — the book, day one (opens to bare paper)
+          </Label>
+          <div className="pr-6">
+            <BookObject returned={null} leaves={[]} leafCount={0} begun="2026-08-02" />
+          </div>
         </section>
       </div>
     </div>
