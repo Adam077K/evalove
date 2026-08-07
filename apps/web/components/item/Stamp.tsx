@@ -24,7 +24,8 @@
  * No icon, no chip, no card, no background — on either ground.
  */
 
-import type { IsoDateTime, MemberSlug } from "@/lib/types";
+import type { IanaTimeZone, IsoDateTime, MemberSlug } from "@/lib/types";
+import { localTime } from "@/lib/time";
 import { stampFor } from "@/lib/stamp";
 
 interface StampProps {
@@ -58,4 +59,44 @@ export default function Stamp({ leftAt, authorSlug, on = "paper" }: StampProps) 
       {stamp.author} · {stamp.other}
     </p>
   );
+}
+
+/**
+ * The mark for an item nobody signed (founder decision, 2026-08-07).
+ *
+ * `Stamp` above exists to report the distance a photograph crossed: what the
+ * OTHER one was doing when THIS one was left. An unsigned photograph was not
+ * left by one of them for the other — it belongs to the day, not to a
+ * sender — so there is no gap to report and no "other" to describe. This
+ * renders only what stays true regardless: the instant, read in the zone
+ * the archive recorded for it (`Photo.sharedDayTz`, always present whether
+ * or not the photo is signed). No name, no condition, no invented author —
+ * an unsigned photo carrying no byline at all is the honest answer here
+ * (DESIGN-LAW-SCRAPBOOK-DECO §2: an ambiguous author gets the app's own
+ * voice, never either hand; this is the same principle applied to the
+ * stamp's voice rather than the caption's).
+ *
+ * Same two grounds as `Stamp`, same absolute-instant law, same position in
+ * the layout — so an unsigned item does not leave a visibly different-shaped
+ * hole where the stamp would have been.
+ */
+export function UnsignedMark({
+  leftAt,
+  tz,
+  on = "paper",
+}: {
+  /** The UTC instant at which the item was left. Stored `createdAt`. */
+  leftAt: IsoDateTime;
+  /** The zone to read the instant in. `Photo.sharedDayTz`. */
+  tz: IanaTimeZone;
+  /** @default "paper" */
+  on?: "paper" | "night";
+}) {
+  const time = localTime(leftAt, tz);
+
+  if (on === "night") {
+    return <p className="type-micro normal-case text-night-mute leading-snug">{time}</p>;
+  }
+
+  return <p className="type-micro normal-case text-mute leading-snug">{time}</p>;
 }

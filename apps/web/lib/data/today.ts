@@ -72,7 +72,10 @@ export async function liveTodayObject(
       limit: IMPRESSION_POOL_SIZE,
     });
     recentDailies = photos.map((p) => {
-      const slug = slugById.get(p.authorMemberId);
+      // An unsigned daily should never exist (`commitPhoto` refuses one —
+      // `lib/data/photos.ts`), but this stays null-safe rather than trusting
+      // that invariant to hold forever.
+      const slug = p.authorMemberId === null ? undefined : slugById.get(p.authorMemberId);
       return slug === undefined ? p : withSlug(p, slug);
     });
     lastLeft = recentDailies[0];

@@ -35,7 +35,9 @@ export interface PhotoRow {
   id: string;
   client_uuid: string;
   kind: PhotoKind;
-  author_member_id: string;
+  /** `null` for a deliberately unsigned photo (migration 12). See the note
+      on `Photo.authorMemberId` in `lib/types.ts`. */
+  author_member_id: string | null;
   attribution_source: AttributionSource;
 
   shared_day: string;

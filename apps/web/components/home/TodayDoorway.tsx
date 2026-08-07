@@ -33,7 +33,11 @@ import { ArrowUpRight } from "lucide-react";
 import type { Return } from "@/lib/resurface";
 import { thumbSrc } from "@/lib/fixtures/resolve";
 import { Mounted } from "@/components/materials";
-import { authorSlugOf, DISPLAY_NAME } from "@/components/book/compose";
+import {
+  authorshipOf,
+  DISPLAY_NAME,
+  unsignedHandClass,
+} from "@/components/book/compose";
 
 interface TodayDoorwayProps {
   /** From `whatCameBack` against the real archive, computed by the page. */
@@ -47,8 +51,12 @@ export function TodayDoorway({ returned }: TodayDoorwayProps) {
 
 function DoorwayCorner({ returned }: { returned: Return }) {
   const { label, photo } = returned;
-  const authorSlug = authorSlugOf(photo);
-  const hand = authorSlug === "eva" ? "font-eva text-[21px]" : "font-adam text-[17px]";
+  const authorship = authorshipOf(photo);
+  const hand = authorship.signed
+    ? authorship.slug === "eva"
+      ? "font-eva text-[21px]"
+      : "font-adam text-[17px]"
+    : unsignedHandClass();
   const hasImage = photo.width > 0 && photo.height > 0;
 
   return (
@@ -91,7 +99,12 @@ function DoorwayCorner({ returned }: { returned: Return }) {
                 <div className="w-[26%] shrink-0 overflow-hidden">
                   <img
                     src={thumbSrc(photo)}
-                    alt={photo.caption ?? `A photograph by ${DISPLAY_NAME[authorSlug]}`}
+                    alt={
+                      photo.caption ??
+                      (authorship.signed
+                        ? `A photograph by ${DISPLAY_NAME[authorship.slug]}`
+                        : "A photograph from that day")
+                    }
                     className="photo block h-auto w-full"
                     loading="lazy"
                   />
