@@ -133,6 +133,11 @@ const ALLOWLIST: AllowlistEntry[] = [
   { file: "app/page.tsx", text: "/today", reason: "redirect target, a route path" },
   { file: "components/auth/LoginForm.tsx", text: "/today", reason: "post-login redirect target, a route path" },
   { file: "components/chrome/Dock.tsx", text: "/today", reason: "tab href, a route path" },
+  {
+    file: "app/(app)/today/page.tsx",
+    text: "@/lib/data/today",
+    reason: "module import specifier (lib/data/today.ts, the live Today composition), not prose",
+  },
 
   // "Today" the proper noun — the room's own name (the dock tab, the page
   // title, the region landmark), not a claim about when something

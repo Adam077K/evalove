@@ -2,12 +2,10 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Lock } from "lucide-react";
-import { whatCameBack } from "@/lib/resurface";
-import { BEGUN, BOOK_ENTRIES, SHARED_DAYS } from "@/lib/fixtures/book";
-import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
 import { Paper } from "@/components/materials";
 import { BookObject } from "@/components/book/BookObject";
-import { bookLeaves } from "@/components/book/leaves";
+import { photoDeps } from "@/lib/data";
+import { liveBookLeaves, liveWhatCameBack } from "@/lib/data/archive";
 
 export const metadata: Metadata = {
   title: "The book — Eva & Adam",
@@ -53,20 +51,16 @@ export const metadata: Metadata = {
  * number of days. The colophon dates the object; the fore-edge
  * carries its weight. Forced-state rendering for QA lives at
  * /review/book-states; no state-override parameter here, ever.
+ *
+ * `leafCount`, `leaves`, `returned` and `begun` are all real now —
+ * `liveBookLeaves`/`liveWhatCameBack` (`lib/data/archive.ts`) read the
+ * database via `listPhotos`, with fixtures reachable only from
+ * /review/book-states and never from here. KNOWN GAP: `liveBookLeaves`
+ * counts kept DAILY days only — the fixture's `leafCount` also added the
+ * opening gathering's curated `BOOK_ENTRIES` pages, which live in
+ * `book_entries` (`lib/data/book.ts`) and were out of scope for this pass.
+ * The fore-edge will read thin until that table is wired in too.
  */
-
-/**
- * How many leaves the book holds: kept days (days that happened —
- * SHARED_DAYS is a list of days, never an iterated range) plus the
- * gathering's curated pages, two entries to a leaf. Feeds the
- * fore-edge width only. Never rendered as a number.
- */
-function leafCount(): number {
-  const keptDays = SHARED_DAYS.filter(
-    (d) => d.date !== FIXTURE_TODAY && (d.evaPosted || d.adamPosted),
-  ).length;
-  return keptDays + Math.ceil(BOOK_ENTRIES.length / 2);
-}
 
 /**
  * The reading lamp, lower-left (§1: "the same paper stocks lit by
@@ -92,10 +86,13 @@ const LAMPLIGHT: CSSProperties = {
     "radial-gradient(130% 88% at 6% 102%, rgb(212 137 42 / calc(var(--lamp-dim, 0) * 0.30)), rgb(212 137 42 / 0) 64%), linear-gradient(to bottom, rgb(20 16 8 / calc(var(--lamp-dim, 0) * 0.12)), rgb(20 16 8 / 0) 42%)",
 };
 
-export default function BookPage() {
-  const returned = whatCameBack(new Date());
-  const leaves = leafCount();
-  const pages = bookLeaves();
+export default async function BookPage() {
+  const deps = photoDeps();
+  const now = new Date();
+  const [returned, { leaves: pages, leafCount: leaves, begun }] = await Promise.all([
+    liveWhatCameBack(deps, now),
+    liveBookLeaves(deps, now),
+  ]);
 
   return (
     /* The shell is edge-to-edge by default and already seats this room
@@ -124,7 +121,7 @@ export default function BookPage() {
               returned={returned}
               leaves={pages}
               leafCount={leaves}
-              begun={BEGUN}
+              begun={begun}
             />
           </div>
 

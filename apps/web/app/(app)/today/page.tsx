@@ -1,20 +1,40 @@
 /* eslint-disable @next/next/no-img-element -- the skylines are keyed
    illustration plates; the optimizer must never re-encode their alpha. */
 
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { Paper, Seam } from "@/components/materials";
-import { TodayPair, todaysObject } from "@/components/home/TodayPair";
+import { TodayPairContent } from "@/components/home/TodayPair";
 import { TodayDoorway } from "@/components/home/TodayDoorway";
 import { SealedCard } from "@/components/home/SealedCard";
 import Stamp from "@/components/item/Stamp";
-import { WINDOW_STRINGS, EVA } from "@/lib/fixtures/members";
-import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
+import { authorSlugOf } from "@/components/book/compose";
+import { WINDOW_STRINGS } from "@/lib/window-strings";
 import { currentWindow } from "@/lib/shared-day";
 import { offsetNote } from "@/lib/stamp";
+import { photoDeps } from "@/lib/data";
+import { liveTodayObject } from "@/lib/data/today";
+import { liveWhatCameBack } from "@/lib/data/archive";
+import { parseProfile, PROFILE_KEY } from "@/lib/session/profile";
+import type { MemberSlug } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Today — Eva & Adam",
 };
+
+/**
+ * Which of the two is holding the phone, for `todaySnapshot`'s day
+ * boundary. Reads the same `profile` cookie `lib/viewer.ts` reads
+ * client-side and `getIdentity()` reads server-side — attribution, not
+ * authentication (see `lib/session/profile.ts`), so a bare cookie read is
+ * the documented way to get at it; there is nothing here for a fourth
+ * reader to protect. Eva-first when nobody has tapped a name yet, matching
+ * `useViewer()`'s own fallback.
+ */
+async function currentViewerSlug(): Promise<MemberSlug> {
+  const jar = await cookies();
+  return parseProfile(jar.get(PROFILE_KEY)?.value) ?? "eva";
+}
 
 /**
  * Today — the room the app opens into. One continuous space, two
@@ -36,21 +56,30 @@ export const metadata: Metadata = {
  *
  * Live wiring that must survive any re-skin: `currentWindow`
  * (lib/shared-day — untouchable), `offsetNote` (lib/stamp),
- * `whatCameBack` (inside TodayDoorway). Fixtures stand in for data;
- * the clock reads are real.
+ * `liveWhatCameBack` (inside TodayDoorway's `returned` prop). The
+ * photographs themselves are real too — `liveTodayObject` (`lib/data/
+ * today.ts`) reads `todaySnapshot`/`listPhotos` against the database, with
+ * fixtures reachable only from `/review/today-pair` and never from here.
  *
  * No masthead, no greeting, nothing above the item (§0). The
  * photograph is Today's masthead.
  */
-export default function TodayPage() {
+export default async function TodayPage() {
   const now = new Date();
   const windowId = currentWindow(now);
   const windowLine = windowId !== null ? (WINDOW_STRINGS[windowId] ?? null) : null;
-  const dst = offsetNote(FIXTURE_TODAY);
+
+  const viewerSlug = await currentViewerSlug();
+  const [today, returned] = await Promise.all([
+    liveTodayObject(photoDeps(), { slug: viewerSlug }),
+    liveWhatCameBack(photoDeps(), now),
+  ]);
+
+  const dst = offsetNote(today.day);
 
   /* The same selection the table renders — the stamp below the seam
      describes the thing above it, including the Tuesday fallback. */
-  const { stampPhoto } = todaysObject();
+  const { stampPhoto } = today;
 
   return (
     /* The shell (`app/(app)/layout.tsx`) is edge-to-edge by default and
@@ -63,7 +92,12 @@ export default function TodayPage() {
     <div className="overflow-x-clip">
       {/* ---- PAPER — the table ---- */}
       <Paper stock="coldpress" className="px-5 pb-16 md:px-8">
-        <TodayPair />
+        <TodayPairContent
+          evaPhoto={today.evaPhoto}
+          adamPhoto={today.adamPhoto}
+          lastLeft={today.lastLeft}
+          recentDailies={today.recentDailies}
+        />
 
         {/* The sealed thing, when one is waiting. An object among
             objects — its own offset, never a full-width row. ml-8
@@ -86,7 +120,7 @@ export default function TodayPage() {
           {stampPhoto !== undefined && (
             <Stamp
               leftAt={stampPhoto.createdAt}
-              authorSlug={stampPhoto.authorMemberId === EVA.id ? "eva" : "adam"}
+              authorSlug={authorSlugOf(stampPhoto)}
               on="night"
             />
           )}
@@ -163,7 +197,7 @@ export default function TodayPage() {
              it clips the shores at street level, never at the towers
              — the sheet is in the room, the cities are outside. ---- */}
         <div className="relative -mt-14">
-          <TodayDoorway now={now} />
+          <TodayDoorway returned={returned} />
         </div>
       </section>
     </div>
