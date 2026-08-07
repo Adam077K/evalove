@@ -18,6 +18,6 @@
     "typeRoots": ["node_modules/@types", "node_modules", "../apps/web/node_modules/@types", "../apps/web/node_modules"],
     "types": ["node", "vitest/globals"]
   },
-  "include": ["export/**/*.ts"],
+  "include": ["export/**/*.ts", "book-placement/**/*.ts"],
   "exclude": ["node_modules"]
 }

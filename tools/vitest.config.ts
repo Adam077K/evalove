@@ -22,7 +22,7 @@ export default defineConfig({
   root: toolsRoot,
   test: {
     environment: "node",
-    include: ["export/__tests__/**/*.test.ts"],
+    include: ["export/__tests__/**/*.test.ts", "book-placement/__tests__/**/*.test.ts"],
     // No setupFiles: these tests are pure — no database, no env vars, no app.
   },
 });
