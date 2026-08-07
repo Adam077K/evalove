@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:tools": "vitest run --reporter=verbose ../../tools/export/__tests__",
+    "test:tools": "vitest run --reporter=verbose ../../tools/export/__tests__ ../../tools/ingest/__tests__",
     "export": "node --experimental-strip-types ../../tools/export/index.ts"
   },
   "dependencies": {
