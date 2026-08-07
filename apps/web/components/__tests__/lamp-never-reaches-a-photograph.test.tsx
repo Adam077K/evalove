@@ -66,6 +66,7 @@ import { PHOTOS } from "@/lib/fixtures/photos";
 import { mountFor } from "@/components/book/compose";
 import type { MountKind } from "@/components/book/compose";
 import type { Return } from "@/lib/resurface";
+import { whatCameBack } from "@/lib/resurface";
 import { BookSheet } from "@/components/book/BookSheet";
 import { ResurfacedItem } from "@/components/book/ResurfacedItem";
 import { TodayDoorway } from "@/components/home/TodayDoorway";
@@ -437,7 +438,13 @@ describe.each(["day", "night"])("no lamp above a photograph — %s", (mode) => {
   });
 
   it("the doorway corner at the foot of Today", () => {
-    render(<TodayDoorway now={new Date("2026-08-02T15:00:00Z")} />);
+    // TodayDoorway takes its `returned` item as a prop now — the page
+    // computes it against the real archive (`lib/data/`), which this
+    // fixture-only test has no business reaching for. Computing it here
+    // against the fixture archive instead exercises the exact same render
+    // path the live page drives.
+    const returned = whatCameBack(new Date("2026-08-02T15:00:00Z"));
+    render(<TodayDoorway returned={returned} />);
     expectNoLampAbovePhotographs(`today doorway (${mode})`);
   });
 

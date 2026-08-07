@@ -46,92 +46,48 @@
  *     index (<Mounted> enforces; §4 explains the silent re-roll).
  *
  * Exports:
- *   TodayPair         — reads FIXTURE_TODAY. Used on /today.
- *   TodayPairContent  — explicit photos. Used by /review/today-pair.
- *   todaysObject      — the state selection, shared with the page so
- *                       the DECO stamp below the seam describes the
- *                       same item the table shows.
+ *   TodayPairContent  — explicit photos, no data source of its own. Used
+ *                       by both /today (against `lib/data/today.ts`'s live
+ *                       composition) and /review/today-pair (fixtures).
+ *
+ * The state-selection logic that used to live in this file as `todaysObject`
+ * — fixture-only, read `FIXTURE_TODAY` directly — moved to
+ * `lib/data/today.ts` as `liveTodayObject`, the real equivalent against the
+ * database. Nothing in `app/(app)/today/` may read a fixture archive
+ * directly any more; see `lib/__tests__/live-surfaces-no-fixtures.test.ts`.
  */
 
 import type { Photo } from "@/lib/types";
-import { EVA, ADAM } from "@/lib/fixtures/members";
-import { PHOTOS } from "@/lib/fixtures/photos";
-import { SHARED_DAYS } from "@/lib/fixtures/book";
-import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Taped, Torn } from "@/components/materials";
-
-/* ------------------------------------------------------------------ *
- * State selection — one place, two readers (this file and the page)
- * ------------------------------------------------------------------ */
-
-export interface TodayObject {
-  evaPhoto?: Photo;
-  adamPhoto?: Photo;
-  /** The most recent daily from a prior day — the Tuesday fallback. */
-  lastLeft?: Photo;
-  /** The item the DECO stamp below the seam describes. */
-  stampPhoto?: Photo;
-}
-
-/**
- * What is on the table today. Today's photographs when they exist;
- * otherwise the last thing left, unchanged, still there.
- */
-export function todaysObject(): TodayObject {
-  const today = SHARED_DAYS.find((d) => d.date === FIXTURE_TODAY);
-  const dailies = Object.values(PHOTOS).filter((p) => p.kind === "daily");
-
-  const todays = dailies.filter((p) => p.sharedDay === FIXTURE_TODAY);
-  const evaPhoto = today?.evaPosted
-    ? todays.find((p) => p.authorMemberId === EVA.id)
-    : undefined;
-  const adamPhoto = today?.adamPosted
-    ? todays.find((p) => p.authorMemberId === ADAM.id)
-    : undefined;
-
-  const lastLeft = dailies
-    .filter((p) => p.sharedDay < FIXTURE_TODAY)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-
-  const stampPhoto =
-    evaPhoto !== undefined && adamPhoto !== undefined
-      ? evaPhoto.createdAt > adamPhoto.createdAt
-        ? evaPhoto
-        : adamPhoto
-      : (evaPhoto ?? adamPhoto ?? lastLeft);
-
-  return { evaPhoto, adamPhoto, lastLeft, stampPhoto };
-}
+import { authorSlugOf } from "@/components/book/compose";
 
 /* ------------------------------------------------------------------ *
  * Public components
  * ------------------------------------------------------------------ */
 
-/** The today object as rendered on /today, from fixture state. */
-export function TodayPair() {
-  const { evaPhoto, adamPhoto, lastLeft } = todaysObject();
-  return (
-    <TodayPairContent
-      evaPhoto={evaPhoto}
-      adamPhoto={adamPhoto}
-      lastLeft={lastLeft}
-    />
-  );
-}
-
 /**
- * The today object with explicit photos — /review/today-pair renders
- * all three states through this without touching FIXTURE_TODAY.
+ * The today object, from explicit photos — no fixture or database read of
+ * its own. `/today` passes the live composition (`lib/data/today.ts`);
+ * `/review/today-pair` passes fixtures directly.
  */
 export function TodayPairContent({
   evaPhoto,
   adamPhoto,
   lastLeft,
+  recentDailies = [],
 }: {
   evaPhoto?: Photo;
   adamPhoto?: Photo;
   lastLeft?: Photo;
+  /**
+   * The candidate pool for the Tuesday's pressed-through impression — recent
+   * dailies other than `lastLeft` itself. Ignored unless the Tuesday branch
+   * renders. Defaults to none, which simply omits the impression rather than
+   * reaching for a global archive: this component has no data source of its
+   * own by design.
+   */
+  recentDailies?: Photo[];
 }) {
   if (evaPhoto !== undefined && adamPhoto !== undefined) {
     return (
@@ -157,7 +113,7 @@ export function TodayPairContent({
   if (lastLeft !== undefined) {
     return (
       <div role="region" aria-label="Today">
-        <HeroItem photo={lastLeft} impression={impressionFor(lastLeft)} />
+        <HeroItem photo={lastLeft} impression={impressionFor(lastLeft, recentDailies)} />
       </div>
     );
   }
@@ -172,24 +128,24 @@ export function TodayPairContent({
  * Internals
  * ------------------------------------------------------------------ */
 
-const isEvasId = (memberId: string) => memberId === EVA.id;
-
-/** Their hand, per the register table (§2). Never swapped. */
-function handClass(memberId: string): string {
+/** Their hand, per the register table (§2). Never swapped. Sized
+    distinctly from the Book's `compose.handClass` — Today's hero
+    caption reads at a larger scale than a page inside the object. */
+function handClass(photo: Pick<Photo, "authorSlug" | "authorMemberId">): string {
   /* Caveat runs smaller on the eye than Patrick Hand at equal px —
      the sizes compensate so neither hand shouts. */
-  return isEvasId(memberId)
+  return authorSlugOf(photo) === "eva"
     ? "font-eva text-[25px]"
     : "font-adam text-[19px]";
 }
 
 /**
  * Earlier writing to press through the paper on a Tuesday: the most
- * recent daily caption that is not the shown item's own. Deterministic
- * — same archive, same impression.
+ * recent daily caption, from `candidates`, that is not the shown item's
+ * own. Deterministic given the same candidate pool.
  */
-function impressionFor(shown: Photo): Photo | undefined {
-  return Object.values(PHOTOS)
+function impressionFor(shown: Photo, candidates: Photo[]): Photo | undefined {
+  return candidates
     .filter(
       (p) =>
         p.kind === "daily" &&
@@ -261,7 +217,7 @@ function HeroItem({
           Never centred under the photo, never in a container. */}
       {caption !== undefined && (
         <p
-          className={`${handClass(photo.authorMemberId)} mt-7 ml-10 max-w-[15rem] leading-snug text-ink`}
+          className={`${handClass(photo)} mt-7 ml-10 max-w-[15rem] leading-snug text-ink`}
         >
           {caption}
         </p>
@@ -280,7 +236,7 @@ function HeroItem({
       {impression?.caption !== undefined && (
         <p
           aria-hidden="true"
-          className={`${handClass(impression.authorMemberId)} mt-14 ml-16 max-w-[13rem] -rotate-2 select-none leading-snug`}
+          className={`${handClass(impression)} mt-14 ml-16 max-w-[13rem] -rotate-2 select-none leading-snug`}
           style={{
             color: "transparent",
             textShadow:
@@ -393,14 +349,14 @@ function PairSpread({
 
       {evaPhoto.caption !== undefined && (
         <p
-          className={`${handClass(evaPhoto.authorMemberId)} mt-8 ml-8 max-w-[14rem] leading-snug text-ink`}
+          className={`${handClass(evaPhoto)} mt-8 ml-8 max-w-[14rem] leading-snug text-ink`}
         >
           {evaPhoto.caption}
         </p>
       )}
       {adamPhoto.caption !== undefined && (
         <p
-          className={`${handClass(adamPhoto.authorMemberId)} mt-5 ml-32 mr-4 max-w-[12rem] leading-snug text-ink`}
+          className={`${handClass(adamPhoto)} mt-5 ml-32 mr-4 max-w-[12rem] leading-snug text-ink`}
         >
           {adamPhoto.caption}
         </p>

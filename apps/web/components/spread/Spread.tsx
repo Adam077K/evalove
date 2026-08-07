@@ -3,8 +3,7 @@
    optimizer must never re-encode them. */
 
 import type { Photo, SharedDay } from "@/lib/types";
-import { runningHeadDate } from "@/lib/time";
-import { postedAtLocal } from "@/lib/fixtures/photos";
+import { postedAtLocal, runningHeadDate } from "@/lib/time";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Taped, Torn } from "@/components/materials";
 import type { TapePlacement, TapeVariant } from "@/components/materials";
@@ -142,7 +141,7 @@ function MountedFigure({
       <Polaroid photo={photo} variant={mount === "square" ? "square" : "chin"} alt={alt}>
         {photo.caption !== undefined && (
           <p
-            className={`${chinHandClass(photo.authorMemberId)} leading-tight text-ink`}
+            className={`${chinHandClass(photo)} leading-tight text-ink`}
             style={{ transform: `rotate(${seededIn(`${photo.id}:c`, -2, 1.2)}deg)` }}
           >
             {photo.caption}
@@ -186,7 +185,7 @@ function PageCaption({ photo, className }: { photo: Photo; className?: string })
     <div className={className}>
       {photo.caption !== undefined && !hasChin(photo) && (
         <p
-          className={`${handClass(photo.authorMemberId)} max-w-[15rem] leading-snug text-ink`}
+          className={`${handClass(photo)} max-w-[15rem] leading-snug text-ink`}
         >
           {photo.caption}
         </p>
@@ -249,8 +248,7 @@ function PairComposition({
     const isLead = photo === lead;
     const onLeft = isLead ? leadLeft : !leadLeft;
     const width = isLead ? leadWidth : followWidth;
-    const drop =
-      dropIn !== undefined && (dropIn === "eva") === isEva(photo.authorMemberId);
+    const drop = dropIn !== undefined && (dropIn === "eva") === isEva(photo);
 
     const figure = isLead ? (
       <MountedFigure photo={photo} elevation={4} drop={drop} />

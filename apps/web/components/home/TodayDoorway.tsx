@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- the thumb is a content
-   photograph resolved from fixtures; `.photo` law forbids the
-   optimizer re-encoding it and any filter ever touching it. */
+   photograph resolved via `thumbSrc` (fixture registry, else the real
+   `/p/{id}` proxy); `.photo` law forbids the optimizer re-encoding it
+   and any filter ever touching it. */
 
 /**
  * The doorway to The Book — a physical page corner at the bottom edge.
@@ -19,36 +20,35 @@
  * viewport. It runs under the dock's transparent gutters on purpose;
  * the tappable content sits above `--dock-footprint`.
  *
- * `whatCameBack(now)` is the live wiring and must survive any re-skin.
- * When it returns null (genuinely empty archive) nothing renders — no
- * empty corner, no "the book is empty" copy.
+ * `whatCameBack` is the live wiring and must survive any re-skin — the page
+ * (`app/(app)/today/page.tsx`) computes it against the real archive and
+ * passes the result in, since it needs the whole archive's photographs and
+ * that is a database read this component may not make itself (all Supabase
+ * access lives in `lib/data/`). When it is null (genuinely empty archive)
+ * nothing renders — no empty corner, no "the book is empty" copy.
  */
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { whatCameBack } from "@/lib/resurface";
+import type { Return } from "@/lib/resurface";
 import { thumbSrc } from "@/lib/fixtures/resolve";
-import { memberById } from "@/lib/fixtures/members";
 import { Mounted } from "@/components/materials";
-
-type Returned = NonNullable<ReturnType<typeof whatCameBack>>;
+import { authorSlugOf, DISPLAY_NAME } from "@/components/book/compose";
 
 interface TodayDoorwayProps {
-  /** The same instant the rest of Today rendered with. Keeps surfaces in sync. */
-  now: Date;
+  /** From `whatCameBack` against the real archive, computed by the page. */
+  returned: Return | null;
 }
 
-export function TodayDoorway({ now }: TodayDoorwayProps) {
-  const returned = whatCameBack(now);
+export function TodayDoorway({ returned }: TodayDoorwayProps) {
   if (returned === null) return null;
   return <DoorwayCorner returned={returned} />;
 }
 
-function DoorwayCorner({ returned }: { returned: Returned }) {
+function DoorwayCorner({ returned }: { returned: Return }) {
   const { label, photo } = returned;
-  const author = memberById(photo.authorMemberId);
-  const hand =
-    author.slug === "eva" ? "font-eva text-[21px]" : "font-adam text-[17px]";
+  const authorSlug = authorSlugOf(photo);
+  const hand = authorSlug === "eva" ? "font-eva text-[21px]" : "font-adam text-[17px]";
   const hasImage = photo.width > 0 && photo.height > 0;
 
   return (
@@ -91,7 +91,7 @@ function DoorwayCorner({ returned }: { returned: Returned }) {
                 <div className="w-[26%] shrink-0 overflow-hidden">
                   <img
                     src={thumbSrc(photo)}
-                    alt={photo.caption ?? `A photograph by ${author.displayName}`}
+                    alt={photo.caption ?? `A photograph by ${DISPLAY_NAME[authorSlug]}`}
                     className="photo block h-auto w-full"
                     loading="lazy"
                   />

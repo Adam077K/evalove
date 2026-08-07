@@ -92,9 +92,15 @@ export default function ReviewTodayPairPage() {
             The Tuesday — nothing arrived; the last thing is still there
           </h2>
           {/* Neither posted today: the last thing left, unchanged,
-              plus the pressed-through impression. Never an empty box. */}
+              plus the pressed-through impression. Never an empty box.
+              `recentDailies` stands in for the archive TodayPairContent
+              no longer reaches for itself — the live page passes its
+              own recent-dailies pool the same way. */}
           <Paper stock="coldpress" className="-mx-5 px-5 py-8 md:-mx-8 md:px-8">
-            <TodayPairContent lastLeft={PHOTOS["d0731-eva"]} />
+            <TodayPairContent
+              lastLeft={PHOTOS["d0731-eva"]}
+              recentDailies={Object.values(PHOTOS)}
+            />
           </Paper>
         </section>
 

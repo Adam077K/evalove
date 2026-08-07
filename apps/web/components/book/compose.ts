@@ -1,4 +1,4 @@
-import { ADAM, EVA } from "@/lib/fixtures/members";
+import type { Photo } from "@/lib/types";
 
 /**
  * Shared composition helpers for The Book — one place, three readers
@@ -27,8 +27,46 @@ export function seededPick<T>(id: string, options: readonly T[]): T {
   return options[Math.floor(seeded(id) * options.length) % options.length]!;
 }
 
-export const isEva = (memberId: string) => memberId === EVA.id;
-export const isAdam = (memberId: string) => memberId === ADAM.id;
+/** What every function below needs to know about a photo's author. */
+type Authored = Pick<Photo, "authorSlug" | "authorMemberId">;
+
+/**
+ * The photo's author, or a loud failure.
+ *
+ * `authorSlug` used to be derived here by comparing `authorMemberId`
+ * against the two fixture ids (`EVA.id`/`ADAM.id`) — which worked only
+ * because every photo in the app WAS a fixture. The live database uses its
+ * own ids (`supabase/seed.sql`), so that comparison silently attributed
+ * every real photograph to Adam. Every producer of a `Photo` that reaches
+ * this module — the fixture builder (`lib/fixtures/photos.ts`) and the live
+ * composition layer (`lib/data/`) alike — now sets `authorSlug` directly
+ * from whichever roster it already has in hand. Throwing on a miss is
+ * deliberate: a caption silently rendered in the wrong hand is exactly the
+ * kind of "looks right, isn't" bug this product has no tolerance for.
+ */
+function slugOf(photo: Authored): "eva" | "adam" {
+  if (photo.authorSlug === undefined) {
+    throw new Error(
+      `compose: photo ${photo.authorMemberId} has no authorSlug — every Photo ` +
+        "reaching this module must have one set by its producer (a fixture " +
+        "builder or a live composition function), never derived here.",
+    );
+  }
+  return photo.authorSlug;
+}
+
+export const isEva = (photo: Authored) => slugOf(photo) === "eva";
+export const isAdam = (photo: Authored) => slugOf(photo) === "adam";
+
+/** Exported so callers that need the slug itself (the stamp, alt text) don't
+    have to re-derive it with their own comparison. */
+export const authorSlugOf = slugOf;
+
+/** There are exactly two people in this product, forever (`lib/types.ts`). */
+export const DISPLAY_NAME: Record<"eva" | "adam", string> = {
+  eva: "Eva",
+  adam: "Adam",
+};
 
 /**
  * Their hand, per the §2 register table. Never swapped; if authorship
@@ -36,16 +74,16 @@ export const isAdam = (memberId: string) => memberId === ADAM.id;
  * not either hand. Caveat runs smaller on the eye than Patrick Hand
  * at equal px — sizes compensate so neither hand shouts.
  */
-export function handClass(memberId: string, size: "caption" | "large" = "caption"): string {
+export function handClass(photo: Authored, size: "caption" | "large" = "caption"): string {
   if (size === "large") {
-    return isEva(memberId) ? "font-eva text-[33px]" : "font-adam text-[26px]";
+    return isEva(photo) ? "font-eva text-[33px]" : "font-adam text-[26px]";
   }
-  return isEva(memberId) ? "font-eva text-[23px]" : "font-adam text-[18px]";
+  return isEva(photo) ? "font-eva text-[23px]" : "font-adam text-[18px]";
 }
 
 /** The chin of a polaroid is narrow — a step smaller again. */
-export function chinHandClass(memberId: string): string {
-  return isEva(memberId) ? "font-eva text-[19px]" : "font-adam text-[15px]";
+export function chinHandClass(photo: Authored): string {
+  return isEva(photo) ? "font-eva text-[19px]" : "font-adam text-[15px]";
 }
 
 /**

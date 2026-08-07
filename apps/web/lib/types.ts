@@ -87,6 +87,19 @@ export interface Photo {
   clientUuid: Uuid;
   kind: PhotoKind;
   authorMemberId: Uuid;
+  /**
+   * The author's slug, when the caller resolved it against the roster.
+   *
+   * `authorMemberId` alone is not enough to tell whose hand a caption should
+   * render in: it is a raw id, and the fixture archive and the live database
+   * do not share ids (fixtures mint their own so a reset never depends on a
+   * live roster). Every place that needs "is this Eva's or Adam's" — the
+   * hand font, the resurfacing stamp — reads this field, set once by whichever
+   * layer had the roster in hand (fixture builders set it directly; live rows
+   * get it attached in `lib/data/` from `listMembers()`), rather than
+   * re-deriving identity from an id nobody downstream can verify.
+   */
+  authorSlug?: MemberSlug;
   attributionSource: AttributionSource;
 
   /** The shared calendar day this photo belongs to. */

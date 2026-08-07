@@ -4,14 +4,19 @@
 
 import type { ReactNode } from "react";
 
-import type { MemberSlug } from "@/lib/types";
 import type { Return } from "@/lib/resurface";
-import { memberById } from "@/lib/fixtures/members";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Torn } from "@/components/materials";
 import Stamp from "@/components/item/Stamp";
 import { Polaroid } from "./Polaroid";
-import { chinHandClass, handClass, mountFor, seededIn } from "./compose";
+import {
+  authorSlugOf,
+  chinHandClass,
+  DISPLAY_NAME,
+  handClass,
+  mountFor,
+  seededIn,
+} from "./compose";
 
 /** Torn sheet or white stock border — the two paper backings. */
 function MountBacking({
@@ -58,8 +63,7 @@ function MountBacking({
  */
 export function ResurfacedItem({ returned }: { returned: Return }) {
   const { label, photo } = returned;
-  const author = memberById(photo.authorMemberId);
-  const authorSlug = author.slug as MemberSlug;
+  const authorSlug = authorSlugOf(photo);
   const hasImage = photo.width > 0 && photo.height > 0;
   const caption = photo.caption;
 
@@ -81,7 +85,7 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
         <p className={`type-quote text-mute ${labelIndent}`}>{label}</p>
         {caption !== undefined && (
           <p
-            className={`${handClass(photo.authorMemberId, "large")} mt-9 ${
+            className={`${handClass(photo, "large")} mt-9 ${
               leftward ? "ml-2 mr-10" : "ml-8 mr-3"
             } leading-snug text-ink`}
           >
@@ -95,7 +99,7 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
     );
   }
 
-  const alt = caption ?? `A photograph from ${author.displayName}`;
+  const alt = caption ?? `A photograph from ${DISPLAY_NAME[authorSlug]}`;
 
   return (
     <div className="pt-2">
@@ -133,7 +137,7 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
             <Polaroid photo={photo} variant={mount} alt={alt}>
               {caption !== undefined && (
                 <p
-                  className={`${chinHandClass(photo.authorMemberId)} leading-tight text-ink`}
+                  className={`${chinHandClass(photo)} leading-tight text-ink`}
                   style={{ transform: `rotate(${seededIn(`${photo.id}:c`, -2, 1.2)}deg)` }}
                 >
                   {caption}
@@ -148,7 +152,7 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
           Their hand, their measure, off the figure's axis. */}
       {caption !== undefined && mount !== "chin" && (
         <p
-          className={`${handClass(photo.authorMemberId)} mt-6 ${
+          className={`${handClass(photo)} mt-6 ${
             leftward ? "ml-14 mr-4" : "ml-4 mr-16"
           } max-w-[16rem] leading-snug text-ink`}
         >
