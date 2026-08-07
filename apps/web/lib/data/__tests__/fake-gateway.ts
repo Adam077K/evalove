@@ -77,9 +77,27 @@ export function row(
   return { ...base, ...overrides };
 }
 
+/** A minimal, valid `BookEntryRow` pointing at a photo. Tests override what they care about. */
+export function bookEntryRow(
+  overrides: Partial<BookEntryRow> & Pick<BookEntryRow, "id" | "photo_id" | "position">,
+): BookEntryRow {
+  const base: BookEntryRow = {
+    id: overrides.id,
+    photo_id: overrides.photo_id,
+    date_id: null,
+    position: overrides.position,
+    caption: null,
+    date_label: null,
+    created_at: "2026-08-01T00:00:00Z",
+    deleted_at: null,
+  };
+  return { ...base, ...overrides };
+}
+
 class FakeGateway implements DataGateway {
   photos: PhotoRow[] = [];
   members: MemberRow[] = [EVA_ROW, ADAM_ROW];
+  bookEntries: BookEntryRow[] = [];
   private notImplemented(method: string): never {
     throw new Error(
       `FakeGateway.${method} is not implemented — the functions under test do not call it.`,
@@ -170,8 +188,10 @@ class FakeGateway implements DataGateway {
   markPurgeAuditStoragePurged(_auditId: number, _at: string): Promise<void> {
     return this.notImplemented("markPurgeAuditStoragePurged");
   }
-  listBookEntries(): Promise<BookEntryRow[]> {
-    return this.notImplemented("listBookEntries");
+  async listBookEntries(): Promise<BookEntryRow[]> {
+    return this.bookEntries
+      .filter((e) => e.deleted_at === null)
+      .sort((a, b) => a.position - b.position);
   }
   updateBookEntry(_id: string, _patch: BookEntryPatch): Promise<BookEntryRow | null> {
     return this.notImplemented("updateBookEntry");

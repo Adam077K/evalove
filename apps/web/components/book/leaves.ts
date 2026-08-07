@@ -15,6 +15,21 @@ import type { Photo, SharedDay } from "@/lib/types";
  */
 
 export interface BookLeaf {
+  /**
+   * Unique per leaf, never assumed to equal `day.date`.
+   *
+   * A day that kept its ordinary one-or-two-photo pairing is the only leaf
+   * on its date, so `day.date` alone used to be a safe React key
+   * (`DaysTurner.tsx`, `BookObject.tsx`). Once curated pages from
+   * `book_entries` can add several more single-photo leaves to the SAME
+   * calendar day (a day with many photographs gets a few pages, not one
+   * crowded one — see `lib/data/archive.ts`), two leaves sharing a date is
+   * the normal case, not a bug, and `day.date` stops being unique. Every
+   * leaf builder sets this explicitly instead: the daily builder uses the
+   * date itself (still unique among daily leaves), the curated builder uses
+   * the book entry's own id.
+   */
+  key: string;
   day: SharedDay;
   evaPhoto?: Photo;
   adamPhoto?: Photo;

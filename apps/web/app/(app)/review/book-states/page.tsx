@@ -88,8 +88,13 @@ const SINGLE_DAY: SharedDay = SHARED_DAYS.find((d) => d.date === "2026-07-31")!;
 /* Leaves for the openable book states — a fixed pair so the turn
    inside the object can be exercised against known compositions. */
 const REVIEW_LEAVES: BookLeaf[] = [
-  { day: SINGLE_DAY, evaPhoto: PHOTOS["d0731-eva"] },
-  { day: PAIR_DAY, evaPhoto: PHOTOS["d0730-eva"], adamPhoto: PHOTOS["d0730-adam"] },
+  { key: SINGLE_DAY.date, day: SINGLE_DAY, evaPhoto: PHOTOS["d0731-eva"] },
+  {
+    key: PAIR_DAY.date,
+    day: PAIR_DAY,
+    evaPhoto: PHOTOS["d0730-eva"],
+    adamPhoto: PHOTOS["d0730-adam"],
+  },
 ];
 
 function Label({ id, children }: { id: string; children: string }) {

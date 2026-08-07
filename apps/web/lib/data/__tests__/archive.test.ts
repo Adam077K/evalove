@@ -10,7 +10,7 @@
 import { describe, expect, it } from "vitest";
 import { listAllPhotos, liveBookLeaves, liveWhatCameBack } from "../archive";
 import { MAX_PAGE_SIZE, type PhotoDeps } from "../photos";
-import { ADAM_ROW, EVA_ROW, fakeGateway, row } from "./fake-gateway";
+import { ADAM_ROW, EVA_ROW, bookEntryRow, fakeGateway, row } from "./fake-gateway";
 
 function deps(gateway: ReturnType<typeof fakeGateway>, now: Date = new Date()): PhotoDeps {
   return { gateway, now: () => now, newId: () => "unused-in-these-tests" };
@@ -169,5 +169,94 @@ describe("liveBookLeaves", () => {
     const { leaves } = await liveBookLeaves(deps(gw, now), now);
 
     expect(leaves).toEqual([]);
+  });
+
+  describe("curated (book_entries) leaves", () => {
+    it("turns each book_entries row into its own single-photo leaf, even when several share a day", async () => {
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = [
+        row({ id: "p1", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T10:00:00Z" }),
+        row({ id: "p2", kind: "book", author_member_id: ADAM_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T11:00:00Z" }),
+        row({ id: "p3", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T12:00:00Z" }),
+      ];
+      gw.bookEntries = [
+        bookEntryRow({ id: "e1", photo_id: "p1", position: 100 }),
+        bookEntryRow({ id: "e2", photo_id: "p2", position: 200 }),
+        bookEntryRow({ id: "e3", photo_id: "p3", position: 300 }),
+      ];
+
+      const { leaves, leafCount } = await liveBookLeaves(deps(gw, now), now);
+
+      // Three distinct pages, not one leaf holding three photos.
+      expect(leaves).toHaveLength(3);
+      expect(leafCount).toBe(3);
+      // Every key is unique even though every date is the same — the bug a
+      // shared `day.date` React key would have hidden.
+      expect(new Set(leaves.map((l) => l.key)).size).toBe(3);
+      expect(leaves.every((l) => l.day.date === "2026-07-24")).toBe(true);
+      // Ordered by book_entries.position, ascending.
+      expect(leaves.map((l) => l.evaPhoto?.id ?? l.adamPhoto?.id)).toEqual(["p1", "p2", "p3"]);
+      // Each leaf carries exactly one photograph, on the correct side.
+      expect(leaves[0]).toMatchObject({ evaPhoto: { id: "p1" }, adamPhoto: undefined });
+      expect(leaves[1]).toMatchObject({ evaPhoto: undefined, adamPhoto: { id: "p2" } });
+    });
+
+    it("sorts a curated day newest-first against ordinary kept days", async () => {
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = [
+        row({ id: "daily-aug3", author_member_id: EVA_ROW.id, shared_day: "2026-08-03", created_at: "2026-08-03T14:00:00Z" }),
+        row({ id: "curated-jul24", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T10:00:00Z" }),
+      ];
+      gw.bookEntries = [bookEntryRow({ id: "e1", photo_id: "curated-jul24", position: 100 })];
+
+      const { leaves } = await liveBookLeaves(deps(gw, now), now);
+
+      expect(leaves.map((l) => l.day.date)).toEqual(["2026-08-03", "2026-07-24"]);
+    });
+
+    it("on a day with both a daily leaf and curated leaves, the daily leaf sorts first", async () => {
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = [
+        row({ id: "daily-eva", author_member_id: EVA_ROW.id, shared_day: "2026-08-01", created_at: "2026-08-01T09:00:00Z" }),
+        row({ id: "daily-adam", author_member_id: ADAM_ROW.id, shared_day: "2026-08-01", created_at: "2026-08-01T10:00:00Z" }),
+        row({ id: "curated", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-08-01", created_at: "2026-08-01T11:00:00Z" }),
+      ];
+      gw.bookEntries = [bookEntryRow({ id: "e1", photo_id: "curated", position: 100 })];
+
+      const { leaves } = await liveBookLeaves(deps(gw, now), now);
+
+      expect(leaves).toHaveLength(2);
+      expect(leaves[0]!.key).toBe("2026-08-01"); // the daily leaf's key
+      expect(leaves[0]!.evaPhoto?.id).toBe("daily-eva");
+      expect(leaves[1]!.key).toBe("book:e1");
+    });
+
+    it("skips a book_entries row whose photo is gone rather than throwing", async () => {
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = []; // the referenced photo does not exist in the archive
+      gw.bookEntries = [bookEntryRow({ id: "e1", photo_id: "missing", position: 100 })];
+
+      const { leaves } = await liveBookLeaves(deps(gw, now), now);
+
+      expect(leaves).toEqual([]);
+    });
+
+    it("an empty book_entries table changes nothing (the existing contract holds)", async () => {
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = [
+        row({ id: "daily", author_member_id: EVA_ROW.id, shared_day: "2026-08-01", created_at: "2026-08-01T14:00:00Z" }),
+      ];
+      gw.bookEntries = [];
+
+      const { leaves, leafCount } = await liveBookLeaves(deps(gw, now), now);
+
+      expect(leaves).toHaveLength(1);
+      expect(leafCount).toBe(1);
+    });
   });
 });

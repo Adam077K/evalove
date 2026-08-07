@@ -7,6 +7,10 @@ const webRoot = fileURLToPath(new URL(".", import.meta.url));
 // Tools tests live outside the Next.js app root; resolve to an absolute path
 // so vitest can find them regardless of the working directory.
 const toolsTestsGlob = resolve(webRoot, "../../tools/export/__tests__/**/*.test.ts");
+const bookPlacementTestsGlob = resolve(
+  webRoot,
+  "../../tools/book-placement/__tests__/**/*.test.ts",
+);
 
 export default defineConfig({
   test: {
@@ -28,6 +32,7 @@ export default defineConfig({
       "app/**/*.test.{ts,tsx}",
       "components/**/*.test.{ts,tsx}",
       toolsTestsGlob,
+      bookPlacementTestsGlob,
     ],
     exclude: ["node_modules/**", ".next/**", "e2e/**"],
   },
