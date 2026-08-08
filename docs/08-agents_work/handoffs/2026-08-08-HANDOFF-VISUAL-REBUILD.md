@@ -32,17 +32,51 @@ navigation, the resurfaced memory, every button. Two designers who never saw eac
 made identical subtractions. That is real signal about the current structure being
 over-populated, even though both results were rejected.
 
-### Do this differently
+### START HERE — the references already exist and were never opened
+
+**This is the sharpest available diagnosis of "ai slop" and it supersedes everything below.**
+
+Adam collected **26 reference images** on 2 and 4 August 2026, in three folders under
+`~/Downloads/`: `deco-art-ref`, `design ref - digital scrapbook - a romantic collage`, and
+`Eva & Adam -app deisgn inspo`. The 54KB design law and the 44KB style bible **cite them by
+filename**. `DECISIONS.md` records that "rev 5 was written without ever seeing its own
+references." **No agent opened a single one until 8 August.** They were described from their
+folder names for six days.
+
+**What opening them changed.** The folder everyone called "Figma asset packs and torn-paper
+textures" contains **three real, shipped products for private two-person memory books** — which
+is Evalove's exact product:
+1. **A locked gift** — passcode screen on parchment (*"From: Zoey / For Jim / a little
+   secret…"*); behind it embedded Spotify and YouTube players, a voice note with a real
+   waveform, a "Memory map" pinning a photograph to a place, unfiltered polaroids of one real
+   couple. **One continuous pannable surface, no tabs.**
+2. **A page-deck viewer** — turnable card spreads on deep navy, four small circular controls.
+3. **A desktop scrapbook editor** — a real tool rail (scissors, washi roll, glue pen), sticker
+   tray, Copy/Paste/Duplicate/Bring-to-front.
+
+**The law extracted their decoration and discarded their product.** It mined shipped interfaces
+for wallpaper. Meanwhile the folder Adam actually labelled *app design inspo* is four Dribbble
+concepts plus SORDJATI, a furniture marketing site — and only SORDJATI was ever used.
+
+So the shipped app is an average of painted deco backgrounds, a scrapbook asset pack, and a
+furniture landing page. **Not one reference behind the current design is a phone app.**
+
+That also explains why all three fresh directions were rejected: **A took the SORDJATI strand,
+B the craft strand, C the deco strand.** Each amplified one thread of the same bad mixture.
+
+**Open all 26 before writing a word.** Do not caption an image you have not looked at — a
+design-lead fabricated plausible captions for 11 of these on this exact task, and they were
+wrong in the direction that mattered.
+
+### Then do this differently
 
 Ideas the founder raised that were never acted on: **"look for UI libraries?", "use the right
 code language", "use the best designing UI UX Apps skills", "think outside of the box."**
 
-Strongly consider, before generating anything:
-1. **Get a concrete visual reference.** The design brief is prose — *"Paper is what they made.
-   Deco is the distance between them"* — and fifteen agents have each rendered their own
-   average guess at it. Averages of interpretations is what slop is. Ask him to point at a
-   real object, app, or publication and match it precisely. The `refero-design` skill and the
-   `mcp__refero__*` tools exist for exactly this.
+Also consider:
+1. **The reference that matters most is #1 above** — a shipped two-person memory book with no
+   tabs and one continuous surface. The current app has four tabs. `refero-design` and the
+   `mcp__refero__*` tools can supplement, but the founder's own folder already holds the answer.
 2. **Every material in the app is AI-generated** — paper grain, washi tape, book cloth, torn
    edges. The eye catches an approximated material instantly. Real scanned or photographed
    surfaces would change the feel more than any amount of CSS.
