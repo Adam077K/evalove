@@ -57,12 +57,14 @@ export default async function TodayPage() {
 
   return (
     /* Paper runs to the bottom: min-h fills the screen below the band,
-       pb-[var(--dock-footprint)] reserves the dock's tray so the last
-       row is never under the fixed nav. dvh, never vh — on iOS Safari
-       vh is the expanded viewport and pushes the last row out of reach. */
+       pb-[calc(var(--dock-footprint)+1rem)] reserves the dock's tray
+       with the +1rem that matches scroll-pb in app/layout.tsx, so the
+       visible and scroll-focus reservations line up. dvh, never vh —
+       on iOS Safari vh is the expanded viewport and pushes the last
+       row out of reach. */
     <Paper
       stock="coldpress"
-      className="min-h-[calc(100dvh-var(--band-height))] px-5 pb-[var(--dock-footprint)] md:px-8"
+      className="min-h-[calc(100dvh-var(--band-height))] px-5 pb-[calc(var(--dock-footprint)+1rem)] md:px-8"
     >
       <TodayPairContent
         evaPhoto={today.evaPhoto}

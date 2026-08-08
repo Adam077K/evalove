@@ -14,12 +14,19 @@ export const metadata: Metadata = {
 };
 
 /**
- * Dates — night window above, two shelves of paper below.
+ * Dates — night window above, a torn edge, two shelves of paper below.
  *
- * The night section (Seam, window sentence, cities, shores) moved here
- * from Today (founder, 2026-08-08): a calendar of things-to-do is a
- * window onto the distance; a table of what happened is not. Today is
- * now one continuous paper world; Dates is where the Seam lives.
+ * The night section (window sentence, cities, shores) moved here from
+ * Today (founder, 2026-08-08): a calendar of things-to-do is a window
+ * onto the distance; a table of what happened is not. Today is now one
+ * continuous paper world; Dates is where the Seam and the DECO window
+ * live.
+ *
+ * ORDER: night section → Seam rotated → Paper. The rotated Seam has
+ * its night-sky falloff at the top (matching the bg-night-sky section
+ * above it) and its transparent paper edge at the bottom (letting the
+ * Paper below show through). Placing the Seam above the night section
+ * inverts it on both sides.
  *
  * DST note: `offsetNote` was omitted intentionally. It derives from
  * `sharedDayLengthMs(day)` which requires a SharedDay — a date-boundary
@@ -49,14 +56,6 @@ export default function DatesPage() {
 
   return (
     <>
-      {/* The Seam — paper tears down into the night.
-          Same height as Today's shell seam was (190px): the fibre strip
-          renders at ~145px at 393px width and 190 is the smallest value
-          above the ~180 crop floor with a margin against the "~".
-          rotated = point-reflected 180° so it tears DOWN from the band
-          (a ceiling tear, not a floor tear). */}
-      <Seam rotated height={190} />
-
       {/* DECO — the window: the night sky, the window sentence, the two
           cities, and the shores. The distance between them.
           Place, not time: renders identically in both modes (the --night-*
@@ -105,6 +104,13 @@ export default function DatesPage() {
           />
         </div>
       </section>
+
+      {/* The Seam — tears out of the night above into the paper below.
+          rotated = point-reflected 180°: its night-sky falloff sits at
+          the top (matching bg-night-sky above), its transparent edge at
+          the bottom lets the Paper show through. 190px is the smallest
+          height above the ~180 crop floor for the fibre strip at 393px. */}
+      <Seam rotated height={190} />
 
       {/* PAPER — the dates content.
           `<Paper>` wraps `<Column>` so every `.card` reads as a plate
