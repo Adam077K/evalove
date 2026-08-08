@@ -42,6 +42,23 @@ import { Seam } from "@/components/materials";
  * This is also what makes the top offset identical across all four
  * routes — see the shell tests.
  *
+ * SEAM HEIGHT — 190, not the component's own 256 default (2026-08-08).
+ * Measured at 393×852: band (56) + the default seam (256) put 312px, 37%
+ * of the screen, above the first pixel of any route's own content, on
+ * every route, identically — the founder's own screenshots of /dates
+ * named this "wastes the top third of the screen". `<Seam>`'s own file
+ * header documents the floor: the fibre strip renders at its natural
+ * aspect (~145px at 393px width) and "anything under ~180 starts
+ * cropping the tear itself". 190 is the smallest value inside that floor
+ * with a margin against the file's own "~", checked by eye at 393×852 in
+ * both modes for cropping before landing on it — the deep end runs
+ * shorter (~45px of falloff run instead of ~110) but the torn fibre
+ * itself is intact and the falloff still reaches `--night-sky` before
+ * the bottom edge. This is a GLOBAL change, deliberately: the seam stays
+ * identical across every route (the same law that put it here once
+ * instead of per-route), it simply asks less of the screen everywhere,
+ * Today included.
+ *
  * Vertical measures in this app use dvh, never vh: on iOS Safari vh
  * is the *expanded* viewport, so a vh-based column is taller than the
  * screen by the height of the toolbar and pushes its own last row out
@@ -52,7 +69,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <>
       <Band />
       <main className="relative pt-[var(--band-height)]">
-        <Seam rotated />
+        <Seam rotated height={190} />
         {children}
       </main>
       <Dock />
