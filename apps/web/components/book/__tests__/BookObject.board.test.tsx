@@ -49,6 +49,7 @@ const RETURNED: Return = {
 
 const LEAVES: BookLeaf[] = [
   {
+    key: "2026-07-30",
     day: SHARED_DAYS.find((d) => d.date === "2026-07-30")!,
     evaPhoto: PHOTOS["d0730-eva"],
     adamPhoto: PHOTOS["d0730-adam"],

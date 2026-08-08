@@ -21,6 +21,6 @@
       "@/*": ["../apps/web/*"]
     }
   },
-  "include": ["export/**/*.ts", "ingest/**/*.ts"],
+  "include": ["export/**/*.ts", "ingest/**/*.ts", "book-placement/**/*.ts"],
   "exclude": ["node_modules"]
 }

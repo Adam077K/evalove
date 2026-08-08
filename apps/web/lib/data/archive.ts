@@ -24,6 +24,7 @@ import type { IsoDate, MemberSlug, Photo, PhotoKind, SharedDay } from "@/lib/typ
 import type { BookLeaf } from "@/components/book/leaves";
 import { whatCameBack, type Return } from "@/lib/resurface";
 import { sharedDayOf } from "@/lib/shared-day";
+import { toBookEntry } from "./rows";
 import { listPhotos, MAX_PAGE_SIZE, type PhotoDeps } from "./photos";
 
 /**
@@ -117,6 +118,52 @@ function toSharedDay(date: IsoDate, photos: readonly Photo[]): SharedDay {
 }
 
 /**
+ * A leaf with the one extra fact needed to sort it against its
+ * day-mates before it leaves this module — never exposed past
+ * `liveBookLeaves`'s own return, so no caller can mistake `position` for
+ * a display value.
+ */
+interface OrderedLeaf {
+  leaf: BookLeaf;
+  /** `book_entries.position`, ascending. Daily leaves have none — see the
+      merge sort below, which treats a missing position as "sorts first". */
+  position?: number;
+}
+
+/**
+ * One curated page: `book_entries` points at a single photo, and — per
+ * the migration's own comment ("a page is EITHER a photo OR a finished
+ * date's artifact") — one entry IS one page, never a container for more
+ * than one photograph. A day with many photographs therefore becomes
+ * several entries, each its own single-photo leaf, not one leaf holding
+ * several photographs; `Spread.tsx`'s existing `single` composition (the
+ * one a day that kept only one photograph already renders through) is
+ * the whole rendering story for a curated leaf — nothing new to build
+ * there. `date_id`-pointing entries (a finished date's artifact) are out
+ * of scope for this reader; they are simply not yet producible by
+ * anything in the app, so skipping them here loses nothing today and
+ * the skip is explicit rather than a silent cast.
+ */
+function toCuratedLeaf(entryId: string, position: number, photo: Photo): OrderedLeaf {
+  const signedEva = photo.authorSlug === "eva";
+  const signedAdam = photo.authorSlug === "adam";
+  return {
+    leaf: {
+      key: `book:${entryId}`,
+      day: toSharedDay(photo.sharedDay, [photo]),
+      evaPhoto: signedEva ? photo : undefined,
+      adamPhoto: signedAdam ? photo : undefined,
+      // Neither slug matched: a deliberately unsigned photo (authorMemberId
+      // null, migration 12), not a miss — see BookLeaf.unsignedPhoto. Without
+      // this, an unsigned curated leaf would carry evaPhoto/adamPhoto both
+      // undefined and Spread would silently render nothing for it.
+      unsignedPhoto: signedEva || signedAdam ? undefined : photo,
+    },
+    position,
+  };
+}
+
+/**
  * The kept days, newest first — the real equivalent of the fixture
  * `bookLeaves()` that used to live in `components/book/leaves.ts`.
  *
@@ -128,10 +175,16 @@ function toSharedDay(date: IsoDate, photos: readonly Photo[]): SharedDay {
  * once is the duplicate the fixture's single `FIXTURE_TODAY` exclusion was
  * guarding against.
  *
- * Deliberately does not include `book_entries` (the curated, non-daily
- * pages from the opening gathering) — `lib/data/book.ts` owns that table
- * and it is a separate read this task did not ask for. Every day this
- * returns is derived from `photos` alone, same as the fixture it replaces.
+ * ALSO includes `book_entries` (the curated pages placed outside the daily
+ * ritual — the opening gathering's archive, laid onto pages by
+ * `tools/book-placement`) merged in alongside the daily leaves, closing the
+ * gap this function's own doc comment used to flag: a curated photo's day
+ * can carry several leaves, so leaves are no longer one-per-date. Within a
+ * date shared by a daily leaf and one or more curated leaves, the daily
+ * leaf sorts first (it is the day itself; the curated leaves are more of
+ * that day, added afterward) and the curated leaves then follow in
+ * `book_entries.position` order — the same ascending "reading order"
+ * `bookManifest()` (`lib/data/book.ts`) already uses.
  */
 export async function liveBookLeaves(
   deps: PhotoDeps,
@@ -150,13 +203,44 @@ export async function liveBookLeaves(
     else byDay.set(photo.sharedDay, [photo]);
   }
 
-  const leaves: BookLeaf[] = [...byDay.entries()]
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([date, photos]) => ({
+  const dailyLeaves: OrderedLeaf[] = [...byDay.entries()].map(([date, photos]) => ({
+    leaf: {
+      key: date,
       day: toSharedDay(date, photos),
       evaPhoto: photos.find((p) => p.authorSlug === "eva"),
       adamPhoto: photos.find((p) => p.authorSlug === "adam"),
-    }));
+    },
+    // No `position`: a daily leaf is the day itself, so it always sorts
+    // ahead of that day's curated leaves — see the merge sort below.
+  }));
+
+  const entryRows = await deps.gateway.listBookEntries();
+  let curatedLeaves: OrderedLeaf[] = [];
+  if (entryRows.length > 0) {
+    // One fetch of the whole archive, not one query per entry — the same
+    // shape `listAllPhotos` already gives every other reader in this file.
+    const archive = await listAllPhotos(deps);
+    const photoById = new Map(archive.map((p) => [p.id, p]));
+    curatedLeaves = entryRows
+      .map(toBookEntry)
+      .filter((entry): entry is Extract<typeof entry, { photoId: string }> => "photoId" in entry)
+      .flatMap((entry) => {
+        const photo = photoById.get(entry.photoId);
+        // A stale reference (the photo was purged after the entry was
+        // written): skip rather than throw — one missing page must not
+        // break every other page in the book.
+        return photo === undefined ? [] : [toCuratedLeaf(entry.id, entry.position, photo)];
+      });
+  }
+
+  const leaves: BookLeaf[] = [...dailyLeaves, ...curatedLeaves]
+    .sort((a, b) => {
+      if (a.leaf.day.date !== b.leaf.day.date) {
+        return b.leaf.day.date.localeCompare(a.leaf.day.date); // newest day first
+      }
+      return (a.position ?? -Infinity) - (b.position ?? -Infinity);
+    })
+    .map((ordered) => ordered.leaf);
 
   const begun =
     leaves.length > 0

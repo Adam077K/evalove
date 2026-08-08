@@ -28,8 +28,13 @@ export function DaysTurner({ pages }: { pages: BookLeaf[] }) {
           // shares one stacked rect (BookTurnStage.tsx) — a leaf that
           // didn't stretch to the tallest would leave the leaf behind
           // it visible in the gap below its own content.
-          <BookSheet key={leaf.day.date} className="h-full">
-            <Spread day={leaf.day} evaPhoto={leaf.evaPhoto} adamPhoto={leaf.adamPhoto} />
+          <BookSheet key={leaf.key} className="h-full">
+            <Spread
+              day={leaf.day}
+              evaPhoto={leaf.evaPhoto}
+              adamPhoto={leaf.adamPhoto}
+              unsignedPhoto={leaf.unsignedPhoto}
+            />
           </BookSheet>
         ))}
       />

@@ -13,6 +13,7 @@ const webRoot = fileURLToPath(new URL(".", import.meta.url));
 const toolsTestsGlobs = [
   resolve(webRoot, "../../tools/export/__tests__/**/*.test.ts"),
   resolve(webRoot, "../../tools/ingest/__tests__/**/*.test.ts"),
+  resolve(webRoot, "../../tools/book-placement/__tests__/**/*.test.ts"),
 ];
 
 export default defineConfig({

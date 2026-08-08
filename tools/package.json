@@ -6,7 +6,8 @@
   "description": "CLI tools for the Eva & Adam archive. @aws-sdk/client-s3 lives here — never in apps/web — so the archive's upload path does not pollute the Next.js bundle.",
   "scripts": {
     "ingest:prepare": "tsx ingest/prepare.ts",
-    "ingest:load": "tsx ingest/load.ts"
+    "ingest:load": "tsx ingest/load.ts",
+    "book:place": "tsx book-placement/place.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.800.0",

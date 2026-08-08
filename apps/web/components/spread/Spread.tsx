@@ -9,12 +9,15 @@ import { Mounted, Taped, Torn } from "@/components/materials";
 import type { TapePlacement, TapeVariant } from "@/components/materials";
 import { Polaroid } from "@/components/book/Polaroid";
 import {
+  authorshipOf,
   chinHandClass,
   handClass,
   isEva,
   mountFor,
   seededIn,
   seededPick,
+  unsignedChinHandClass,
+  unsignedHandClass,
 } from "@/components/book/compose";
 
 /**
@@ -56,20 +59,24 @@ type SpreadProps = {
   day: SharedDay;
   evaPhoto?: Photo;
   adamPhoto?: Photo;
+  /** A curated leaf's deliberately unsigned photo — see `BookLeaf.unsignedPhoto`.
+      Never set alongside `evaPhoto`/`adamPhoto`; always renders as a single. */
+  unsignedPhoto?: Photo;
   /** Accepted for compatibility; a live day renders like a closed one. */
   live?: boolean;
   /** Plays the drop-into-place entrance on that side, on pair completion. */
   dropIn?: "eva" | "adam";
 };
 
-export function Spread({ day, evaPhoto, adamPhoto, dropIn }: SpreadProps) {
-  /* Neither posted: the book skips the date in silence. No marker. */
-  if (!evaPhoto && !adamPhoto) return null;
+export function Spread({ day, evaPhoto, adamPhoto, unsignedPhoto, dropIn }: SpreadProps) {
+  /* Nothing posted, nothing curated: the book skips the date in silence.
+     No marker. */
+  if (!evaPhoto && !adamPhoto && !unsignedPhoto) return null;
 
   const head = runningHeadDate(day.date);
   const headIndent = Math.round(seededIn(`${day.date}:h`, 0, 44));
 
-  const only = evaPhoto && adamPhoto ? undefined : (evaPhoto ?? adamPhoto);
+  const only = evaPhoto && adamPhoto ? undefined : (evaPhoto ?? adamPhoto ?? unsignedPhoto);
 
   return (
     <section aria-label={head} className="relative">
@@ -141,7 +148,9 @@ function MountedFigure({
       <Polaroid photo={photo} variant={mount === "square" ? "square" : "chin"} alt={alt}>
         {photo.caption !== undefined && (
           <p
-            className={`${chinHandClass(photo)} leading-tight text-ink`}
+            className={`${
+              authorshipOf(photo).signed ? chinHandClass(photo) : unsignedChinHandClass()
+            } leading-tight text-ink`}
             style={{ transform: `rotate(${seededIn(`${photo.id}:c`, -2, 1.2)}deg)` }}
           >
             {photo.caption}
@@ -185,7 +194,9 @@ function PageCaption({ photo, className }: { photo: Photo; className?: string })
     <div className={className}>
       {photo.caption !== undefined && !hasChin(photo) && (
         <p
-          className={`${handClass(photo)} max-w-[15rem] leading-snug text-ink`}
+          className={`${
+            authorshipOf(photo).signed ? handClass(photo) : unsignedHandClass()
+          } max-w-[15rem] leading-snug text-ink`}
         >
           {photo.caption}
         </p>

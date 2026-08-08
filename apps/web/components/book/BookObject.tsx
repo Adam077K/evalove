@@ -314,7 +314,7 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                    object. */
                 ...leaves.map((leaf) => (
                   <BookSheet
-                    key={leaf.day.date}
+                    key={leaf.key}
                     className="h-full"
                     underlay={
                       <div
@@ -324,7 +324,12 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                       />
                     }
                   >
-                    <Spread day={leaf.day} evaPhoto={leaf.evaPhoto} adamPhoto={leaf.adamPhoto} />
+                    <Spread
+                      day={leaf.day}
+                      evaPhoto={leaf.evaPhoto}
+                      adamPhoto={leaf.adamPhoto}
+                      unsignedPhoto={leaf.unsignedPhoto}
+                    />
                   </BookSheet>
                 )),
               ]}
