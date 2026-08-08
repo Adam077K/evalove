@@ -217,15 +217,17 @@ With frontmatter including `qa_verdict: PASS` and (when applicable) `tier: full|
 
 ## Project State
 
-*Updated 2026-08-06. `main` at `d53fc3a`, pushed and in sync.*
+*Updated 2026-08-08. `main` at `3863b79`, pushed and in sync.*
 
-- **Current focus:** **Design audit and repair.** The founder used the app and called it *"very, very bad"* and *"a three years old website design."* Layout breaks, the Book is the wrong size, mobile use is poor. **Active brief: [`docs/08-agents_work/handoffs/2026-08-06-HANDOFF-USE-THE-APP.md`](docs/08-agents_work/handoffs/2026-08-06-HANDOFF-USE-THE-APP.md)** — read it before anything else.
+- **Current focus:** **Visual rebuild.** The founder's words: *"the app looks like shit, ai slop."* Three replacement directions were built and all three rejected — *"all very bad."* **Active brief: [`docs/08-agents_work/handoffs/2026-08-08-PROMPT-NEXT-TEAM.md`](docs/08-agents_work/handoffs/2026-08-08-PROMPT-NEXT-TEAM.md)** — read it before anything else.
 - **Stage:** Stage 1 UI, plus the photo path (the founder authorised breaking "UI only" so screens get judged against real photographs instead of placeholders).
-- **Merged and live:** Today (three states, the seam, the Deco band) · The Book (opens on tap, pages turn inside, three ways out, none the back button) · the photo path with server-verified EXIF/GPS stripping · the dock as a physical tray · real Deco art · a working build, lint and dev server.
-- **Blockers:** None technical. Two decisions sit with the founder — **Echo** (its streaming endpoint works, the UI returns a canned apology; five questions open in `AI-PARTNER-SPEC.md` §12) and **the Pocket** (removal decided, unbuilt).
-- **Next milestone:** A written design audit — ranked, one screenshot per finding — then repair in priority order. **Mobile-first at 393×852 is the only viewport that counts.** Two users, both on phones, no desktop story.
-- **The lesson governing this stage:** seven QA-Lead PASS verdicts were issued on this code and the app is still bad to use. Every review checked whether the code was *correct*; nobody checked whether the thing *worked*. **Use the app before you read it.**
-- **Eva has still never been asked a single question.** Every claim about her half of this product is the founder's account, not a finding.
+- **Merged and live:** Today · The Book (opens on tap, pages turn inside, three ways out, none the back button) · the photo path with server-verified EXIF/GPS stripping · the dock as a physical tray · and as of `3863b79`, **deco quarantined to Dates** — the Seam leaves the shared shell, the Band moves onto paper, returning Band (56px) + Seam (190px) = **246px, 29% of an 852px screen**, to the photographs on every route.
+- **The gate that has not been passed:** **nobody has seen the real Today or Dates.** Every render came from `/review/today-pair`. The merge landed on QA-Lead's PASS and five reviewers, at the founder's explicit instruction, *before* anyone looked at the screens. First move next session is `pnpm dev` and his phone, not more building.
+- **Blockers:** None technical. Decisions sitting with the founder — **Echo** (streaming endpoint works, UI returns a canned apology) · **the Pocket** (removal decided, unbuilt; `PocketGate` declines everything by design) · the hairline under the Band · the 190px `/book`, `/send` and `/pocket` silently lost.
+- **The finding that reframes the stage:** the 54KB design law and 44KB style bible cite the founder's 26 reference images **by filename**, and **no agent opened one until 8 August.** The folder dismissed as "asset packs" holds **three shipped products for private two-person memory books** — Evalove's exact product. The law mined their decoration and discarded their product. **Not one reference behind the shipped design is a phone app.** That is why A, B and C were each rejected.
+- **Next milestone:** the founder's one-sentence verdict on the rebuilt Today and Dates, then repair in priority order. **Mobile-first at 393×852 is the only viewport that counts.** Two users, both on phones, no desktop story.
+- **The lesson governing this stage:** seven QA-Lead PASS verdicts were issued on this code and the app is still bad to use. Every review checked whether the code was *correct*; nobody checked whether the thing *worked*. **Use the app before you read it.** Its sharper form, learned 8 August: *the adversary goes looking for failure modes; the code-reviewer goes looking for reasons it is fine* — and **every structural assertion must be able to fail.**
+- **Eva has still never been asked a single question.** Every claim about her half of this product is the founder's account, not a finding. Top of the backlog by more than double, blocked on nothing, questions written 3 August.
 
 ---
 
