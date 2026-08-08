@@ -72,6 +72,7 @@ import { commitPhoto } from "@/lib/data/photos.ts";
 import type { CommitPhotoInput, PhotoDeps } from "@/lib/data/photos.ts";
 import { photoDisplayPath, photoOriginalPath, photoThumbPath } from "@/lib/schema.ts";
 import { startOfLocalDay, isMemberSlug, resolveTz } from "@/lib/shared-day/index.ts";
+import { isMachineShapedCaption } from "@/lib/caption-law.ts";
 
 import { parseFilename } from "./filename.ts";
 import { parseAuthorshipTsv } from "./manifest.ts";
@@ -310,7 +311,23 @@ async function main(): Promise<void> {
         colorSpace: "srgb",
         checksumSha256: display.checksumSha256,
       };
-      if (item.captionSeed) input.caption = item.captionSeed;
+      // `prepare.ts`'s `resolveCaptionSeed` already filters a machine-shaped
+      // catalogue caption_seed out of manifest.json before this ever runs —
+      // this is a second, independent check on manifest.json itself (which
+      // could be stale, or hand-edited, or built by an older prepare.ts),
+      // so THIS loader never writes an internal note as a caption either
+      // way. `commitPhoto` below would also refuse it (lib/caption-law.ts),
+      // but refusing here means a bad caption costs the photo nothing —
+      // the photo still commits, uncaptioned — instead of failing the whole
+      // item the way an exception out of commitPhoto would.
+      if (item.captionSeed && isMachineShapedCaption(item.captionSeed)) {
+        console.warn(
+          `  WARN: ${item.file}'s captionSeed reads as an internal/technical note, ` +
+            `not a caption — committing without one: ${JSON.stringify(item.captionSeed)}`,
+        );
+      } else if (item.captionSeed) {
+        input.caption = item.captionSeed;
+      }
 
       const result = await commitPhoto(deps, input, { authenticated: false });
       console.log(

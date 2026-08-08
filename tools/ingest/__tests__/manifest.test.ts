@@ -3,6 +3,7 @@ import {
   buildAuthorshipTsv,
   guessAuthor,
   parseAuthorshipTsv,
+  resolveCaptionSeed,
   type AuthorshipRow,
 } from "../manifest.ts";
 import type { CatalogEntry } from "../catalog.ts";
@@ -70,6 +71,35 @@ describe("guessAuthor", () => {
       entry({ subject: "a woman on a wall", likely_shooter: "received" }),
     );
     expect(onPhone.guess).toBe(received.guess);
+  });
+});
+
+describe("resolveCaptionSeed — the 2026-08-08 breach guard", () => {
+  it("passes through an ordinary caption_seed unchanged", () => {
+    const result = resolveCaptionSeed(
+      entry({ caption_seed: "Sunset over the water, and neither of them is looking at it." }),
+    );
+    expect(result).toBe("Sunset over the water, and neither of them is looking at it.");
+  });
+
+  it("drops the exact caption_seed that shipped live as a caption (the real breach)", () => {
+    const result = resolveCaptionSeed(
+      entry({ caption_seed: "Same photo as 24:7:26-4.JPG at lower resolution." }),
+    );
+    expect(result).toBe("");
+  });
+
+  it("drops a caption_seed naming a file by extension generally, not just this one file", () => {
+    const result = resolveCaptionSeed(entry({ caption_seed: "duplicate of IMG_0142.heic" }));
+    expect(result).toBe("");
+  });
+
+  it("returns empty for no catalogue entry at all", () => {
+    expect(resolveCaptionSeed(undefined)).toBe("");
+  });
+
+  it("returns empty for an entry with an empty caption_seed, without flagging it as machine-shaped", () => {
+    expect(resolveCaptionSeed(entry({ caption_seed: "" }))).toBe("");
   });
 });
 

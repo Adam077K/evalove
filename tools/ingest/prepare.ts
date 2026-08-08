@@ -46,6 +46,7 @@ import { readSourceMetadata, verifyDerivativeClean } from "./verify.ts";
 import {
   buildAuthorshipTsv,
   guessAuthor,
+  resolveCaptionSeed,
   writeManifest,
   type AuthorshipRow,
   type DroppedFile,
@@ -180,11 +181,20 @@ async function main(): Promise<void> {
     try {
       const sourceMeta = readSourceMetadata(srcPath);
 
+      const rawSeed = catalogEntry?.caption_seed ?? "";
+      const captionSeed = resolveCaptionSeed(catalogEntry);
+      if (rawSeed !== "" && captionSeed === "") {
+        console.warn(
+          `  WARN: ${file}'s catalogue caption_seed reads as an internal/technical ` +
+            `note, not a caption — dropping it (photo will have no caption): ${JSON.stringify(rawSeed)}`,
+        );
+      }
+
       const item: ManifestItem = {
         file,
         isoDate: parsed.isoDate,
         kind: parsed.kind,
-        captionSeed: catalogEntry?.caption_seed ?? "",
+        captionSeed,
         catalogPeople: catalogEntry?.people ?? "unclear",
         catalogLikelyShooter: catalogEntry?.likely_shooter ?? "unclear",
         derivatives: {},

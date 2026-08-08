@@ -17,6 +17,7 @@
 import { writeFileSync } from "node:fs";
 import type { CatalogEntry } from "./catalog.ts";
 import type { MediaKind } from "./filename.ts";
+import { isMachineShapedCaption } from "@/lib/caption-law.ts";
 
 /* ------------------------------------------------------------------ *
  * manifest.json
@@ -71,6 +72,34 @@ export interface Manifest {
 
 export function writeManifest(path: string, manifest: Manifest): void {
   writeFileSync(path, JSON.stringify(manifest, null, 2) + "\n", "utf8");
+}
+
+/**
+ * The manifest's `captionSeed` for one file — `catalogEntry.caption_seed`,
+ * UNLESS it reads as an internal/technical note about the photo file rather
+ * than a caption (`lib/caption-law.ts`), in which case this returns `""`,
+ * same as a file with no catalogue entry at all.
+ *
+ * This is the real fix for the 2026-08-08 breach ("Same photo as
+ * 24:7:26-4.JPG at lower resolution." reaching the live Book as a caption):
+ * `caption_seed` was always the field this tool trusted — the mapping was
+ * never wrong — but nothing before this function ever looked at what was
+ * IN it. `caption_seed` is authored by an automated vision pass with no
+ * human review in between, so a catalogue row can carry notes-shaped prose
+ * in the one field this tool assumes is caption-shaped; this function is
+ * what makes that assumption true rather than merely convenient.
+ *
+ * Deliberately does not fall back to `notes` or any other field — the
+ * founder's own standing rule for this pipeline (see prepare.ts, "no
+ * curation happens here") is that an uncaptioned photograph is a completely
+ * fine outcome; inventing a caption from a different free-text field is not
+ * this tool's job, and load.ts's caption-worthy defaults already treat an
+ * empty `captionSeed` as "no caption" for exactly this reason.
+ */
+export function resolveCaptionSeed(catalogEntry: CatalogEntry | undefined): string {
+  const seed = catalogEntry?.caption_seed ?? "";
+  if (seed !== "" && isMachineShapedCaption(seed)) return "";
+  return seed;
 }
 
 /* ------------------------------------------------------------------ *
