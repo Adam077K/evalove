@@ -51,25 +51,28 @@ describe("Band", () => {
   /**
    * Eva first, everywhere the two of them appear in sequence — the
    * same rule `MEMBERS: readonly [Member, Member] = [EVA, ADAM]`
-   * (lib/fixtures/members.ts) and Today's own DECO section already
-   * hold ("New York first; the gold is hers"). New York is Eva's city
+   * (lib/fixtures/members.ts) and Dates' own DECO section already
+   * hold ("New York first; the ink is hers"). New York is Eva's city
    * (`EVA.homeTimezone === "America/New_York"`); Tel Aviv is Adam's.
    * This is the most visible surface in the app — on every route — so
    * asserted, not left to be remembered: New York must precede Tel
-   * Aviv in the rendered order, and Eva's reading carries the gold
+   * Aviv in the rendered order, and Eva's reading carries the stronger
    * tone, both by DOM order and by document position.
    */
-  it("holds Eva-first: New York precedes Tel Aviv, gold is hers", () => {
+  it("holds Eva-first: New York precedes Tel Aviv, ink is hers", () => {
     const { container } = render(<Band />);
     const text = container.textContent ?? "";
     expect(text.indexOf("NEW YORK")).toBeGreaterThanOrEqual(0);
     expect(text.indexOf("TEL AVIV")).toBeGreaterThan(text.indexOf("NEW YORK"));
 
-    // After the Band moved to paper, Eva's city carries text-ink (full
-    // darkness — the stronger reading) and Adam's carries text-mute (the
-    // receded reading). The guard is: TEL AVIV is the muted one, which
-    // means New York is NOT muted — the distinction holds by exclusion.
-    const muted = container.querySelector(".text-mute");
-    expect(muted?.textContent).toBe("TEL AVIV");
+    // After the Band moved to paper: Eva's city carries text-ink (full
+    // darkness — the stronger reading); Adam's carries text-mute (the
+    // receded reading). Both sides are asserted positively — asserting
+    // only text-mute on Tel Aviv would pass even if text-ink were stripped
+    // from Eva's span, leaving New York with no distinguishing tone at all.
+    const evaCity = container.querySelector("span.text-ink");
+    expect(evaCity?.textContent).toBe("NEW YORK");
+    const adamCity = container.querySelector("span.text-mute");
+    expect(adamCity?.textContent).toBe("TEL AVIV");
   });
 });
