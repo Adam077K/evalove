@@ -35,7 +35,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({
-  photoId: z.string().uuid("photo id must be a uuid"),
+  // UUID *shape*, deliberately not `z.uuid()`. Ids written by `tools/ingest`
+  // are derived from the source filename so that re-running the loader is
+  // idempotent, which means their version and variant nibbles are whatever
+  // the hash produced rather than RFC 4122's. Postgres stores those happily;
+  // `z.uuid()` rejected roughly half of them, and the archive rendered with
+  // holes in it. This check exists to reject garbage before it reaches a
+  // database lookup, and a hex shape does that: the id is a key into our own
+  // table, an unknown one simply misses, and `requireSession()` above already
+  // decided whether this person may see anything at all.
+  photoId: z
+    .string()
+    .regex(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      "photo id must be a uuid",
+    ),
   variant: z.string().min(1),
 });
 
