@@ -4,9 +4,12 @@ import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
 const webRoot = fileURLToPath(new URL(".", import.meta.url));
-// Tools tests live outside the Next.js app root; resolve to an absolute path
+// Tools tests live outside the Next.js app root; resolve to absolute paths
 // so vitest can find them regardless of the working directory.
-const toolsTestsGlob = resolve(webRoot, "../../tools/export/__tests__/**/*.test.ts");
+const toolsTestsGlobs = [
+  resolve(webRoot, "../../tools/export/__tests__/**/*.test.ts"),
+  resolve(webRoot, "../../tools/ingest/__tests__/**/*.test.ts"),
+];
 
 export default defineConfig({
   test: {
@@ -27,7 +30,7 @@ export default defineConfig({
       "lib/**/*.test.ts",
       "app/**/*.test.{ts,tsx}",
       "components/**/*.test.{ts,tsx}",
-      toolsTestsGlob,
+      ...toolsTestsGlobs,
     ],
     exclude: ["node_modules/**", ".next/**", "e2e/**"],
   },
