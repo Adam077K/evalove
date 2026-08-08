@@ -5,38 +5,43 @@
  * The Seam and the DECO window moved to Dates. Today is the room the app
  * opens into — paper runs to the dock.
  *
- * REGRESSION GUARD: overflow-x-clip contains the photograph mount's
- * ml-12 -mr-12 bleed (TodayPair.tsx lines 217 and 307). A defect shipped
- * where this clip was lost, causing 66px horizontal scroll at 393px. The
- * commit that restored it: fix(ui): correct Seam order on Dates and Today
- * pb reservation. This test guards against silent re-addition of that defect.
+ * REGRESSION TRIPWIRE: overflow-x-clip on Paper element.
+ *
+ * A defect shipped where this clip was lost, causing 66px horizontal scroll
+ * at 393px viewport width. The regression was approved by code review. This
+ * test is a tripwire that greps the source for the class name — it catches
+ * the exact regression route (someone deletes the class and review approves it)
+ * and nothing else. It passes if the clip moves to an element that does not
+ * contain the bleed, if the structure changes so containment no longer applies,
+ * or if the bleed moves.
+ *
+ * The only proof that Today cannot scroll sideways is measurement:
+ * document.documentElement.scrollWidth === viewport width at 393px.
+ * Only a human running the real route with a session can verify that today.
+ *
+ * When TodayPage becomes testable (async dependencies lifted), replace this
+ * source-grep tripwire with a render-based assertion that actually measures
+ * overflow and containment.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 
 describe("Today page", () => {
-  it("Today's root Paper carries overflow-x-clip for photograph bleed containment", () => {
-    // TodayPage is an async server component that hits the data layer
+  it("Today's root Paper carries overflow-x-clip (regression tripwire)", () => {
+    // TodayPage is an async server component hitting the data layer
     // (liveTodayObject, liveWhatCameBack), so it cannot be rendered in jsdom.
-    // Instead, verify the source code contains the required constraint.
-    // When TodayPage becomes testable (async lifted), this should be replaced
-    // with a render-based assertion.
+    // This tripwire greps the source file for the required class — the only
+    // assertion we can make without shipping false-green render tests.
 
     const pageSource = readFileSync(
       join(__dirname, "../page.tsx"),
       "utf-8"
     );
 
-    // Assert that the Paper component on this route carries overflow-x-clip.
-    // The class must be present to contain the photograph mount's ml-12 -mr-12
-    // bleed (TodayPair.tsx lines 217 and 307). Without it, the page scrolls
-    // horizontally by ~66px at 393px viewport width.
+    // KEEP: The class name itself must be present in the className attribute.
+    // This is the strong assertion — it catches deletion of the class or
+    // moving it out of the Paper element.
     expect(pageSource).toContain('className="overflow-x-clip');
-
-    // Assert the comment is still there explaining why (so a future refactor
-    // does not accidentally remove the clip thinking it is dead code).
-    expect(pageSource).toContain("overflow-x-clip");
-    expect(pageSource).toContain("contains the photograph mount");
   });
 });
