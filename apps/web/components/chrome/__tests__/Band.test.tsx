@@ -48,6 +48,12 @@ describe("Band", () => {
     expect(header?.style.height).toBe("var(--band-height)");
   });
 
+  it("carries bg-canvas material", () => {
+    const { container } = render(<Band />);
+    const header = container.querySelector("header");
+    expect(header?.className).toContain("bg-canvas");
+  });
+
   /**
    * Eva first, everywhere the two of them appear in sequence — the
    * same rule `MEMBERS: readonly [Member, Member] = [EVA, ADAM]`
@@ -59,11 +65,25 @@ describe("Band", () => {
    * Aviv in the rendered order, and Eva's reading carries the stronger
    * tone, both by DOM order and by document position.
    */
-  it("holds Eva-first: New York precedes Tel Aviv, ink is hers", () => {
+  it("holds Eva-first: New York precedes Tel Aviv in DOM order, ink is hers", () => {
     const { container } = render(<Band />);
-    const text = container.textContent ?? "";
-    expect(text.indexOf("NEW YORK")).toBeGreaterThanOrEqual(0);
-    expect(text.indexOf("TEL AVIV")).toBeGreaterThan(text.indexOf("NEW YORK"));
+
+    // Assert clock order by DOM — both readings rendered, New York first
+    const allSpans = container.querySelectorAll("span");
+    let newYorkIndex = -1;
+    let telAvivIndex = -1;
+
+    allSpans.forEach((span, idx) => {
+      if (span.textContent?.includes("NEW YORK")) {
+        newYorkIndex = idx;
+      }
+      if (span.textContent?.includes("TEL AVIV")) {
+        telAvivIndex = idx;
+      }
+    });
+
+    expect(newYorkIndex).toBeGreaterThanOrEqual(0);
+    expect(telAvivIndex).toBeGreaterThan(newYorkIndex);
 
     // After the Band moved to paper: Eva's city carries text-ink (full
     // darkness — the stronger reading); Adam's carries text-mute (the
