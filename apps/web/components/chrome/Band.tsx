@@ -20,10 +20,13 @@ import type { Member } from "@/lib/types";
  * now sits on the same substrate as the paper world below it. The night
  * window belongs to Dates; the Band is the room's header, not the sky.
  *
- * EVA-FIRST. Eva's city reads at full `--ink` (the darker reading);
- * Adam's reads at `--mute` (the receded reading). Weight and darkness
- * carry the distinction — never hue, never `--eva`/`--adam` (those are
- * authorship inks and a city label is not authorship). The product law
+ * EVA-FIRST. Eva's whole clock reading (city + time) reads at full
+ * `--ink` (the darker tone); Adam's whole reading reads at `--mute`
+ * (the receded tone). Tone lives on the `<p>` so both the label and
+ * the time inherit it — applying it only to the city label leaves the
+ * time at the wrong weight. Weight and darkness carry the distinction —
+ * never hue, never `--eva`/`--adam` (those are authorship inks and a
+ * clock reading is not authorship). The product law
  * that Eva's name precedes Adam's is held by `MEMBERS[0] = EVA` in
  * `lib/fixtures/members.ts`; this component inherits it, never
  * re-asserts it.
@@ -78,10 +81,10 @@ function ClockReading({
   return (
     <p
       suppressHydrationWarning
-      className="type-micro flex items-baseline gap-1.5 normal-case text-ink"
+      className={cn("type-micro flex items-baseline gap-1.5 normal-case", tone)}
     >
       <PresenceDot presence={presence.presence} />
-      <span className={cn("tracking-[0.14em]", tone)}>
+      <span className="tracking-[0.14em]">
         {CITY[member.slug].toUpperCase()}
       </span>
       <span>{localTime(now, member.homeTimezone)}</span>

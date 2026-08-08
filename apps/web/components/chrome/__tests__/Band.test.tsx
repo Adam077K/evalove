@@ -85,14 +85,14 @@ describe("Band", () => {
     expect(newYorkIndex).toBeGreaterThanOrEqual(0);
     expect(telAvivIndex).toBeGreaterThan(newYorkIndex);
 
-    // After the Band moved to paper: Eva's city carries text-ink (full
-    // darkness — the stronger reading); Adam's carries text-mute (the
-    // receded reading). Both sides are asserted positively — asserting
-    // only text-mute on Tel Aviv would pass even if text-ink were stripped
-    // from Eva's span, leaving New York with no distinguishing tone at all.
-    const evaCity = container.querySelector("span.text-ink");
-    expect(evaCity?.textContent).toBe("NEW YORK");
-    const adamCity = container.querySelector("span.text-mute");
-    expect(adamCity?.textContent).toBe("TEL AVIV");
+    // Tone now lives on the <p> so city + time both inherit it — asserting
+    // on span.text-* would miss a regression where the time stayed at full
+    // ink while only the label was muted. Both sides are asserted positively:
+    // p.text-ink is Eva's reading; p.text-mute is Adam's. toContain because
+    // the <p> textContent includes the time string alongside the city label.
+    const evaReading = container.querySelector("p.text-ink");
+    expect(evaReading?.textContent).toContain("NEW YORK");
+    const adamReading = container.querySelector("p.text-mute");
+    expect(adamReading?.textContent).toContain("TEL AVIV");
   });
 });
