@@ -521,6 +521,50 @@ fourth is why CEO caught it in the delta review.
 **Owner:** ceo (session ceo-4), rule authored by design-lead
 **Affects:** anyone adding ornament assets (the rule is now the gate); whoever builds hand-composition (pressed flowers unblock only there); anyone touching `seededPick` or `TapeVariant`.
 
+## 2026-08-07 — Every photograph in the Book was dimmed at night, and every gate was structurally blind to it
+
+**Context:** A whole-app law sweep — the first ever run on this codebase; every prior gate checked only the diff in front of it — found that `.under-lamp` was applied to `BookObject.tsx:198`, the cloth wrapper, which is an **ancestor** of every `img.photo` in the open Book. `.under-lamp` applies `filter: brightness(…)`. **A CSS filter on an ancestor filters the entire composited subtree, and `filter: none` on a descendant cannot undo it** — the child renders, then the ancestor's filter is applied to the result.
+
+**So every photograph in the Book dimmed at night**, in direct breach of the rule `globals.css` states in its own words: *"Photographs are the sole exception and are NEVER dimmed — never give a photograph `.under-lamp`, per the standing rule that at 11pm the brightest thing on the screen is the other one's face."* The code obeyed the letter — no photograph carried the class — and broke the rule by giving it to their parent.
+
+**⚠️ THE LESSON, which is bigger than the bug:** **every QA gate that ever checked this verified that `.photo` computes `filter: none`. It genuinely does.** The check was **structurally incapable** of detecting the defect, and it passed, repeatedly, for the entire life of the Book. This is the same species as the e2e route array that measured the wrong page and the `jsdom` gap that let two files silently not run — **a green check pointed at the wrong thing** — but it is the most consequential instance, because the law it silently broke is the one this product is arguably built on.
+
+**Fix:** the cloth, box-shadow and LampShade move onto an `aria-hidden` sibling layer; the page block is that layer's sibling, painted above it. **This is `Paper.tsx`'s existing pattern — the reason every other paper surface never had this bug.** The lamp is re-aimed, not retuned: `globals.css` untouched, the ×0.73 curve unchanged.
+
+**Second-order catch that would have turned a correct fix into a visible regression:** the removed filter was **silently providing the stacking context**. `useBookTurn.zIndexFor` hands turning leaves z-index 1000+, which would then have escaped over the cover flap (z-20) and the close affordance (z-30). `isolation: isolate` added and tested.
+
+**Corrections to the CEO's brief, all right:** there are **four** inline readers of the lamp curve (`Pinned.tsx:93`, `Polaroid.tsx:99`, `BookCover.tsx:365`, `BookObject.tsx:260`), not the one named — a drift assertion now pins all four to their `:root` tokens. And **`drop-shadow` is a legitimate exemption**: it composites behind an already-rendered subtree and never touches source pixels, which `globals.css` also states in words. **The distinction is encoded in the test rather than banning all ancestor filters** — a blanket ban would have been easier and would eventually have been deleted as a nuisance.
+
+**The regression test is the durable artifact.** It **walks UP** from every `img.photo`; it **parses the dimming class set out of the real `globals.css`**, so a new dimming utility is caught with nobody remembering to update it; it **fails if any surface rendered zero photographs**, so it cannot pass vacuously; and it carries a **trap case** that rebuilds the shipped structure, asserts `.photo` computes `filter: none`, and then proves the walker catches it anyway — *executable documentation of why every previous gate passed.*
+
+**Filed separately, out of scope:** `lib/fixtures/photos.ts` calls `uuid()` at module load, so seeded mounts re-roll every process and `compose.ts`'s documented *"same photograph wears the same frame on every surface, forever"* rule is **unenforceable on fixtures** — on one run all nine fixture photographs drew the polaroid chin.
+
+**Reversibility:** presentation only. Risk tier full (touches every Book surface).
+**Owner:** ceo (session ceo-4); found by code-reviewer's law sweep, fixed and proven by frontend-engineer
+**Affects:** anyone applying `.under-lamp` (put it on a sibling layer, never an ancestor of content); anyone writing a photograph-integrity check (**assert on ancestors, not on the element**); QA-Lead (the diff-only habit is what let this live).
+
+## 2026-08-06 — The review door fails open on `!== "production"`; the guard becomes `=== "development"`
+
+**Context:** Security audit of the Irreversible-tier middleware change at `origin/main` @ `5beb340`. **Verdict APPROVE_WITH_CONDITIONS, no P1.** The auditor stated which tree it read — `origin/main` via `git show`, explicitly **not** the founder's working tree, whose uncommitted dev-door patch has already misled one agent.
+
+**The finding, verified independently by the CEO in the installed toolchain:** the proposed guard `process.env.NODE_ENV !== "production"` **fails open.** `next/dist/bin/next` line 17 is `process.env.NODE_ENV = process.env.NODE_ENV || defaultEnv` — **Next only *defaults* it; a preset value survives.** So `NODE_ENV=test next build` inlines `"test"`, the condition is true, and `/review/` ships **in the production bundle** — and the non-standard-env warning does not fire for `"test"`. Also satisfied by `undefined`, `""`, `"staging"`, and `"Production"` with a capital P (`===` is case-sensitive).
+
+**Decision: the guard is `process.env.NODE_ENV === "development"`.** Fails closed. Verified to still cover both real consumers — `next dev` defaults to `development`, and `playwright.config.ts:50` pins `NODE_ENV: "development"` explicitly. **The diff's own comment claimed `next build` inlines `"production"` unconditionally; that claim was false and would have been trusted by the next reader.**
+
+**Why no P1:** worst-case misconfiguration exposes three fixture harnesses whose every image is a `picsum.photos` URL — **zero cookies, zero DB, zero authenticated calls.** The one registry-miss fallback (`/p/[photoId]/[variant]`) calls `requireSession()` itself, so a miss fails closed. **Two people's photographs are not reachable through this.**
+
+**The finding worth acting on first is not the security one.** `middleware.ts` transitively imports `lib/env.ts`, which **throws at module evaluation**, and **30 of 44 worktrees have no `.env.local` — including the branch that proposed this change.** So the door may open onto a 500 rather than a harness. *"Your stated failure mode is 'passes QA, fails use' — do not let the seventh instance be a security change."* **Merge condition: demonstrate a bare worktree loading `/review/book-states` with no cookie.**
+
+**A prefix publishes what does not exist yet.** Nothing gates a future file dropped under `app/(app)/review/`. Resolved **not** with a per-route allowlist — that would put an edit to the auth boundary on the critical path of every harness, which is the friction that produced three forcing attempts already — but with **a second gate**: `app/(app)/review/layout.tsx` carrying `notFound()` outside development, matching the standard the project already set at `app/dev/materials/page.tsx:32`, plus **a test asserting the *shape* of any harness** (no `fetch(`, no `cookies()`, no server data module) rather than its existence. A test that fires on every new route is noise and gets silenced within a week.
+
+**Pre-existing, out of scope, production-affecting — recorded so it is not lost:** percent-encoded slashes survive `nextUrl.pathname`. `/img/..%2f..%2ftoday` and the same shape under `/_next/`, `/api/img/` are public **in production on `origin/main` today**. Unchanged by this diff, which is why it is not a condition here.
+
+**Test-suite gaps found:** it tested three values of a condition whose risk lives in the fourth; it asserts 5 routes stay closed and **0 that must stay open**; and **nothing tests the artifact** — the entire security claim is "the string is absent from the production bundle" and no test greps `.next/server/edge/chunks/*.js`.
+
+**Reversibility:** Irreversible tier. Merge conditions: the `=== "development"` form with fail-open cases · the production-bundle grep, output pasted · cherry-pick rather than merge (the original branch is 11 commits stale and would revert 795 lines including four session files).
+**Owner:** ceo (session ceo-4); audit by security-engineer
+**Affects:** anyone editing `PUBLIC_PREFIXES`; anyone adding a route under `app/(app)/review/`; QA-Lead (holds the gate).
+
 ## 2026-08-06 — QA-Lead PASS on feat/dates-cardcopy (Lite) — and the gate's own reviewer wrote a wrong test
 
 *Ported by the CEO from QA-Lead's verdict. QA-Lead had appended it to a `DECISIONS.md` five commits stale — committing that file would have silently deleted four of today's entries. The verdict is QA-Lead's and unaltered; one factual claim is corrected inline and marked.*

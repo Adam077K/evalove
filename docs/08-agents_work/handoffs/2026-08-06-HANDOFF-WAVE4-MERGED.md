@@ -340,3 +340,140 @@ laundering. It needs the founder's own hand.
 
 **Still his alone, still unrun: the slop test.** Nothing from this wave has been in front of
 his eyes.
+
+---
+
+## §11 · Wave 5 is BUILT — `integration/wave5` @ `d973812`, pushed
+
+**41 files / 544 tests / 541 passed / 1 failed (documented `tools/export`) / 2 skipped ·
+typecheck clean · 33 files, +1886 / −602 · zero merge conflicts across four branches.**
+
+| In the wave | What |
+|---|---|
+| shared shell | one edge-to-edge frame; both hand-rolled escape hatches deleted; `Column` opt-in for Dates/Send |
+| DECO band | `--night-sky`, Seam **rotated 180° (not mirrored)**, `--band-height: calc(56px + safe-area)`, identical every route, **never a skeleton** |
+| page turn | **real spine hinge**, leaves stacked, true back face, Prev/Next for WCAG 2.5.7, reduced-motion honoured |
+| dates debt | wrong regression test corrected (w9→w7), relative-time law breach removed |
+| cleanup | five dead v7 files deleted — **also cleared 3 of 7 pre-existing lint errors** |
+
+**Every worker returned `visual_verification: PENDING` with a specific `needs_eyes` list. Not
+one claimed to have seen a screen.** That is the discipline that was absent when seven PASS
+verdicts landed on an app the founder called unusable.
+
+### ⚠️ The security finding that changes the line you were told to paste
+The review-door guard was going to be `NODE_ENV !== "production"`. **It fails open.**
+`next/dist/bin/next` line 17 is `process.env.NODE_ENV = process.env.NODE_ENV || defaultEnv` —
+Next only *defaults* it. `NODE_ENV=test next build` inlines `"test"`, the condition is true,
+and `/review/` **ships in the production bundle**, with no warning. Also open on `undefined`,
+`""`, `"staging"`, `"Production"`.
+
+**The correct line is `process.env.NODE_ENV === "development"`.** Verified to still cover
+`next dev` and `playwright.config.ts:50`, which pins development explicitly.
+**Audit verdict: APPROVE_WITH_CONDITIONS, no P1** — worst case exposes three fixture pages
+with `picsum.photos` images, zero cookies, zero DB; the one fallback path calls
+`requireSession()` itself.
+
+### ⚠️ The finding worth acting on before the security one
+`middleware.ts` transitively imports `lib/env.ts`, which **throws at module evaluation**, and
+**30 of 44 worktrees have no `.env.local` — including the branch that proposed the change.**
+**CONFIRMED EMPIRICALLY — no longer a hypothesis.** A worker booted `next dev` both ways and
+hit `/review/book-states` with no cookie: **with** a generated `.env.local` → **`307` to
+`/login`** (correct; the door line is not landed). **Without** one → **`500`,
+`EnvironmentError` thrown at module evaluation in `lib/env.ts` via `lib/session/token.ts`,
+before the request reaches `isPublic()` at all.**
+
+**So the middleware line ALONE does not unblock a worker.** Every worker also needs its own
+`.env.local`, generated from `apps/web/.env.example` — **never copied or symlinked from
+another worktree.** Brief both together, or the door is theatre. *Do not let the seventh
+"passes QA, fails use" be a security change.*
+
+### Pre-existing, live in production, nobody's ticket yet
+**Percent-encoded slashes survive `nextUrl.pathname`.** `/img/..%2f..%2ftoday` and the same
+shape under `/_next/` and `/api/img/` are public **in production on `origin/main` today**.
+Unrelated to this wave. Needs its own decision.
+
+### Branches
+`integration/wave5` (pushed, code-complete) · `feat/review-door` (hardened: fail-open
+`NODE_ENV` cases, `ALWAYS_PUBLIC` assertions, `review/layout.tsx` second gate, harness shape
+test; **one red until the line lands, which is the suite working**) ·
+`feat/lay-probe-responsiveness` (separate base) · `feat/floral-washi` (awaiting plate download).
+**Do NOT merge `feat/review-door-dev-only`** — 11 commits stale, would revert 795 lines. The
+test was cherry-picked onto `feat/review-door` instead.
+
+### The two things only the founder can do
+1. **The one line**, in `.worktrees/review-door-2/apps/web/middleware.ts`:
+   `...(process.env.NODE_ENV === "development" ? ["/review/"] : []),`
+2. **Download the washi plates** (URLs in the session log) — CDN egress is blocked from every
+   agent session; confirmed independently from two.
+
+**Then: the visual pass against five `needs_eyes` lists → QA gate → the founder's slop test.
+Nothing in this wave has been seen by a human.**
+
+---
+
+## §12 · Wave 5 COMPLETE and gated — `integration/wave5` @ `f23be64`
+
+**Nine merges · 59 files · +3372 / −644 · 47 files / 737 tests / 734 passed · typecheck
+clean · all branches pushed.** With QA-Lead at **Irreversible tier** (`middleware.ts` is in
+the diff).
+
+Shared shell · DECO band · real spine-hinged page turn · the lamp fix · floral washi · the
+review door · dates debt · three law fixes.
+
+### ⚠️ The defect that had survived the entire life of the Book
+**Every photograph in the Book dimmed at night.** `.under-lamp` applies a CSS `filter` and
+sat on an **ancestor** of every `img.photo`; a child cannot escape a parent's filter.
+**Every gate that ever checked this verified `.photo` computes `filter: none` — and it does.**
+The check was structurally incapable of seeing it. Fixed by moving the cloth to a sibling
+layer (`Paper.tsx`'s own pattern). **The regression test walks UP, parses the dimming set out
+of the real `globals.css`, fails if a surface renders zero photographs, and carries a trap
+case that reproduces the shipped structure and proves the old check passes on it.**
+
+### The first pixels anyone has seen
+The review door landed, so `/review/*` is reachable with no session. Verified live:
+`/review/*` → **200**, `/today` and `/book` → **307 `/login`**. Captured at 393×852 both
+modes. **The band renders exactly its specced 56px** — but the Seam falloff runs below it, so
+**paper begins at y=185px (night) / 203px (day) of 852: roughly a quarter of every screen is
+band + falloff, in both modes.** That is the spec working as written (*place, not time*) and
+is a **founder decision, not a defect.**
+
+⚠️ **A CEO error, corrected here so it is not inherited:** the dock's centre `+` was flagged
+as a possible prepared place. **It is not.** It is `<Link href="/send">` with
+`aria-label="Send something small"` — it works. The criticism was aesthetic dressed as a law
+finding. Those are not the same thing and only one of them is the gate's business.
+
+### Still open, none blocking
+- ~~The security audit's last condition~~ **CLOSED — measured, verdict PASS.** A production
+  build was run and the edge chunk grepped: it contains **every other allowlist literal**
+  (`/_next/`, `/icons/`, `/api/img/`, `/img/`, `/manifest.webmanifest`, `/offline`) and
+  **zero occurrences of `"/review/"`**, plus **zero `NODE_ENV` reads at all** — the ternary
+  was constant-folded and dead-code-eliminated at build time. **A host that sets
+  `NODE_ENV=development` at runtime cannot reopen the prefix, because there is no branch left
+  to take.** `force-dynamic` also verified: no prerendered HTML exists for either harness and
+  the fixture caption is absent from the client bundle. The diff is `+23/−0`, `PUBLIC_PATHS`
+  untouched.
+  Full traversal/encoding matrix run — `..`, `%2e%2e`, `%2F`, case, backslash, double-slash —
+  **all fail closed.** One curiosity, harmless: `/review/İx` (dotted capital I) does match the
+  prefix, but only two routes exist under it so it 404s.
+  **Two P3s, neither blocking:** the traversal test asserts Node's URL parser rather than the
+  deployed server, and the *layout's* `NODE_ENV` read was verified only in the edge bundle,
+  not the Node-runtime one. Impact nil either way — the prefix is physically absent from the
+  production artifact.
+- **Percent-encoded slashes survive `nextUrl.pathname`** — `/img/..%2f..%2ftoday` is public
+  **in production on `main` today.** Pre-existing, unowned, unmeasured whether the router
+  then resolves it. Task #62.
+- **Fixture photo ids re-roll every process** (`uuid()` at module load), so `compose.ts`'s
+  "same photograph wears the same frame forever" rule is unenforceable on fixtures. Task #69.
+- **`lib/session` token-tamper flake at ~1-in-6** — two independent reproductions.
+- **Register question:** the new resurface label reads *"From 29 July 2026"* against prose-y
+  siblings like *"Left in the evening, in June"*. Anchored to the colophon's `longDate`.
+  Founder's call.
+
+### The environment trap that cost two attempts
+`.env.local` must escape **every `$` in the scrypt hashes as `\$`**. **Quoting does not work**
+— single and double quotes arrive just as mangled in both `@next/env` and Turbopack.
+`.env.example` lines 9-19 document it. The app throws `EnvironmentError` at module
+evaluation, so a wrong `.env.local` looks like a broken app, not a broken env.
+
+**Nothing in this wave has been in front of the founder's eyes. The slop test is his alone
+and remains unrun.**
