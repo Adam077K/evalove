@@ -220,9 +220,24 @@ function hasChin(photo: Photo): boolean {
  * ------------------------------------------------------------------ */
 
 function PageCaption({ photo, className }: { photo: Photo; className?: string }) {
+  // A chin mount already carries the caption on the photo itself
+  // (Polaroid.tsx only paints its chin for `variant === "chin"`, and
+  // MountedFigure only sets that variant when `mountFor` picked
+  // "chin"). This component used to render anyway, `!hasChin` only
+  // guarding the caption text — leaving the timestamp as an orphan: no
+  // caption, no photo, nothing to anchor it to, and in a cluster of
+  // several chin-mounted photos, several identical unlabelled
+  // "12:00 pm" lines stacked with nothing to tell them apart. That is
+  // the "layers" defect in miniature — a stamp separated from its
+  // photograph — even though the pairing in the DOM was never wrong.
+  // Nothing is lost by skipping it here: every fact this would have
+  // shown (who wrote it, what it says, when) already reads off the
+  // chin, in the same place a person would actually look.
+  if (hasChin(photo)) return null;
+
   return (
     <div className={className}>
-      {photo.caption !== undefined && !hasChin(photo) && (
+      {photo.caption !== undefined && (
         <p
           className={`${
             authorshipOf(photo).signed ? handClass(photo) : unsignedHandClass()
