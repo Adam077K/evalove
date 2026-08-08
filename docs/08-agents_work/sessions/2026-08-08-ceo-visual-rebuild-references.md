@@ -82,9 +82,78 @@ and Khánh Vĩnh) — an instrument pointed away from the answer, which is this 
 shape. Treat it as *not found by us*, not *does not exist*. **Cheapest resolution is the
 founder's own browser history from the morning of 4 August.**
 
-**Open.** Founder reaction to the wall is the gate — nothing is built before it.
+**Open.** Founder reaction to the wall is the gate.
 `refero` MCP returns `NO_SUBSCRIPTION` and the `refero-design` skill was never installed, so the
 previous handoff's top recommendation is unavailable twice over.
+
+---
+
+# The build — `feat/deco-to-dates`
+
+Given the corrected classification the founder set a new allocation: **the app's structure from
+real shipped apps, the material from the memory-book products, and deco quarantined to Dates.**
+Then two scoping answers: *"keep the clocks, drop the night"* and *"paper runs to the bottom."*
+
+**Nine commits, one atom.** The Seam leaves the shared shell · the Band stays and moves from
+`bg-night-sky` onto paper (`bg-canvas`, hairline, Eva's city `text-ink`, Adam's `text-mute`) ·
+Today loses its whole night section and its paper runs to the dock lip · Dates gains the night
+section, then a rotated Seam, then its Paper. **68 files, 1021 passed, 1 todo, 0 skipped.**
+
+**The measured prize:** Band (56px) + Seam (190px) = **246px of deco chrome above the first
+pixel of content on every route, 29% of an 852px screen.** The shell's own comment recorded the
+founder on the previous 312px: *"wastes the top third of the screen."*
+
+## What the gate caught — and what it says about gates here
+
+**One P1, found by the adversary alone and actively approved by a reviewer that PASSed.** Today
+lost `overflow-x-clip`; `TodayPair` still bleeds `-mr-12` and its own comment names the
+dependency. Measured on the dev server at 393×852: `scrollWidth` **459 against a 393 viewport —
+66px of horizontal scroll**. code-reviewer had approved the removal, reasoning that Today no
+longer held overflowing elements now the shores had moved. **The bleed was never the shores.**
+The reviewer's stated rationale was itself the defect. Fixed at `9417d4a`, re-measured contained.
+
+**The vacuous-assertion pattern appeared four times in one afternoon**, in work by three
+different agents *and by the CEO*:
+1. The Eva-first guard asserted Adam's city was muted and *inferred* Eva's was not — passes if
+   her tone is stripped entirely.
+2. The CEO's own brief said "assert the first child is **not** a seam" — passes if nothing renders.
+3. `if (nightSkyIndex >= 0 && seamIndex >= 0)` — **passes if the Seam vanishes**, which is the
+   regression it exists to catch.
+4. An `it()` with an **empty body** — asserts nothing, always passes, counts toward the total
+   while its title claims coverage.
+
+Every one looks correct, runs green, and reads as coverage in an audit. **Coverage counts are
+not coverage.** All four are now two-sided; the untestable case is an honest `it.todo` naming
+why, rather than a mocked test asserting against a fiction — mocking `lib/shared-day` to force
+it would have violated the untouchable rule to manufacture a green tick.
+
+**A live hole in the gate itself:** `lib/__tests__/no-client-secrets.test.ts` uses
+`it.skipIf(files.length === 0)` against `.next/static`. On any unbuilt worktree the two tests
+verifying no server secret reaches the client bundle **skip silently while the suite reports a
+clean 1013.** QA-Lead's ruling, adopted: *a test that reports green when the artifact it examines
+does not exist has not tested anything.* Fix is a throw telling the engineer to build first.
+Pre-existing; filed as debt.
+
+**The reviewer tally, honestly:** security PASS · code-review PASS (0 P1/P2) · qa-engineer BLOCK
+on coverage (closed) · adversary BLOCK on the P1 (closed) · design-critic PASS_WITH_P2. **No P0s.**
+The adversary returned empty on its first run and was resumed rather than counted as a pass;
+QA-Lead refused to certify an incomplete pipeline and named its own missed reviewer.
+
+## Founder-facing, unresolved
+
+- **The hairline stays** — the design-critic stripped it in the live DOM and compared: without
+  it the fixed/scroll boundary is invisible, since Band and page share `--canvas` with no
+  elevation shadow. *"Not decoration — a functional signal made as quiet as possible."* Evidence,
+  not taste. His to overrule.
+- **Adam's time reads at full ink while his city is muted** — pixel-confirmed, "TEL AVIV"
+  `rgb(107,98,89)` against "9:01 pm" `rgb(25,21,18)`. Faithful to the night version, never
+  decided. One-line fix: move `tone` onto the `<p>`.
+- **`/book`, `/send` and `/pocket` silently lost 190px** of top spacing. **CEO scoping error** —
+  the change was framed as Today + Dates + shell, and nobody asked what happens to the three
+  other routes that also lost the shell Seam. May well be an improvement; nobody has looked.
+- **Nobody has seen the real Today or Dates.** Both are auth-gated; every render this session
+  came from `/review/today-pair`. The photograph law was verified three ways (pixel, ancestor
+  trace, structural) but the compositions themselves are unjudged.
 
 **Not done, at his instruction:** SESSION_SECRET rotation (time-sensitive — a valid token
 reached an agent log), caption fix, three attributions, video schema, `people` migration,
