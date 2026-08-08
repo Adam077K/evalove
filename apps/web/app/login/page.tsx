@@ -1,3 +1,4 @@
+import { Paper } from "@/components/materials";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 /**
@@ -6,7 +7,9 @@ import { LoginForm } from "@/components/auth/LoginForm";
  * Outside the `(app)` group on purpose: no dock, because there is
  * nowhere to navigate to yet, and a nav bar in front of someone who
  * cannot use it is furniture. Warm paper and nothing else behind it,
- * which is the same page everything else is printed on.
+ * which is the same page everything else is printed on — literally
+ * `<Paper>` now, the same coldpress stock Today and The Book sit on,
+ * rather than `--canvas-base`'s flat fill standing in for it.
  *
  * The wordmark is set edge to edge, which is the one structural idea
  * taken wholesale from the SORDJATI reference: a masthead at a size
@@ -28,16 +31,18 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-16">
-      <p className="type-micro text-mute">Two cities, one book</p>
-      <h1 className="type-masthead mt-3 text-ink">
-        Eva <span aria-hidden="true">&amp;</span>
-        <span className="sr-only">and</span> Adam
-      </h1>
+    <Paper stock="coldpress" className="min-h-[100dvh]">
+      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-16">
+        <p className="type-micro text-mute">Two cities, one book</p>
+        <h1 className="type-masthead mt-3 text-ink">
+          Eva <span aria-hidden="true">&amp;</span>
+          <span className="sr-only">and</span> Adam
+        </h1>
 
-      <div className="flex flex-1 items-center justify-center">
-        <LoginForm />
-      </div>
-    </main>
+        <div className="flex flex-1 items-center justify-center">
+          <LoginForm />
+        </div>
+      </main>
+    </Paper>
   );
 }
