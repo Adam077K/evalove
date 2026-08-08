@@ -60,7 +60,7 @@
 import type { Photo } from "@/lib/types";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Taped, Torn } from "@/components/materials";
-import { authorSlugOf } from "@/components/book/compose";
+import { authorshipOf, authorSlugOf } from "@/components/book/compose";
 
 /* ------------------------------------------------------------------ *
  * Public components
@@ -130,13 +130,29 @@ export function TodayPairContent({
 
 /** Their hand, per the register table (§2). Never swapped. Sized
     distinctly from the Book's `compose.handClass` — Today's hero
-    caption reads at a larger scale than a page inside the object. */
+    caption reads at a larger scale than a page inside the object.
+    Throws for an unsigned photo (routed through `authorSlugOf`) —
+    every call site must check `authorshipOf(photo).signed` first and
+    use `unsignedHandClass` below instead, same guard `compose.ts`'s
+    own `handClass` requires of its callers. */
 function handClass(photo: Pick<Photo, "authorSlug" | "authorMemberId">): string {
   /* Caveat runs smaller on the eye than Patrick Hand at equal px —
      the sizes compensate so neither hand shouts. */
   return authorSlugOf(photo) === "eva"
     ? "font-eva text-[25px]"
     : "font-adam text-[19px]";
+}
+
+/**
+ * The app's own voice, at Today's hero-caption scale, for a photograph
+ * nobody signed (founder decision, 2026-08-07 — a "book" plate may be
+ * unsigned; only `lastLeft` can ever reach `HeroItem` unsigned, since
+ * `evaPhoto`/`adamPhoto` always carry an author). Sized near Adam's
+ * caption size, the same relationship `compose.ts`'s own
+ * `unsignedHandClass` holds against its two hands.
+ */
+function unsignedHandClass(): string {
+  return "font-display italic text-[20px]";
 }
 
 /**
@@ -214,10 +230,14 @@ function HeroItem({
 
       {/* The caption — type directly on paper, in their hand, at a
           narrower measure than the photograph and off its axis.
-          Never centred under the photo, never in a container. */}
+          Never centred under the photo, never in a container. An
+          unsigned photo (only reachable via `lastLeft`) gets the app's
+          own voice instead of either hand — see `unsignedHandClass`. */}
       {caption !== undefined && (
         <p
-          className={`${handClass(photo)} mt-7 ml-10 max-w-[15rem] leading-snug text-ink`}
+          className={`${
+            authorshipOf(photo).signed ? handClass(photo) : unsignedHandClass()
+          } mt-7 ml-10 max-w-[15rem] leading-snug text-ink`}
         >
           {caption}
         </p>

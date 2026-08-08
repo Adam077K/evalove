@@ -117,11 +117,66 @@ describe("liveTodayObject", () => {
     expect(result.recentDailies).toEqual([]);
   });
 
-  it("ignores a book-kind photo when looking for the Tuesday fallback — only dailies count", async () => {
+  it("falls back to a book-kind photo when no daily exists (2026-08-08) — the last thing left, any kind", async () => {
+    // The real archive on go-live: 48 real photographs, every one
+    // `kind: "book"`, zero `kind: "daily"` — the exact shape that used to
+    // make this test assert the opposite and made Today render empty.
     const gw = fakeGateway();
     gw.photos = [
       row({
         id: "curated-plate",
+        kind: "book",
+        author_member_id: EVA_ROW.id,
+        shared_day: "2026-08-04",
+        created_at: "2026-08-04T20:00:00Z",
+        caption: "the coffee place",
+      }),
+    ];
+
+    const result = await liveTodayObject(deps(gw, NOW), { slug: "eva" });
+
+    expect(result.lastLeft?.id).toBe("curated-plate");
+    expect(result.lastLeft?.authorSlug).toBe("eva");
+    expect(result.stampPhoto?.id).toBe("curated-plate");
+  });
+
+  it("falls back to an unsigned book-kind photo — it belongs to the day, not to a sender", async () => {
+    // 26 of the 48 real photographs are unsigned (founder decision,
+    // 2026-08-07): `author_member_id is null` on purpose. `lastLeft` must
+    // still surface it rather than skip it — `authorSlug` simply stays
+    // unresolved, and callers (`TodayPair.tsx`, `today/page.tsx`) branch on
+    // `authorshipOf` rather than assuming a hand.
+    const gw = fakeGateway();
+    gw.photos = [
+      row({
+        id: "unsigned-plate",
+        kind: "book",
+        author_member_id: null,
+        shared_day: "2026-08-04",
+        created_at: "2026-08-04T20:00:00Z",
+      }),
+    ];
+
+    const result = await liveTodayObject(deps(gw, NOW), { slug: "eva" });
+
+    expect(result.lastLeft?.id).toBe("unsigned-plate");
+    expect(result.lastLeft?.authorMemberId).toBeNull();
+    expect(result.lastLeft?.authorSlug).toBeUndefined();
+    expect(result.stampPhoto?.id).toBe("unsigned-plate");
+  });
+
+  it("prefers the most recent photo across kinds, not the most recent daily", async () => {
+    const gw = fakeGateway();
+    gw.photos = [
+      row({
+        id: "older-daily",
+        kind: "daily",
+        author_member_id: ADAM_ROW.id,
+        shared_day: "2026-08-02",
+        created_at: "2026-08-02T08:00:00Z",
+      }),
+      row({
+        id: "newer-book",
         kind: "book",
         author_member_id: EVA_ROW.id,
         shared_day: "2026-08-04",
@@ -131,6 +186,6 @@ describe("liveTodayObject", () => {
 
     const result = await liveTodayObject(deps(gw, NOW), { slug: "eva" });
 
-    expect(result.lastLeft).toBeUndefined();
+    expect(result.lastLeft?.id).toBe("newer-book");
   });
 });

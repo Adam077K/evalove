@@ -7,8 +7,8 @@ import { Paper, Seam } from "@/components/materials";
 import { TodayPairContent } from "@/components/home/TodayPair";
 import { TodayDoorway } from "@/components/home/TodayDoorway";
 import { SealedCard } from "@/components/home/SealedCard";
-import Stamp from "@/components/item/Stamp";
-import { authorSlugOf } from "@/components/book/compose";
+import Stamp, { UnsignedMark } from "@/components/item/Stamp";
+import { authorshipOf } from "@/components/book/compose";
 import { WINDOW_STRINGS } from "@/lib/window-strings";
 import { currentWindow } from "@/lib/shared-day";
 import { offsetNote } from "@/lib/stamp";
@@ -78,8 +78,23 @@ export default async function TodayPage() {
   const dst = offsetNote(today.day);
 
   /* The same selection the table renders — the stamp below the seam
-     describes the thing above it, including the Tuesday fallback. */
+     describes the thing above it, including the Tuesday fallback. Since
+     2026-08-08 the fallback can land on an unsigned "book" plate (founder
+     decision, 2026-08-07), so this observes `authorshipOf` first, exactly
+     the guard `ResurfacedItem.tsx` already uses, rather than assuming every
+     `stampPhoto` has a slug to hand `<Stamp>`. */
   const { stampPhoto } = today;
+  const stampMark =
+    stampPhoto === undefined
+      ? null
+      : (() => {
+          const authorship = authorshipOf(stampPhoto);
+          return authorship.signed ? (
+            <Stamp leftAt={stampPhoto.createdAt} authorSlug={authorship.slug} on="night" />
+          ) : (
+            <UnsignedMark leftAt={stampPhoto.createdAt} tz={stampPhoto.sharedDayTz} on="night" />
+          );
+        })();
 
   return (
     /* The shell (`app/(app)/layout.tsx`) is edge-to-edge by default and
@@ -116,14 +131,11 @@ export default async function TodayPage() {
       <section className="relative bg-night-sky pt-9">
         <div className="px-5 md:px-8">
           {/* The stamp — the app observing the thing above the tear:
-              typeset, absolute, both clocks. DECO's first word. */}
-          {stampPhoto !== undefined && (
-            <Stamp
-              leftAt={stampPhoto.createdAt}
-              authorSlug={authorSlugOf(stampPhoto)}
-              on="night"
-            />
-          )}
+              typeset, absolute, both clocks. DECO's first word. An
+              unsigned `stampPhoto` gets the bare-instant mark instead
+              (`stampMark`, above) — there is no "other" to report a gap
+              against. */}
+          {stampMark}
 
           {/* The window sentence — the app's own voice, live from
               lib/shared-day. Never a w-code. */}

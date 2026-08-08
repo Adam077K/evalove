@@ -14,6 +14,23 @@
  * stays, unchanged, until it is replaced. That is a presentation rule, not a
  * fact about one day, so it is composed here rather than folded into the
  * snapshot's own shape.
+ *
+ * WHY THE FALLBACK NO LONGER FILTERS TO `kind: "daily"` (2026-08-08). It
+ * used to: the Tuesday fallback searched only dailies, on the reasoning that
+ * a "daily" is the one shared card for a day and a "book" photo is a curated
+ * plate that does not belong to any particular day. That reasoning produces
+ * an empty screen the moment the archive holds zero dailies — which is
+ * exactly the shape of the real database on go-live (48 real photographs,
+ * every one `kind: "book"`, ingested before either of them had posted a
+ * daily). §4.4's actual law is "the last thing left stays, unchanged, until
+ * it is replaced" — it says nothing about kind. A photograph either of them
+ * left is still a lamp left on, whatever the app happened to label it, and
+ * an empty table when a real photograph exists in storage fails the
+ * Tuesday test worse than showing a "book" plate ever could. So the pool
+ * below is read across every kind; `lastLeft` is simply the most recent
+ * photograph, full stop. `impressionFor` (TodayPair.tsx) still narrows to
+ * `kind === "daily"` for its own decorative purpose, so this widening does
+ * not change what the pressed-through impression search sees.
  */
 
 import type { IanaTimeZone, IsoDate, IsoDateTime, MemberSlug, Photo } from "@/lib/types";
@@ -24,15 +41,23 @@ export interface LiveTodayObject {
   day: IsoDate;
   evaPhoto?: Photo;
   adamPhoto?: Photo;
-  /** The most recent daily from a prior day — the Tuesday fallback. */
+  /**
+   * The most recent photograph left, of any kind, from before the viewer's
+   * shared day — the Tuesday fallback. May be unsigned (`kind: "book"`,
+   * `authorMemberId: null`); every reader of this field must check
+   * `authorshipOf` before assuming a hand or a slug (see the file header).
+   */
   lastLeft?: Photo;
-  /** The item the DECO stamp below the seam describes. */
+  /** The item the DECO stamp below the seam describes. May be unsigned —
+      same caveat as `lastLeft`. */
   stampPhoto?: Photo;
   /**
-   * A small pool of recent dailies, oldest constraint none, for the
+   * A small pool of the most recent photographs of any kind, for the
    * Tuesday's pressed-through impression search (`TodayPairContent`'s
-   * `recentDailies` prop). Empty whenever the Tuesday branch does not
-   * apply — nothing else needs it.
+   * `recentDailies` prop) — `impressionFor` there narrows this to
+   * `kind === "daily"` itself, so the name still describes what that search
+   * actually uses. Empty whenever the Tuesday branch does not apply —
+   * nothing else needs it.
    */
   recentDailies: Photo[];
   pendingUntil: IsoDateTime;
@@ -59,22 +84,22 @@ export async function liveTodayObject(
   let recentDailies: Photo[] = [];
 
   if (evaPhoto === undefined && adamPhoto === undefined) {
-    // The Tuesday: nothing posted on the viewer's shared day. The most
-    // recent daily overall is guaranteed to be from a day strictly before
-    // `snapshot.day` — if one existed FOR `snapshot.day`, `todaySnapshot`
-    // above would have returned it as `eva` or `adam` and this branch would
-    // not be reached.
+    // The Tuesday: nothing posted on the viewer's shared day. `kind` is
+    // deliberately omitted here (see the file header, 2026-08-08): a
+    // "daily" posted FOR `snapshot.day` would already have surfaced above as
+    // `eva`/`adam`, but a "daily" from an EARLIER day, or any "book" plate at
+    // all, is still the last thing left and belongs in this pool.
     const roster = await deps.gateway.listMembers();
     const slugById = new Map(roster.map((m) => [m.id, m.slug]));
 
     const { photos } = await listPhotos(deps, {
-      kind: "daily",
       limit: IMPRESSION_POOL_SIZE,
     });
     recentDailies = photos.map((p) => {
-      // An unsigned daily should never exist (`commitPhoto` refuses one —
-      // `lib/data/photos.ts`), but this stays null-safe rather than trusting
-      // that invariant to hold forever.
+      // A "book" photo may legitimately be unsigned (founder decision,
+      // 2026-08-07 — see `lib/types.ts`'s `Photo.authorMemberId`); a "daily"
+      // never is (`commitPhoto` refuses one). Either way this stays
+      // null-safe rather than trusting either invariant from here.
       const slug = p.authorMemberId === null ? undefined : slugById.get(p.authorMemberId);
       return slug === undefined ? p : withSlug(p, slug);
     });
