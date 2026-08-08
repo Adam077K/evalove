@@ -44,6 +44,7 @@ import {
   sharedDayOf,
 } from "@/lib/shared-day";
 import { findMetadataEvidence } from "@/lib/photo/guard";
+import { isMachineShapedCaption } from "@/lib/caption-law";
 import {
   photoDisplayPath,
   photoOriginalPath,
@@ -322,6 +323,23 @@ export async function commitPhoto(
   const existing = await deps.gateway.findPhotoByClientUuid(input.clientUuid);
   if (existing !== null) {
     return { photo: toPhoto(existing), created: false };
+  }
+
+  // A caption is trusted here, at the one place every caption-bearing commit
+  // funnels through — live uploads (app/api/photos/route.ts) AND the archival
+  // ingest backfill (tools/ingest/load.ts) alike — the same reasoning
+  // `verifyDerivativesAreClean` below already applies to bytes: a claim about
+  // a caption's content is worth nothing until the place doing the writing
+  // actually looks at it. See lib/caption-law.ts's header for the real
+  // breach this guards against (an ingest catalogue's internal
+  // deduplication note, rendered as a photo's caption) and why the check
+  // lives here rather than only in the one caller that happened to cause it.
+  if (input.caption !== undefined && isMachineShapedCaption(input.caption)) {
+    throw new DataError(
+      "invalid",
+      "this caption reads as an internal/technical note about the photo file, not a caption — refusing to write it",
+      { caption: input.caption },
+    );
   }
 
   // "Daily" means the one shared card for a day, posted BY a person — that
