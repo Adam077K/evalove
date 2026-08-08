@@ -107,6 +107,31 @@ export function BookTurnStage({ leaves, ariaLabel, className, turn }: BookTurnSt
       mounted.current = true;
       return;
     }
+    // QA-Lead caught a real regression here: the Prev/Next buttons (the
+    // WCAG 2.5.7 no-drag path — they exist FOR keyboard users) sit BELOW
+    // this stage in DOM order. A sighted keyboard user tabs to "Next" and
+    // presses it; this effect then scrolled the stage's TOP into view,
+    // which put the very button that still has focus below the bottom of
+    // the screen — the fix for the pointer/drag case cost keyboard users
+    // their place.
+    //
+    // The first guard tried here — skip when `activeElement !== body` —
+    // does not hold: verified against a real click in Chromium, a mouse
+    // tap on the button ALSO leaves it focused (`activeElement` is the
+    // button, not `body`), so that check silently disabled the scroll fix
+    // for the ordinary tap-to-turn case too. Measured, not assumed: a
+    // clicked Next button and a Tab-then-Enter'd Next button both leave
+    // `document.activeElement` on the same node; they differ only in
+    // WHY it is focused, and `:focus-visible` is the platform's own
+    // answer to exactly that question — Chromium's heuristic matches it
+    // for keyboard-driven focus and not for a mouse click. A drag-completed
+    // turn involves no button at all and leaves focus on `<body>`, which
+    // fails `:focus-visible` the same way a mouse click does, so both
+    // non-keyboard paths correctly fall through to the scroll fix below.
+    const kbdFocused =
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement.matches(":focus-visible");
+    if (kbdFocused) return;
     // jsdom (this component's own test file) has no `scrollIntoView` at
     // all — not a stub, an absent property — so this guards the same gap
     // `lib/__tests__/setup-env.ts` already works around elsewhere, rather
