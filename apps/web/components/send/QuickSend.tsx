@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ImagePlus, RefreshCw, Send, X } from "lucide-react";
+import { Camera, Check, RefreshCw, Send, X } from "lucide-react";
 import { PillButton } from "@/components/ui/PillButton";
 import { partnerOf } from "@/lib/fixtures/members";
 import { useViewer } from "@/lib/viewer";
@@ -231,13 +231,23 @@ export function QuickSend() {
             </button>
           </div>
         ) : (
+          /* A tool resting on the page, not an empty container waiting
+             to be filled — the design law bans "no slot, no prepared
+             place, no plus-in-a-well" in almost these words, and a
+             dashed rectangle with a centred plus is that pattern by
+             name. The camera sits in a well the same way a pin or a
+             pen would (§ "the pen is always in the same place"); the
+             invitation is a line of type beside it, not inside a
+             bordered container (§4 move #4, type directly on paper). */
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="press well flex w-full flex-col items-center justify-center gap-2 rounded-[0.875rem] border-2 border-dashed border-line py-10 text-mute"
+            className="press flex w-full items-center gap-3.5 py-2 text-left"
           >
-            <ImagePlus size={24} strokeWidth={1.6} />
-            <span className="type-label">Add a photograph</span>
+            <span className="well flex h-13 w-13 shrink-0 items-center justify-center rounded-full text-ink">
+              <Camera size={20} strokeWidth={1.7} />
+            </span>
+            <span className="type-body text-mute">Add a photograph</span>
           </button>
         )}
         <input
