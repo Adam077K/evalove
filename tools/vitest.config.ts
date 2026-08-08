@@ -34,6 +34,7 @@ export default defineConfig({
       "export/__tests__/**/*.test.ts",
       "ingest/__tests__/**/*.test.ts",
       "book-placement/__tests__/**/*.test.ts",
+      "authorship-fix/__tests__/**/*.test.ts",
     ],
     // No setupFiles: these tests are pure — no database, no env vars, no app.
   },
