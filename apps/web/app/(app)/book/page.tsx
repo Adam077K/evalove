@@ -95,10 +95,10 @@ export default async function BookPage() {
   ]);
 
   return (
-    /* The shell is edge-to-edge by default and already seats this room
-       flush against the shared band's torn edge — nothing to escape
-       here, like Today's. overflow-x-clip keeps the spine's off-screen
-       bleed from becoming a horizontal scroll. */
+    /* The shell is edge-to-edge by default with pt-[var(--band-height)]
+       on main — nothing to escape here, like Today's. overflow-x-clip
+       keeps the spine's off-screen bleed from becoming a horizontal
+       scroll. */
     <div className="overflow-x-clip">
       <Paper stock="coldpress" className="pb-[calc(var(--dock-footprint)+3rem)]">
         {/* isolate: the lamplight needs a stacking context so -z-10

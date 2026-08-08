@@ -59,12 +59,14 @@ export default async function TodayPage() {
     /* Paper runs to the bottom: min-h fills the screen below the band,
        pb-[calc(var(--dock-footprint)+1rem)] reserves the dock's tray
        with the +1rem that matches scroll-pb in app/layout.tsx, so the
-       visible and scroll-focus reservations line up. dvh, never vh —
-       on iOS Safari vh is the expanded viewport and pushes the last
-       row out of reach. */
+       visible and scroll-focus reservations line up. overflow-x-clip
+       contains the photograph mount's ml-12 -mr-12 bleed (TodayPair.tsx
+       lines 217 and 307) — same job /book/page.tsx's outer clip does
+       for its spine bleed. dvh, never vh — on iOS Safari vh is the
+       expanded viewport and pushes the last row out of reach. */
     <Paper
       stock="coldpress"
-      className="min-h-[calc(100dvh-var(--band-height))] px-5 pb-[calc(var(--dock-footprint)+1rem)] md:px-8"
+      className="overflow-x-clip min-h-[calc(100dvh-var(--band-height))] px-5 pb-[calc(var(--dock-footprint)+1rem)] md:px-8"
     >
       <TodayPairContent
         evaPhoto={today.evaPhoto}
