@@ -18,12 +18,16 @@ import { leafTurnPose, posesEqual, type LeafTurnPose } from "./turn";
  */
 const TURN_DISTANCE_PX = 220;
 
-/** Settle duration, ms — matches --dur-2 (globals.css). Inline
-    transition strings can't read a CSS custom property, so this is a
-    second definition of the same number; keep it in sync with
-    --dur-2 (the lamp-curve precedent, globals.css:696-698, applies
-    here too — one value, two readers, noted on purpose). */
-export const SETTLE_MS = 220;
+/** Settle duration, ms. Inline transition strings can't read a CSS
+    custom property, so this lives here rather than pulling from
+    --dur-2 (globals.css). 300ms is intentionally longer than the
+    220ms --dur-2 UI cadence: a page turn carries more mass than a
+    button state change. The easing curve's deceleration at the far
+    end conveys resistance and landing weight; at 220ms that tail
+    was too short to read. The fallback timer below adds
+    SETTLE_FALLBACK_SLACK_MS on top, so a legitimate transition
+    always resolves first. */
+export const SETTLE_MS = 300;
 
 /** Fallback margin, ms, above SETTLE_MS before an unresolved settle
     is forced closed — see the `useEffect` in useBookTurn below.

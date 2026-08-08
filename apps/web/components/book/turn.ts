@@ -46,9 +46,12 @@
     degenerate case. */
 export const LEAF_TURN_END_DEG = 172;
 
-/** Peak lift, px — rounded up from the retired keyframe's -7px
-    (globals.css, retired) for the wider arc this turn now travels. */
-const LIFT_PX = 8;
+/** Peak lift, px — increased from 8 to 12 so the arc is perceptible
+    on a 393px phone at arm's length. At 8px the bow was barely visible
+    (sub-pixel movement on the leaf's midpoint for most of the arc);
+    at 12px it reads as the leaf picking up off the table without
+    reading as a cartoon bounce. */
+const LIFT_PX = 12;
 
 export interface LeafTurnPose {
   /** deg, 0 (facing the reader) → LEAF_TURN_END_DEG (turned away).
