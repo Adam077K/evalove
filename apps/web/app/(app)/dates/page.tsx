@@ -25,12 +25,18 @@ export default function DatesPage() {
   return (
     <Paper stock="coldpress">
       <Column>
-        <header className="mb-8">
+        <header className="mb-6">
           <p className="type-micro text-mute">for the two of them</p>
           <h1 className="type-hero mt-1.5 text-ink">Dates</h1>
         </header>
 
-        <div className="space-y-10">
+        {/* space-y-8, not the original space-y-10 — part of the same
+            first-paint dock-clip fix as /book: at 393x852 "The idea
+            shelf" heading below sat 3-20px inside the fixed dock's
+            tray on arrival (tray from 783px). Trimmed here rather than
+            inside HostedDates' own seeded rhythm, which stays as
+            designed. */}
+        <div className="space-y-8">
           <HostedDates />
           <DatesExplorer />
         </div>
