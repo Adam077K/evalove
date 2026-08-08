@@ -301,5 +301,57 @@ describe("liveBookLeaves", () => {
       expect(leaves).toHaveLength(1);
       expect(leafCount).toBe(1);
     });
+
+    it("the richest day (most leaves) leads, even when it is older than the newest kept day", async () => {
+      // 24 July has a daily leaf + 2 cluster pages (4 curated photos → 2+2).
+      // 3 August has a daily leaf only.
+      // Even though 3 August is newer, 24 July leads because it has more leaves.
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = [
+        // Daily for 3 August
+        row({ id: "daily-aug3", author_member_id: EVA_ROW.id, shared_day: "2026-08-03", created_at: "2026-08-03T14:00:00Z" }),
+        // Daily for 24 July
+        row({ id: "daily-jul24-eva", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T09:00:00Z" }),
+        row({ id: "daily-jul24-adam", author_member_id: ADAM_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T10:00:00Z" }),
+        // Four curated photos for 24 July → chunkEvenly(4, 3) = 2+2 = 2 cluster pages
+        row({ id: "c1", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T11:00:00Z" }),
+        row({ id: "c2", kind: "book", author_member_id: ADAM_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T12:00:00Z" }),
+        row({ id: "c3", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T13:00:00Z" }),
+        row({ id: "c4", kind: "book", author_member_id: ADAM_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T14:00:00Z" }),
+      ];
+      gw.bookEntries = [
+        bookEntryRow({ id: "e1", photo_id: "c1", position: 100 }),
+        bookEntryRow({ id: "e2", photo_id: "c2", position: 200 }),
+        bookEntryRow({ id: "e3", photo_id: "c3", position: 300 }),
+        bookEntryRow({ id: "e4", photo_id: "c4", position: 400 }),
+      ];
+
+      const { leaves } = await liveBookLeaves(deps(gw, now), now);
+
+      // 24 July: 1 daily + 2 cluster = 3 leaves → leads the Book.
+      // 3 August: 1 daily leaf → newest-first tail.
+      // Expected order: [2026-07-24 daily, 2026-07-24 cluster1, 2026-07-24 cluster2, 2026-08-03]
+      expect(leaves).toHaveLength(4);
+      expect(leaves[0]!.day.date).toBe("2026-07-24");
+      expect(leaves[0]!.key).toBe("2026-07-24"); // the daily leaf leads within the date
+      expect(leaves[1]!.day.date).toBe("2026-07-24");
+      expect(leaves[2]!.day.date).toBe("2026-07-24");
+      expect(leaves[3]!.day.date).toBe("2026-08-03");
+    });
+
+    it("on a count tie between dates, the more recent date leads (recovers newest-first)", async () => {
+      // Two days, each with exactly 1 leaf. More recent date should lead.
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = [
+        row({ id: "aug3", author_member_id: EVA_ROW.id, shared_day: "2026-08-03", created_at: "2026-08-03T14:00:00Z" }),
+        row({ id: "aug1", author_member_id: EVA_ROW.id, shared_day: "2026-08-01", created_at: "2026-08-01T14:00:00Z" }),
+      ];
+
+      const { leaves } = await liveBookLeaves(deps(gw, now), now);
+
+      expect(leaves.map((l) => l.day.date)).toEqual(["2026-08-03", "2026-08-01"]);
+    });
   });
 });

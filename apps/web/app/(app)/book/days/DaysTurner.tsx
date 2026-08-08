@@ -42,7 +42,7 @@ export function DaysTurner({ pages }: { pages: BookLeaf[] }) {
       />
       <BookTurnControls
         turn={turn}
-        footer={<p className="type-caption text-mute">newest first</p>}
+        footer={<p className="type-caption text-mute">richest day first</p>}
       />
     </div>
   );

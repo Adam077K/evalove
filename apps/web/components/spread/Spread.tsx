@@ -452,7 +452,13 @@ function ClusterComposition({
 
 function SingleFigure({ photo }: { photo: Photo }) {
   const leftward = seededIn(`${photo.id}:x`, 0, 1) < 0.5;
-  const width = Math.round(seededIn(`${photo.id}:w`, 74, 84));
+  // Width raised from 74-84% to 88-96%: a single photograph on a page is a
+  // full, legitimate page (§0 "no empty twin") — it deserves a photograph's
+  // scale, not a thumbnail's. The narrower range made photos read as stamps
+  // inside the opened book at 393 CSS px, where the page area is only ~206px
+  // wide. At 88-96% the photograph fills the page and the slight indent on one
+  // side reads as placement rather than margin. Seeds remain stable (${photo.id}:w).
+  const width = Math.round(seededIn(`${photo.id}:w`, 88, 96));
 
   return (
     <div>

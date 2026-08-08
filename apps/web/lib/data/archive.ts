@@ -94,7 +94,11 @@ export async function liveWhatCameBack(
  * ------------------------------------------------------------------ */
 
 export interface LiveBookLeaves {
-  /** The kept days, newest first. */
+  /**
+   * The kept days in book order: the richest day (most leaves) leads, then
+   * the remaining days run newest-first. See `liveBookLeaves` for the full
+   * ordering rule and what happens when a new day arrives.
+   */
   leaves: BookLeaf[];
   /** Feeds the fore-edge width only. Never rendered as a number. */
   leafCount: number;
@@ -239,7 +243,7 @@ function toCuratedClusterLeaf(
 }
 
 /**
- * The kept days, newest first — the real equivalent of the fixture
+ * The kept days in book order — the real equivalent of the fixture
  * `bookLeaves()` that used to live in `components/book/leaves.ts`.
  *
  * A day is "kept" once it is no longer live for EITHER member — excluded by
@@ -263,6 +267,19 @@ function toCuratedClusterLeaf(
  * leaves are more of that day, added afterward) and the curated leaves then
  * follow in `book_entries.position` order — the same ascending "reading
  * order" `bookManifest()` (`lib/data/book.ts`) already uses.
+ *
+ * **Ordering rule — richest day first:**
+ * The day with the most leaves (curated cluster pages + daily leaf) leads
+ * the Book: the couple's most-photographed shared evening is the first thing
+ * encountered on opening. On a count tie — every day has the same leaf count,
+ * which is the common case early on — the more recent date leads, recovering
+ * newest-first as the tiebreak. All remaining days then follow newest-first.
+ *
+ * What happens when a new day arrives: it starts with 1 leaf (the daily) and
+ * joins the newest-first tail. It displaces the current lead only if it
+ * accumulates more curated leaves than the richest day today. The lead is not
+ * intended to be permanent — the day that eventually surpasses it takes over
+ * naturally, no code change required.
  */
 export async function liveBookLeaves(
   deps: PhotoDeps,
@@ -331,12 +348,39 @@ export async function liveBookLeaves(
     );
   }
 
-  const leaves: BookLeaf[] = [...dailyLeaves, ...curatedLeaves]
+  // See the ordering-rule doc comment on this function above.
+  const allOrdered = [...dailyLeaves, ...curatedLeaves];
+
+  // Count leaves per date to find the richest day.
+  const countByDate = new Map<IsoDate, number>();
+  for (const { leaf } of allOrdered) {
+    const date = leaf.day.date;
+    countByDate.set(date, (countByDate.get(date) ?? 0) + 1);
+  }
+
+  // Lead date: most leaves wins; ties go to the more recent date.
+  let leadDate: IsoDate | undefined;
+  let leadCount = 0;
+  for (const [date, count] of countByDate) {
+    if (count > leadCount || (count === leadCount && (leadDate === undefined || date > leadDate))) {
+      leadCount = count;
+      leadDate = date;
+    }
+  }
+
+  const leaves: BookLeaf[] = allOrdered
     .sort((a, b) => {
-      if (a.leaf.day.date !== b.leaf.day.date) {
-        return b.leaf.day.date.localeCompare(a.leaf.day.date); // newest day first
+      const aIsLead = a.leaf.day.date === leadDate;
+      const bIsLead = b.leaf.day.date === leadDate;
+      // Lead date always sorts first.
+      if (aIsLead !== bIsLead) return aIsLead ? -1 : 1;
+      // Within the same date — daily leaf before curated (missing position
+      // sorts as −Infinity, i.e., before any explicit position).
+      if (a.leaf.day.date === b.leaf.day.date) {
+        return (a.position ?? -Infinity) - (b.position ?? -Infinity);
       }
-      return (a.position ?? -Infinity) - (b.position ?? -Infinity);
+      // Remaining dates: newest first.
+      return b.leaf.day.date.localeCompare(a.leaf.day.date);
     })
     .map((ordered) => ordered.leaf);
 
