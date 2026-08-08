@@ -4,14 +4,21 @@
 
 import type { ReactNode } from "react";
 
-import type { MemberSlug } from "@/lib/types";
 import type { Return } from "@/lib/resurface";
-import { memberById } from "@/lib/fixtures/members";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Torn } from "@/components/materials";
-import Stamp from "@/components/item/Stamp";
+import Stamp, { UnsignedMark } from "@/components/item/Stamp";
 import { Polaroid } from "./Polaroid";
-import { chinHandClass, handClass, mountFor, seededIn } from "./compose";
+import {
+  authorshipOf,
+  chinHandClass,
+  DISPLAY_NAME,
+  handClass,
+  mountFor,
+  seededIn,
+  unsignedChinHandClass,
+  unsignedHandClass,
+} from "./compose";
 
 /** Torn sheet or white stock border — the two paper backings. */
 function MountBacking({
@@ -58,8 +65,7 @@ function MountBacking({
  */
 export function ResurfacedItem({ returned }: { returned: Return }) {
   const { label, photo } = returned;
-  const author = memberById(photo.authorMemberId);
-  const authorSlug = author.slug as MemberSlug;
+  const authorship = authorshipOf(photo);
   const hasImage = photo.width > 0 && photo.height > 0;
   const caption = photo.caption;
 
@@ -74,6 +80,15 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
      figure's — no two successive elements share an axis (§4). */
   const labelIndent = leftward ? "ml-10" : "ml-3";
 
+  /* The mark at the foot of the item — both clocks for a signed photo,
+     the bare instant for one nobody signed (see UnsignedMark's own
+     header for why the two are not the same shape). */
+  const mark = authorship.signed ? (
+    <Stamp leftAt={photo.createdAt} authorSlug={authorship.slug} />
+  ) : (
+    <UnsignedMark leftAt={photo.createdAt} tz={photo.sharedDayTz} />
+  );
+
   if (!hasImage) {
     /* What came back is a line they wrote. It is the page. */
     return (
@@ -81,21 +96,23 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
         <p className={`type-quote text-mute ${labelIndent}`}>{label}</p>
         {caption !== undefined && (
           <p
-            className={`${handClass(photo.authorMemberId, "large")} mt-9 ${
+            className={`${
+              authorship.signed ? handClass(photo, "large") : unsignedHandClass("large")
+            } mt-9 ${
               leftward ? "ml-2 mr-10" : "ml-8 mr-3"
             } leading-snug text-ink`}
           >
             {caption}
           </p>
         )}
-        <div className={`mt-10 ${leftward ? "ml-12" : "ml-6"}`}>
-          <Stamp leftAt={photo.createdAt} authorSlug={authorSlug} />
-        </div>
+        <div className={`mt-10 ${leftward ? "ml-12" : "ml-6"}`}>{mark}</div>
       </div>
     );
   }
 
-  const alt = caption ?? `A photograph from ${author.displayName}`;
+  const alt =
+    caption ??
+    (authorship.signed ? `A photograph from ${DISPLAY_NAME[authorship.slug]}` : "A photograph from that day");
 
   return (
     <div className="pt-2">
@@ -133,7 +150,9 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
             <Polaroid photo={photo} variant={mount} alt={alt}>
               {caption !== undefined && (
                 <p
-                  className={`${chinHandClass(photo.authorMemberId)} leading-tight text-ink`}
+                  className={`${
+                    authorship.signed ? chinHandClass(photo) : unsignedChinHandClass()
+                  } leading-tight text-ink`}
                   style={{ transform: `rotate(${seededIn(`${photo.id}:c`, -2, 1.2)}deg)` }}
                 >
                   {caption}
@@ -148,7 +167,9 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
           Their hand, their measure, off the figure's axis. */}
       {caption !== undefined && mount !== "chin" && (
         <p
-          className={`${handClass(photo.authorMemberId)} mt-6 ${
+          className={`${
+            authorship.signed ? handClass(photo) : unsignedHandClass()
+          } mt-6 ${
             leftward ? "ml-14 mr-4" : "ml-4 mr-16"
           } max-w-[16rem] leading-snug text-ink`}
         >
@@ -156,10 +177,10 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
         </p>
       )}
 
-      {/* The stamp — typeset, absolute, both clocks. Its own distance
-          from whatever came before it (§4: varied vertical rhythm). */}
+      {/* The mark — typeset, absolute. Its own distance from whatever
+          came before it (§4: varied vertical rhythm). */}
       <div className={`${caption !== undefined && mount !== "chin" ? "mt-7" : "mt-9"} ${leftward ? "ml-5" : "ml-11"}`}>
-        <Stamp leftAt={photo.createdAt} authorSlug={authorSlug} />
+        {mark}
       </div>
     </div>
   );

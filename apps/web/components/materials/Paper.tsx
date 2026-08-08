@@ -51,6 +51,17 @@ interface StockSpec {
    * down. Recalibrate if a source is regenerated.
    */
   size: string;
+  /**
+   * Warm fill that paints immediately before the texture PNG/webp
+   * loads. Without it, each leaf in BookTurnStage is transparent
+   * during slow network: all the stacked gridArea="1/1" leaves
+   * bleed through each other — overlapping captions, white photo
+   * holes. The colour is tuned to the stock's measured mean tone
+   * so the fill is invisible once the texture arrives. Not a
+   * loading indicator — it is what the paper looks like with no
+   * grain.
+   */
+  color: string;
 }
 
 /**
@@ -62,9 +73,9 @@ interface StockSpec {
  * the library untouched.
  */
 const STOCKS: Record<PaperStock, StockSpec> = {
-  coldpress: { src: "/materials/paper-coldpress-stock-tile.webp", size: "58% auto" },
-  "bone-laid": { src: "/materials/paper-bone-laid.webp", size: "134% auto" },
-  bone: { src: "/materials/paper-bone-v2.png", size: "100% auto" },
+  coldpress: { src: "/materials/paper-coldpress-stock-tile.webp", size: "58% auto", color: "#f2ece4" },
+  "bone-laid": { src: "/materials/paper-bone-laid.webp", size: "134% auto", color: "#ede0c8" },
+  bone: { src: "/materials/paper-bone-v2.png", size: "100% auto", color: "#f0e8d8" },
 };
 
 export function Paper({ stock = "coldpress", children, className }: PaperProps) {
@@ -78,6 +89,7 @@ export function Paper({ stock = "coldpress", children, className }: PaperProps) 
         aria-hidden="true"
         className="under-lamp absolute inset-0"
         style={{
+          backgroundColor: spec.color,
           backgroundImage: `url(${spec.src})`,
           backgroundSize: spec.size,
         }}

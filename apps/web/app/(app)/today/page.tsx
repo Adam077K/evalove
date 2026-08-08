@@ -1,20 +1,41 @@
 /* eslint-disable @next/next/no-img-element -- the skylines are keyed
    illustration plates; the optimizer must never re-encode their alpha. */
 
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { Paper, Seam } from "@/components/materials";
-import { TodayPair, todaysObject } from "@/components/home/TodayPair";
+import { TodayPairContent } from "@/components/home/TodayPair";
 import { TodayDoorway } from "@/components/home/TodayDoorway";
 import { SealedCard } from "@/components/home/SealedCard";
-import Stamp from "@/components/item/Stamp";
-import { WINDOW_STRINGS, EVA } from "@/lib/fixtures/members";
-import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
+import Stamp, { UnsignedMark } from "@/components/item/Stamp";
+import { authorshipOf } from "@/components/book/compose";
+import { WINDOW_STRINGS } from "@/lib/window-strings";
 import { currentWindow } from "@/lib/shared-day";
 import { offsetNote } from "@/lib/stamp";
+import { photoDeps } from "@/lib/data";
+import { liveTodayObject } from "@/lib/data/today";
+import { liveWhatCameBack } from "@/lib/data/archive";
+import { MemoryOnTable } from "@/components/home/MemoryOnTable";
+import { parseProfile, PROFILE_KEY } from "@/lib/session/profile";
+import type { MemberSlug } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Today — Eva & Adam",
 };
+
+/**
+ * Which of the two is holding the phone, for `todaySnapshot`'s day
+ * boundary. Reads the same `profile` cookie `lib/viewer.ts` reads
+ * client-side and `getIdentity()` reads server-side — attribution, not
+ * authentication (see `lib/session/profile.ts`), so a bare cookie read is
+ * the documented way to get at it; there is nothing here for a fourth
+ * reader to protect. Eva-first when nobody has tapped a name yet, matching
+ * `useViewer()`'s own fallback.
+ */
+async function currentViewerSlug(): Promise<MemberSlug> {
+  const jar = await cookies();
+  return parseProfile(jar.get(PROFILE_KEY)?.value) ?? "eva";
+}
 
 /**
  * Today — the room the app opens into. One continuous space, two
@@ -36,34 +57,74 @@ export const metadata: Metadata = {
  *
  * Live wiring that must survive any re-skin: `currentWindow`
  * (lib/shared-day — untouchable), `offsetNote` (lib/stamp),
- * `whatCameBack` (inside TodayDoorway). Fixtures stand in for data;
- * the clock reads are real.
+ * `liveWhatCameBack` (inside TodayDoorway's `returned` prop). The
+ * photographs themselves are real too — `liveTodayObject` (`lib/data/
+ * today.ts`) reads `todaySnapshot`/`listPhotos` against the database, with
+ * fixtures reachable only from `/review/today-pair` and never from here.
  *
  * No masthead, no greeting, nothing above the item (§0). The
  * photograph is Today's masthead.
  */
-export default function TodayPage() {
+export default async function TodayPage() {
   const now = new Date();
   const windowId = currentWindow(now);
   const windowLine = windowId !== null ? (WINDOW_STRINGS[windowId] ?? null) : null;
-  const dst = offsetNote(FIXTURE_TODAY);
+
+  const viewerSlug = await currentViewerSlug();
+  const [today, returned] = await Promise.all([
+    liveTodayObject(photoDeps(), { slug: viewerSlug }),
+    liveWhatCameBack(photoDeps(), now),
+  ]);
+
+  const dst = offsetNote(today.day);
 
   /* The same selection the table renders — the stamp below the seam
-     describes the thing above it, including the Tuesday fallback. */
-  const { stampPhoto } = todaysObject();
+     describes the thing above it, including the Tuesday fallback. Since
+     2026-08-08 the fallback can land on an unsigned "book" plate (founder
+     decision, 2026-08-07), so this observes `authorshipOf` first, exactly
+     the guard `ResurfacedItem.tsx` already uses, rather than assuming every
+     `stampPhoto` has a slug to hand `<Stamp>`. */
+  const { stampPhoto } = today;
+  const stampMark =
+    stampPhoto === undefined
+      ? null
+      : (() => {
+          const authorship = authorshipOf(stampPhoto);
+          return authorship.signed ? (
+            <Stamp leftAt={stampPhoto.createdAt} authorSlug={authorship.slug} on="night" />
+          ) : (
+            <UnsignedMark leftAt={stampPhoto.createdAt} tz={stampPhoto.sharedDayTz} on="night" />
+          );
+        })();
 
   return (
-    /* Escape the (app) column on all four sides: the room runs edge
-       to edge and the deco floor replaces the layout's dock padding
-       with its own night-sky run. overflow-x-clip keeps the single-
-       edge bleeds from becoming a horizontal scroll. */
-    <div className="-mx-5 -mt-[max(1.5rem,env(safe-area-inset-top))] -mb-[calc(var(--dock-footprint)+4rem)] overflow-x-clip md:-mx-8">
+    /* The shell (`app/(app)/layout.tsx`) is edge-to-edge by default and
+       already reserves the band's top clearance and seats this room
+       flush against the shared torn edge — there is nothing left to
+       escape here. overflow-x-clip keeps the shore images' single-edge
+       bleeds (below) from becoming a horizontal scroll; the deco floor
+       replaces the dock's own bottom padding with its own night-sky
+       run on purpose (Today's corner runs under the tray). */
+    <div className="overflow-x-clip">
       {/* ---- PAPER — the table ---- */}
-      <Paper
-        stock="coldpress"
-        className="px-5 pb-16 pt-[max(1.75rem,env(safe-area-inset-top))] md:px-8"
-      >
-        <TodayPair />
+      <Paper stock="coldpress" className="px-5 pb-16 md:px-8">
+        <TodayPairContent
+          evaPhoto={today.evaPhoto}
+          adamPhoto={today.adamPhoto}
+          lastLeft={today.lastLeft}
+          recentDailies={today.recentDailies}
+        />
+
+        {/* The memory — a photograph from the archive placed on the table
+            below the main item. The founder asked for "under it, picture
+            of us from twenty fourth of July, is memory we bring up."
+            `returned` is from `liveWhatCameBack` (above), which uses the
+            real archive — the same selection the Book corner has always
+            used, now surfaced here where it can be seen.
+            The label above it ("Left at this hour, in July") is the text
+            the founder asked for: a fact in the app's own voice, never a
+            prompt. Renders only when the archive is non-empty. */}
+        {returned !== null && <MemoryOnTable returned={returned} />}
 
         {/* The sealed thing, when one is waiting. An object among
             objects — its own offset, never a full-width row. ml-8
@@ -82,14 +143,11 @@ export default function TodayPage() {
       <section className="relative bg-night-sky pt-9">
         <div className="px-5 md:px-8">
           {/* The stamp — the app observing the thing above the tear:
-              typeset, absolute, both clocks. DECO's first word. */}
-          {stampPhoto !== undefined && (
-            <Stamp
-              leftAt={stampPhoto.createdAt}
-              authorSlug={stampPhoto.authorMemberId === EVA.id ? "eva" : "adam"}
-              on="night"
-            />
-          )}
+              typeset, absolute, both clocks. DECO's first word. An
+              unsigned `stampPhoto` gets the bare-instant mark instead
+              (`stampMark`, above) — there is no "other" to report a gap
+              against. */}
+          {stampMark}
 
           {/* The window sentence — the app's own voice, live from
               lib/shared-day. Never a w-code. */}
@@ -163,7 +221,7 @@ export default function TodayPage() {
              it clips the shores at street level, never at the towers
              — the sheet is in the room, the cities are outside. ---- */}
         <div className="relative -mt-14">
-          <TodayDoorway now={now} />
+          <TodayDoorway returned={returned} />
         </div>
       </section>
     </div>

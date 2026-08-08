@@ -139,6 +139,21 @@ export function ServiceWorkerRegistration() {
       return;
     }
 
+    // `next dev` never serves `/sw.js` — `next.config.ts`'s own header note
+    // explains why: Turbopack dev cannot run the webpack plugin that
+    // compiles `app/sw.ts`, so `scripts/build-sw.mjs` only emits
+    // `public/sw.js` as a `postbuild` step, after `next build`. Registering
+    // against a path that is a guaranteed 404 under `next dev` was firing on
+    // every single page load — a `console.error` the Next.js dev overlay
+    // surfaced as a permanent "1 Issue" badge on every screen (found
+    // 2026-08-08, verified against the running dev server), not a real
+    // defect in the page underneath it. `next start` (after a real build)
+    // sets `NODE_ENV=production`, which is exactly when `/sw.js` exists, so
+    // this check is a reliable proxy for "is there anything to register".
+    if (process.env.NODE_ENV !== "production") {
+      return;
+    }
+
     let mounted = true;
 
     async function register() {

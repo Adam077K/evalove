@@ -2,9 +2,9 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -16,8 +16,11 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "typeRoots": ["node_modules/@types", "node_modules", "../apps/web/node_modules/@types", "../apps/web/node_modules"],
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@/*": ["../apps/web/*"]
+    }
   },
-  "include": ["export/**/*.ts"],
+  "include": ["export/**/*.ts", "ingest/**/*.ts", "book-placement/**/*.ts", "authorship-fix/**/*.ts", "caption-fix/**/*.ts"],
   "exclude": ["node_modules"]
 }

@@ -1,4 +1,4 @@
-import type { IanaTimeZone, IsoDate, IsoDateTime } from "@/lib/types";
+import type { IanaTimeZone, IsoDate, IsoDateTime, Photo } from "@/lib/types";
 
 /**
  * Time display, the whole vocabulary.
@@ -79,4 +79,17 @@ export function monthOf(day: IsoDate): string {
     month: "long",
     timeZone: "UTC",
   }).format(utc);
+}
+
+/**
+ * A photo's own posted time, in its own author's zone — `postedAtLocal`.
+ *
+ * Moved here from `lib/fixtures/photos.ts`: it is a one-line wrapper around
+ * `localTime` that reads only a `Photo`'s own fields, true of a fixture
+ * photograph and a live one alike. Living under `lib/fixtures/` made every
+ * caller — including Spread, which real Book pages render — look like it
+ * was reaching for stand-in data when it was not.
+ */
+export function postedAtLocal(p: Pick<Photo, "createdAt" | "sharedDayTz">): string {
+  return localTime(p.createdAt, p.sharedDayTz);
 }

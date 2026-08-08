@@ -47,6 +47,7 @@ import { describe, expect, it } from "vitest";
 import { whatCameBack } from "@/lib/resurface";
 import type { Photo } from "@/lib/types";
 import { PHOTOS } from "@/lib/fixtures/photos";
+import { RELATIVE_TIME_PATTERN } from "@/lib/copy-law";
 
 /* ------------------------------------------------------------------
  * Date match
@@ -61,9 +62,10 @@ describe("whatCameBack — date match", () => {
     expect(result!.reason).toBe("date");
   });
 
-  it("returns the 'A year ago today' label on a date match", () => {
+  it("returns the photograph's own absolute date as the label, never a relative one", () => {
     const result = whatCameBack(NOW_DATE_MATCH);
-    expect(result!.label).toBe("A year ago today");
+    // sharedDay "2026-08-01" → longDate → "1 August 2026", not "a year ago"
+    expect(result!.label).toBe("From 1 August 2026");
   });
 
   it("returns a photo whose sharedDay is the date one year ago", () => {
@@ -74,6 +76,43 @@ describe("whatCameBack — date match", () => {
   it("date match wins over hour match when both are possible", () => {
     const result = whatCameBack(NOW_DATE_MATCH);
     expect(result!.reason).toBe("date");
+  });
+});
+
+/* ------------------------------------------------------------------
+ * Rule 1 — absolute, never relative
+ *
+ * The label used to read "A year ago today" — relative twice over, and
+ * rendered on Today (the screen the app opens into). The guard covers
+ * every resolution, not just the one that broke, so a future label never
+ * regresses to "yesterday" / "3 days ago" / "this morning" either.
+ * ------------------------------------------------------------------ */
+
+describe("Rule 1 — no relative time expressions", () => {
+  it("the date-match label states an absolute date, not an elapsed one", () => {
+    const result = whatCameBack(new Date("2027-08-01T12:00:00Z"));
+    expect(result!.label).not.toMatch(RELATIVE_TIME_PATTERN);
+  });
+
+  it("resolution 1, 2, and 3 hour-match labels all pass the guard", () => {
+    const r1 = whatCameBack(new Date("2028-01-01T14:00:00Z")); // resolution 1
+    const r2 = whatCameBack(new Date("2028-06-15T07:00:00Z")); // resolution 2
+    const r3 = whatCameBack(new Date("2028-01-15T05:00:00Z"), [
+      {
+        ...PHOTOS["d0729-eva"],
+        id: "test-r3-guard",
+        clientUuid: "test-r3-guard",
+        sharedDay: "2024-03-01",
+        createdAt: "2024-03-01T17:00:00Z",
+      },
+    ]); // resolution 3
+    for (const result of [r1, r2, r3]) {
+      expect(result!.label).not.toMatch(RELATIVE_TIME_PATTERN);
+    }
+  });
+
+  it("catches the historical 'A year ago today' label were it reintroduced", () => {
+    expect("A year ago today").toMatch(RELATIVE_TIME_PATTERN);
   });
 });
 

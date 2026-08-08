@@ -51,17 +51,10 @@ export const COORDS: Record<MemberSlug, { lat: number; lon: number }> = {
 };
 
 /**
- * The nine windows, in the couple's own words — PRD §2, verbatim.
- * The w-codes exist in data only and never appear on screen.
+ * The nine window sentences moved to `@/lib/window-strings` — they are
+ * product copy, not fixture stand-in data, and needed to live somewhere a
+ * real, live surface could import without tripping "this page reaches for
+ * fixtures". Re-exported here so no import site in the Dates feature had to
+ * change at the same time as this file.
  */
-export const WINDOW_STRINGS: Record<string, string> = {
-  w1: "Eva’s in bed, Adam’s awake",
-  w2: "Eva’s up early",
-  w3: "Eva’s commute",
-  w4: "Eva’s lunch break",
-  w5: "Eva’s just off work, Adam’s fading",
-  w6: "Worth staying up for",
-  w7: "Saturday — Eva and Adam both off",
-  w8: "Eva’s at work, Adam’s day is free",
-  w9: "Eva’s day is free, Adam’s at work",
-};
+export { WINDOW_STRINGS } from "@/lib/window-strings";

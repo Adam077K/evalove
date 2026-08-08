@@ -86,7 +86,38 @@ export interface Photo {
   /** Client-generated id, stable across retries. The idempotency key. */
   clientUuid: Uuid;
   kind: PhotoKind;
-  authorMemberId: Uuid;
+  /**
+   * Who took it — or `null`.
+   *
+   * `null` is not "unknown" or "not yet resolved"; it is a deliberate,
+   * permanent state (founder decision, 2026-08-07): a photograph nobody could
+   * be confidently attributed to, or one a third party took of them
+   * together, is held unsigned rather than guessed at. It belongs to the day
+   * it was taken, not to a sender. See `authorSlug` below and
+   * `components/book/compose.ts`'s `authorshipOf` for how every render site
+   * is made to decide what an unsigned photo looks like, rather than being
+   * able to silently ignore the case.
+   */
+  authorMemberId: Uuid | null;
+  /**
+   * The author's slug, when the caller resolved it against the roster.
+   *
+   * `authorMemberId` alone is not enough to tell whose hand a caption should
+   * render in: it is a raw id, and the fixture archive and the live database
+   * do not share ids (fixtures mint their own so a reset never depends on a
+   * live roster). Every place that needs "is this Eva's or Adam's" — the
+   * hand font, the resurfacing stamp — reads this field, set once by whichever
+   * layer had the roster in hand (fixture builders set it directly; live rows
+   * get it attached in `lib/data/` from `listMembers()`), rather than
+   * re-deriving identity from an id nobody downstream can verify.
+   *
+   * Left `undefined` for a photo that IS signed (`authorMemberId` is not
+   * `null`) but whose producer has not yet resolved it — `authorshipOf`
+   * treats that as a bug and throws. Always `undefined` for a photo that is
+   * deliberately unsigned (`authorMemberId` is `null`); a producer must never
+   * set this field when `authorMemberId` is `null`.
+   */
+  authorSlug?: MemberSlug;
   attributionSource: AttributionSource;
 
   /** The shared calendar day this photo belongs to. */

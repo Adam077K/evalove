@@ -45,14 +45,18 @@ export const STAMP_STRINGS = {
   leftWhileAsleep: (name: string) => `left while ${name} was asleep`,
   leftWhileAtWork: (name: string) => `left while ${name} was at work`,
   // Time-of-day fallback — used when partner was awake or state is unknown.
-  // Based on the author's own local hour at the time of leaving.
-  leftEarlyMorning: "left early this morning",
-  leftThisMorning: "left this morning",
-  leftThisAfternoon: "left this afternoon",
-  leftThisEvening: "left this evening",
+  // Based on the author's own local hour at the time of leaving. "in the
+  // {part}", never "this {part}" — a deictic "this" reads as "today", and
+  // this stamp renders on items The Book resurfaces from any date (see
+  // components/book/ResurfacedItem.tsx), not only same-day ones. Matches
+  // the "Left in the {part of day}" idiom lib/resurface.ts already uses.
+  leftEarlyMorning: "left in the early morning",
+  leftThisMorning: "left in the morning",
+  leftThisAfternoon: "left in the afternoon",
+  leftThisEvening: "left in the evening",
   leftLate: "left late",
   // DST note — surfaces once below the window sentence for ~26 days/year
-  dstNote: "Six hours this week, not seven.",
+  dstNote: "Six hours, not seven.",
 } as const;
 
 /* ------------------------------------------------------------------
@@ -135,7 +139,7 @@ export function stampFor(leftAt: IsoDateTime, authorSlug: MemberSlug): Stamp {
 }
 
 /**
- * The DST note — "Six hours this week, not seven."
+ * The DST note — "Six hours, not seven."
  *
  * Returns the note string during the two windows each year when one zone
  * has changed over to summer time and the other has not (~26 days total).

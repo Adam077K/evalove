@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   title: "Review: today pair — dev",
 };
 
+// Forces this route to render per-request rather than being prerendered at
+// build time. Without this, `next build` still statically generates this
+// page — the layout's `notFound()` changes the response status to 404 and
+// the visible UI, but Next still serializes this page's RSC tree into the
+// static build artifact, embedding every fixture caption and photo URL
+// below in `.next/server/app/review/today-pair.html` regardless of the
+// 404. `force-dynamic` is what actually stops that: with no static artifact
+// to bake anything into, there is nothing to leak from a build output.
+export const dynamic = "force-dynamic";
+
 /**
  * Development review surface — not reachable from the dock.
  *
@@ -82,9 +92,15 @@ export default function ReviewTodayPairPage() {
             The Tuesday — nothing arrived; the last thing is still there
           </h2>
           {/* Neither posted today: the last thing left, unchanged,
-              plus the pressed-through impression. Never an empty box. */}
+              plus the pressed-through impression. Never an empty box.
+              `recentDailies` stands in for the archive TodayPairContent
+              no longer reaches for itself — the live page passes its
+              own recent-dailies pool the same way. */}
           <Paper stock="coldpress" className="-mx-5 px-5 py-8 md:-mx-8 md:px-8">
-            <TodayPairContent lastLeft={PHOTOS["d0731-eva"]} />
+            <TodayPairContent
+              lastLeft={PHOTOS["d0731-eva"]}
+              recentDailies={Object.values(PHOTOS)}
+            />
           </Paper>
         </section>
 

@@ -38,6 +38,7 @@ export function DatesExplorer() {
   const [nowWindow, setNowWindow] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const w = currentWindow(new Date());
@@ -45,13 +46,22 @@ export function DatesExplorer() {
     setSelected((s) => s ?? w);
   }, []);
 
-  /* Bring the selected window into view — centred, no page jump. */
+  /* Bring the selected window into view — centred, no page jump.
+     `scrollIntoView({block: "nearest"})` walks every scrollable ancestor,
+     not just the rail: on arrival the active button sits below the fold
+     (the rail is well down the page), so "nearest" still dragged the whole
+     PAGE down — measured as an unsolicited ~143px jump on load (found
+     2026-08-08, verified against the running dev server, exactly the
+     "wastes the top third" defect one layer deeper than the seam/header
+     sizing itself). Scrolling the rail's own `scrollLeft` directly reaches
+     into that one container and nothing above it — the actual "no page
+     jump" this comment already promised. */
   useEffect(() => {
-    activeRef.current?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
+    const rail = railRef.current;
+    const btn = activeRef.current;
+    if (!rail || !btn) return;
+    const target = btn.offsetLeft - rail.clientWidth / 2 + btn.clientWidth / 2;
+    rail.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
   }, [selected]);
 
   const active = selected ?? "w1";
@@ -67,6 +77,7 @@ export function DatesExplorer() {
 
       {/* The window rail. */}
       <div
+        ref={railRef}
         className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-3 md:-mx-8 md:px-8"
         style={{ scrollbarWidth: "none" }}
         role="tablist"
@@ -146,7 +157,7 @@ export function DatesExplorer() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...SPRING, delay: i * 0.05 }}
-              className="card hover-lift rounded-[1.125rem] p-5"
+              className="card rounded-[1.125rem] p-5"
             >
               <div className="flex items-start gap-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center well rounded-full text-ink">

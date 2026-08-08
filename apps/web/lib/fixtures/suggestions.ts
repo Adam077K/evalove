@@ -87,7 +87,7 @@ export const SUGGESTIONS: Record<string, ActivityIndexEntry> = {
   "b1-mirrored-errand": {
     id: "b1-mirrored-errand",
     title: "The mirrored errand",
-    description: "Both run the same small errand today and compare receipts.",
+    description: "Both run the same small errand and compare receipts.",
     durationMin: 20,
     costTier: "free",
     costConditional: false,

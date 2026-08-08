@@ -44,6 +44,7 @@ import {
   sharedDayOf,
 } from "@/lib/shared-day";
 import { findMetadataEvidence } from "@/lib/photo/guard";
+import { isMachineShapedCaption } from "@/lib/caption-law";
 import {
   photoDisplayPath,
   photoOriginalPath,
@@ -197,8 +198,18 @@ export interface CommitPhotoInput {
   /** The id issued by `issueUploadSlots`. Names the three storage objects. */
   photoId: Uuid;
   kind: PhotoKind;
-  /** Who says they took it. Self-declared unless the session proves otherwise. */
-  author: MemberSlug;
+  /**
+   * Who says they took it. Self-declared unless the session proves otherwise.
+   *
+   * `undefined` commits the photo unsigned — `author_member_id is null`
+   * (migration 12, founder decision 2026-08-07). No route handler in this
+   * app ever omits it; `app/api/photos/route.ts` validates `author` as a
+   * required uuid before it ever reaches here. Only `tools/ingest/load.ts`
+   * — the archival backfill for photographs nobody could be confidently
+   * attributed to — passes `undefined`. `kind: "daily"` may NOT be
+   * unsigned; see the guard at the top of `commitPhoto`.
+   */
+  author?: MemberSlug;
   /** What the device claims its zone is. Advisory — see `resolveTz`. */
   clientTz?: IanaTimeZone;
   takenAt?: IsoDateTime;
@@ -314,7 +325,37 @@ export async function commitPhoto(
     return { photo: toPhoto(existing), created: false };
   }
 
-  const member = await memberBySlug(deps, input.author);
+  // A caption is trusted here, at the one place every caption-bearing commit
+  // funnels through — live uploads (app/api/photos/route.ts) AND the archival
+  // ingest backfill (tools/ingest/load.ts) alike — the same reasoning
+  // `verifyDerivativesAreClean` below already applies to bytes: a claim about
+  // a caption's content is worth nothing until the place doing the writing
+  // actually looks at it. See lib/caption-law.ts's header for the real
+  // breach this guards against (an ingest catalogue's internal
+  // deduplication note, rendered as a photo's caption) and why the check
+  // lives here rather than only in the one caller that happened to cause it.
+  if (input.caption !== undefined && isMachineShapedCaption(input.caption)) {
+    throw new DataError(
+      "invalid",
+      "this caption reads as an internal/technical note about the photo file, not a caption — refusing to write it",
+      { caption: input.caption },
+    );
+  }
+
+  // "Daily" means the one shared card for a day, posted BY a person — that
+  // has no meaning without a person to post it. Refused here, before any
+  // storage or database work happens, rather than left to the database's own
+  // `photos_daily_requires_author` check (migration 12) to catch later.
+  if (input.kind === "daily" && input.author === undefined) {
+    throw new DataError(
+      "invalid",
+      'a "daily" photo must have an author; only "book" may be unsigned',
+      { kind: input.kind },
+    );
+  }
+
+  const member =
+    input.author !== undefined ? await memberBySlug(deps, input.author) : undefined;
 
   const displayPath = photoDisplayPath(input.photoId);
   const thumbPath = photoThumbPath(input.photoId);
@@ -342,10 +383,26 @@ export async function commitPhoto(
    */
   const createdAt = deps.now();
 
-  const sharedDayTz = resolveTz(input.clientTz, member.home_timezone);
+  // `member?.home_timezone` — for an unsigned commit there is no member to
+  // read a zone from. `resolveTz` already has a fallback for exactly this
+  // ("when neither the device nor the home zone is usable"): the zone the
+  // shared day opens in, which cannot file a photo under a date that has
+  // already been lived. No new fallback was invented here.
+  const sharedDayTz = resolveTz(input.clientTz, member?.home_timezone);
   const sharedDay = sharedDayOf(createdAt, sharedDayTz);
 
   if (input.kind === "daily") {
+    // The guard above already refused a daily commit with no author; this
+    // re-check just narrows the type rather than asserting past it, so a
+    // future edit that removed the guard would fail here instead of writing
+    // a bad row.
+    if (member === undefined) {
+      throw new DataError(
+        "invalid",
+        'a "daily" photo must have an author; only "book" may be unsigned',
+        { kind: input.kind },
+      );
+    }
     await deps.gateway.supersedePriorDaily({
       authorMemberId: member.id,
       sharedDay,
@@ -358,9 +415,9 @@ export async function commitPhoto(
     id: input.photoId,
     client_uuid: input.clientUuid,
     kind: input.kind,
-    author_member_id: member.id,
+    author_member_id: member?.id ?? null,
     attribution_source:
-      identity.authenticated && identity.memberId === member.id
+      identity.authenticated && identity.memberId === member?.id
         ? "authenticated"
         : "self_declared",
 
@@ -725,6 +782,13 @@ export async function todaySnapshot(
   const slugById = new Map(roster.map((m) => [m.id, m.slug]));
   const bySlug = new Map<MemberSlug, PhotoRow>();
   for (const row of rows) {
+    // An unsigned row (`author_member_id === null`, migration 12) has no
+    // side and is not eva's or adam's — it is excluded here, not filtered
+    // downstream, so Today's pair can never mistake it for either of them.
+    // In practice `dailyPhotosForDay` never returns one: `commitPhoto`
+    // refuses a `kind: "daily"` commit with no author, and the ingest tool
+    // that writes unsigned rows only ever writes `kind: "book"`.
+    if (row.author_member_id === null) continue;
     const slug = slugById.get(row.author_member_id);
     if (slug !== undefined) bySlug.set(slug, row);
   }

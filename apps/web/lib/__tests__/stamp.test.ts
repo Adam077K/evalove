@@ -27,11 +27,12 @@
  *   "2026-08-03T19:00:00Z"
  *     → NY  15:00 (Eva) → she is posting at 3pm
  *     → IL  22:00 (Adam — IDT) → before 23h → awake (not working; past 18h)
- *     → falls back to author time-of-day: 15h = "left this afternoon"
+ *     → falls back to author time-of-day: 15h = "left in the afternoon"
  */
 
 import { describe, expect, it } from "vitest";
 import { stampFor, offsetNote, STAMP_STRINGS } from "@/lib/stamp";
+import { RELATIVE_TIME_PATTERN } from "@/lib/copy-law";
 
 /* ------------------------------------------------------------------
  * stampFor — condition line
@@ -169,8 +170,6 @@ describe("Rule 4 — no pronouns in stamp strings", () => {
  * ------------------------------------------------------------------ */
 
 describe("Rule 1 — no relative time expressions", () => {
-  const relativePattern = /\b(\d+\s*days?\s*ago|yesterday|just now|\d+\s*hours?\s*ago|recently)\b/i;
-
   it("stamp condition is never a relative expression", () => {
     const cases: [string, "eva" | "adam"][] = [
       ["2026-08-02T03:20:00Z", "adam"],
@@ -180,7 +179,40 @@ describe("Rule 1 — no relative time expressions", () => {
     ];
     for (const [leftAt, slug] of cases) {
       const stamp = stampFor(leftAt, slug);
-      expect(stamp.condition).not.toMatch(relativePattern);
+      expect(stamp.condition).not.toMatch(RELATIVE_TIME_PATTERN);
+    }
+  });
+
+  /**
+   * Regression: `leftThisMorning` / `leftThisAfternoon` / `leftThisEvening`
+   * / `leftEarlyMorning` used to read "left this morning" etc. — "this"
+   * before a time-of-day noun implies today, which is false for an item
+   * The Book resurfaces from any date (components/book/ResurfacedItem.tsx
+   * renders this same stamp on year-old photographs). The guard pattern
+   * must fail on the old wording and pass on the current one.
+   */
+  it("catches the historical 'this {part of day}' wording were it reintroduced", () => {
+    const historical = [
+      "left this morning",
+      "left this afternoon",
+      "left this evening",
+      "left early this morning",
+    ];
+    for (const s of historical) {
+      expect(s).toMatch(RELATIVE_TIME_PATTERN);
+    }
+  });
+
+  it("the current time-of-day fallback strings all pass the guard", () => {
+    const current: string[] = [
+      STAMP_STRINGS.leftEarlyMorning,
+      STAMP_STRINGS.leftThisMorning,
+      STAMP_STRINGS.leftThisAfternoon,
+      STAMP_STRINGS.leftThisEvening,
+      STAMP_STRINGS.leftLate,
+    ];
+    for (const s of current) {
+      expect(s).not.toMatch(RELATIVE_TIME_PATTERN);
     }
   });
 });

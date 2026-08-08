@@ -1,5 +1,5 @@
 import type { IsoDate, IsoDateTime, Member, Photo, PhotoKind } from "@/lib/types";
-import { localDate, localTime } from "@/lib/time";
+import { localDate } from "@/lib/time";
 import { photoDisplayPath, photoThumbPath } from "@/lib/schema";
 import { ADAM, EVA } from "./members";
 
@@ -54,6 +54,7 @@ function mkPhoto(opts: {
     clientUuid: id,
     kind: opts.kind,
     authorMemberId: opts.author.id,
+    authorSlug: opts.author.slug,
     attributionSource: "self_declared",
     sharedDay:
       opts.sharedDay ?? localDate(opts.createdAt, opts.author.homeTimezone),
@@ -173,7 +174,9 @@ export const PHOTOS = {
 
 export type PhotoKey = keyof typeof PHOTOS;
 
-/** `6:20 am` — a photo's posted time in its author's own city. */
-export function postedAtLocal(p: Photo): string {
-  return localTime(p.createdAt, p.sharedDayTz);
-}
+/**
+ * `postedAtLocal` moved to `@/lib/time` — it read only a `Photo`'s own
+ * fields and had nothing fixture-specific about it. Re-exported here so
+ * no import site had to change in the same commit that moved it.
+ */
+export { postedAtLocal } from "@/lib/time";

@@ -2,12 +2,10 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Lock } from "lucide-react";
-import { whatCameBack } from "@/lib/resurface";
-import { BEGUN, BOOK_ENTRIES, SHARED_DAYS } from "@/lib/fixtures/book";
-import { FIXTURE_TODAY } from "@/lib/fixtures/clock";
 import { Paper } from "@/components/materials";
 import { BookObject } from "@/components/book/BookObject";
-import { bookLeaves } from "@/components/book/leaves";
+import { photoDeps } from "@/lib/data";
+import { liveBookLeaves, liveWhatCameBack } from "@/lib/data/archive";
 
 export const metadata: Metadata = {
   title: "The book — Eva & Adam",
@@ -53,20 +51,16 @@ export const metadata: Metadata = {
  * number of days. The colophon dates the object; the fore-edge
  * carries its weight. Forced-state rendering for QA lives at
  * /review/book-states; no state-override parameter here, ever.
+ *
+ * `leafCount`, `leaves`, `returned` and `begun` are all real now —
+ * `liveBookLeaves`/`liveWhatCameBack` (`lib/data/archive.ts`) read the
+ * database via `listPhotos`, with fixtures reachable only from
+ * /review/book-states and never from here. KNOWN GAP: `liveBookLeaves`
+ * counts kept DAILY days only — the fixture's `leafCount` also added the
+ * opening gathering's curated `BOOK_ENTRIES` pages, which live in
+ * `book_entries` (`lib/data/book.ts`) and were out of scope for this pass.
+ * The fore-edge will read thin until that table is wired in too.
  */
-
-/**
- * How many leaves the book holds: kept days (days that happened —
- * SHARED_DAYS is a list of days, never an iterated range) plus the
- * gathering's curated pages, two entries to a leaf. Feeds the
- * fore-edge width only. Never rendered as a number.
- */
-function leafCount(): number {
-  const keptDays = SHARED_DAYS.filter(
-    (d) => d.date !== FIXTURE_TODAY && (d.evaPosted || d.adamPosted),
-  ).length;
-  return keptDays + Math.ceil(BOOK_ENTRIES.length / 2);
-}
 
 /**
  * The reading lamp, lower-left (§1: "the same paper stocks lit by
@@ -92,20 +86,21 @@ const LAMPLIGHT: CSSProperties = {
     "radial-gradient(130% 88% at 6% 102%, rgb(212 137 42 / calc(var(--lamp-dim, 0) * 0.30)), rgb(212 137 42 / 0) 64%), linear-gradient(to bottom, rgb(20 16 8 / calc(var(--lamp-dim, 0) * 0.12)), rgb(20 16 8 / 0) 42%)",
 };
 
-export default function BookPage() {
-  const returned = whatCameBack(new Date());
-  const leaves = leafCount();
-  const pages = bookLeaves();
+export default async function BookPage() {
+  const deps = photoDeps();
+  const now = new Date();
+  const [returned, { leaves: pages, leafCount: leaves, begun }] = await Promise.all([
+    liveWhatCameBack(deps, now),
+    liveBookLeaves(deps, now),
+  ]);
 
   return (
-    /* Escape the (app) column on all four sides — the room runs edge
-       to edge, like Today's. overflow-x-clip keeps the spine's
-       off-screen bleed from becoming a horizontal scroll. */
-    <div className="-mx-5 -mt-[max(1.5rem,env(safe-area-inset-top))] -mb-[calc(var(--dock-footprint)+4rem)] overflow-x-clip md:-mx-8">
-      <Paper
-        stock="coldpress"
-        className="pb-[calc(var(--dock-footprint)+3rem)] pt-[max(2.25rem,env(safe-area-inset-top))]"
-      >
+    /* The shell is edge-to-edge by default and already seats this room
+       flush against the shared band's torn edge — nothing to escape
+       here, like Today's. overflow-x-clip keeps the spine's off-screen
+       bleed from becoming a horizontal scroll. */
+    <div className="overflow-x-clip">
+      <Paper stock="coldpress" className="pb-[calc(var(--dock-footprint)+3rem)]">
         {/* isolate: the lamplight needs a stacking context so -z-10
             lands above the Paper stock and under all content. */}
         <div className="relative isolate">
@@ -120,18 +115,28 @@ export default function BookPage() {
           {/* ---- 1 · The book — tap to open, swipe to turn ---- */}
           {/* pr-6 keeps the fore-edge fully on screen with room to
               grow; the spine takes the one bleed edge on the left.
-              The bottom margin clears the hanging ribbon's tail. */}
-          <div className="mb-48 pr-6">
+              The bottom margin clears the hanging ribbon's tail — mb-24
+              rather than the original mb-48: at 393x852 the extra 96px
+              put "The days in order" (the doors section below) entirely
+              inside the fixed dock's tray on first paint (measured:
+              link at 823-850px, tray from 783px) — sliced on every
+              arrival, before anyone had touched anything. mb-24 still
+              clears the ribbon (checked against the closed cover, which
+              has the longest ribbon drop) with room to spare. */}
+          <div className="mb-24 pr-6">
             <BookObject
               returned={returned}
               leaves={pages}
               leafCount={leaves}
-              begun={BEGUN}
+              begun={begun}
             />
           </div>
 
           {/* ---- 2 · The doors — type on hairline rules ---- */}
-          <div className="mt-20 px-5 md:px-8">
+          {/* mt-12, not the original mt-20 — same first-paint dock-clip
+              fix as above, taken from the doors' side of the gap
+              instead of the ribbon's. */}
+          <div className="mt-12 px-5 md:px-8">
             {/* "Ask for something" (Echo, quoting their archive word for
                 word) used to live here. Removed rather than repointed:
                 PRODUCT-VISION-V2 §2.4 says the strictly-quoting search

@@ -54,8 +54,10 @@ export function BookSheet({ children, className, underlay }: BookSheetProps) {
         {/* The turn's light — hinge shade and grazing highlight,
             painted on the substrate only, below every mounted thing
             (the lamp precedent: light never touches a photograph).
-            Inert opacity-0 outside the days rail; `.leaf-turn`
-            drives it from scroll position. Both siblings are
+            Inert (opacity 0) unless an ancestor sets
+            `--leaf-sheen-opacity` — BookTurnStage.tsx sets it on the
+            leaf's own flip wrapper, and it inherits down to here
+            without BookSheet needing a prop for it. Both siblings are
             positioned so DOM order keeps content above it. */}
         <div aria-hidden="true" className="leaf-sheen pointer-events-none absolute inset-0" />
         {underlay}

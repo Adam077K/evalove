@@ -75,6 +75,29 @@ const PUBLIC_PREFIXES: readonly string[] = [
   // session must still render an image.
   "/api/img/",
   "/img/",
+  // The review harnesses (`app/(app)/review/**`) — fixture-driven, dev-only
+  // screens with no fetch of their own; every image they render comes from a
+  // hardcoded external registry, never a gated route. They exist because a
+  // worker builds in an isolated worktree where every other page in this app
+  // requires a session, and a screen nobody can open cannot be reviewed
+  // against what it actually renders — that gap produced seven passing
+  // reviews on an app the founder then called unusable.
+  //
+  // `=== "development"`, deliberately NOT `!== "production"`. Next only
+  // DEFAULTS NODE_ENV (`process.env.NODE_ENV = process.env.NODE_ENV ||
+  // defaultEnv`, next/dist/bin/next) — a preset value survives. The negated
+  // form is satisfied by undefined, "", "test", "staging" and "Production",
+  // so `NODE_ENV=test next build` would inline "test" and ship this prefix in
+  // the production bundle with no warning. This form fails closed. Both real
+  // consumers still pass: `next dev` defaults to development, and
+  // playwright.config.ts pins NODE_ENV: "development" explicitly.
+  //
+  // Paired with `app/(app)/review/layout.tsx`, which calls notFound() outside
+  // development, and with `export const dynamic = "force-dynamic"` on each
+  // harness page so nothing is baked into a static artifact. Removing any one
+  // of the three reopens the gap. Do not widen this to a runtime-readable
+  // variable — NODE_ENV is the only lever this file can audit at build time.
+  ...(process.env.NODE_ENV === "development" ? ["/review/"] : []),
 ];
 
 export async function middleware(request: NextRequest) {

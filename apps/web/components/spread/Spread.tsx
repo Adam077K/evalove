@@ -3,19 +3,21 @@
    optimizer must never re-encode them. */
 
 import type { Photo, SharedDay } from "@/lib/types";
-import { runningHeadDate } from "@/lib/time";
-import { postedAtLocal } from "@/lib/fixtures/photos";
+import { postedAtLocal, runningHeadDate } from "@/lib/time";
 import { photoSrc } from "@/lib/fixtures/resolve";
 import { Mounted, Taped, Torn } from "@/components/materials";
 import type { TapePlacement, TapeVariant } from "@/components/materials";
 import { Polaroid } from "@/components/book/Polaroid";
 import {
+  authorshipOf,
   chinHandClass,
   handClass,
   isEva,
   mountFor,
   seededIn,
   seededPick,
+  unsignedChinHandClass,
+  unsignedHandClass,
 } from "@/components/book/compose";
 
 /**
@@ -50,6 +52,12 @@ import {
  *                     has not posted simply is not on the page. The
  *                     `live` prop survives so existing callers
  *                     compile; it no longer changes what renders.
+ *   cluster (curated) a curated page holding several photographs at
+ *                     once (`BookLeaf.photos`, 2 to
+ *                     `MAX_PHOTOS_PER_CURATED_PAGE`) — any mix of
+ *                     authorship, since it groups by day, not by the
+ *                     daily ritual's one-each pairing. See
+ *                     `ClusterComposition`.
  *   neither posted    null — the book skips the date in silence.
  */
 
@@ -57,20 +65,46 @@ type SpreadProps = {
   day: SharedDay;
   evaPhoto?: Photo;
   adamPhoto?: Photo;
+  /** A curated leaf's deliberately unsigned photo — see `BookLeaf.unsignedPhoto`.
+      Never set alongside `evaPhoto`/`adamPhoto`; always renders as a single. */
+  unsignedPhoto?: Photo;
+  /** A curated leaf holding several photographs — see `BookLeaf.photos`.
+      Never set alongside `evaPhoto`/`adamPhoto`/`unsignedPhoto`. */
+  photos?: Photo[];
+  /**
+   * Seeds a `photos` cluster's page-level composition choices (which side
+   * leads, the tape variant) — the role `day.date` plays for
+   * `PairComposition`. Must be unique PER PAGE, not per day: several
+   * cluster pages can share a date (`lib/data/archive.ts`), so callers pass
+   * the leaf's own `key`, never `day.date` alone, or every cluster page on
+   * a busy day would compose identically.
+   */
+  pageKey?: string;
   /** Accepted for compatibility; a live day renders like a closed one. */
   live?: boolean;
   /** Plays the drop-into-place entrance on that side, on pair completion. */
   dropIn?: "eva" | "adam";
 };
 
-export function Spread({ day, evaPhoto, adamPhoto, dropIn }: SpreadProps) {
-  /* Neither posted: the book skips the date in silence. No marker. */
-  if (!evaPhoto && !adamPhoto) return null;
+export function Spread({
+  day,
+  evaPhoto,
+  adamPhoto,
+  unsignedPhoto,
+  photos,
+  pageKey,
+  dropIn,
+}: SpreadProps) {
+  const cluster = photos !== undefined && photos.length >= 2;
+
+  /* Nothing posted, nothing curated: the book skips the date in silence.
+     No marker. */
+  if (!evaPhoto && !adamPhoto && !unsignedPhoto && !cluster) return null;
 
   const head = runningHeadDate(day.date);
   const headIndent = Math.round(seededIn(`${day.date}:h`, 0, 44));
 
-  const only = evaPhoto && adamPhoto ? undefined : (evaPhoto ?? adamPhoto);
+  const only = evaPhoto && adamPhoto ? undefined : (evaPhoto ?? adamPhoto ?? unsignedPhoto);
 
   return (
     <section aria-label={head} className="relative">
@@ -80,7 +114,9 @@ export function Spread({ day, evaPhoto, adamPhoto, dropIn }: SpreadProps) {
         {head}
       </p>
 
-      {only ? (
+      {cluster ? (
+        <ClusterComposition photos={photos!} pageSeed={pageKey ?? day.date} />
+      ) : only ? (
         <SingleFigure photo={only} />
       ) : (
         <PairComposition
@@ -142,7 +178,9 @@ function MountedFigure({
       <Polaroid photo={photo} variant={mount === "square" ? "square" : "chin"} alt={alt}>
         {photo.caption !== undefined && (
           <p
-            className={`${chinHandClass(photo.authorMemberId)} leading-tight text-ink`}
+            className={`${
+              authorshipOf(photo).signed ? chinHandClass(photo) : unsignedChinHandClass()
+            } leading-tight text-ink`}
             style={{ transform: `rotate(${seededIn(`${photo.id}:c`, -2, 1.2)}deg)` }}
           >
             {photo.caption}
@@ -182,11 +220,28 @@ function hasChin(photo: Photo): boolean {
  * ------------------------------------------------------------------ */
 
 function PageCaption({ photo, className }: { photo: Photo; className?: string }) {
+  // A chin mount already carries the caption on the photo itself
+  // (Polaroid.tsx only paints its chin for `variant === "chin"`, and
+  // MountedFigure only sets that variant when `mountFor` picked
+  // "chin"). This component used to render anyway, `!hasChin` only
+  // guarding the caption text — leaving the timestamp as an orphan: no
+  // caption, no photo, nothing to anchor it to, and in a cluster of
+  // several chin-mounted photos, several identical unlabelled
+  // "12:00 pm" lines stacked with nothing to tell them apart. That is
+  // the "layers" defect in miniature — a stamp separated from its
+  // photograph — even though the pairing in the DOM was never wrong.
+  // Nothing is lost by skipping it here: every fact this would have
+  // shown (who wrote it, what it says, when) already reads off the
+  // chin, in the same place a person would actually look.
+  if (hasChin(photo)) return null;
+
   return (
     <div className={className}>
-      {photo.caption !== undefined && !hasChin(photo) && (
+      {photo.caption !== undefined && (
         <p
-          className={`${handClass(photo.authorMemberId)} max-w-[15rem] leading-snug text-ink`}
+          className={`${
+            authorshipOf(photo).signed ? handClass(photo) : unsignedHandClass()
+          } max-w-[15rem] leading-snug text-ink`}
         >
           {photo.caption}
         </p>
@@ -199,6 +254,28 @@ function PageCaption({ photo, className }: { photo: Photo; className?: string })
 /* ------------------------------------------------------------------ *
  * The pair — unequal by law. The newer leads; the other tucks under.
  * ------------------------------------------------------------------ */
+
+/**
+ * The washi assets that exist, by their post-rename names (Wave 1's
+ * QA-gate rename, now on main; floral-pressed/floral-blue added Wave
+ * 5). Exported so the coverage test in `__tests__/tape-pick-list.test.ts`
+ * can assert every entry here resolves to a registered TAPE_ASSETS
+ * plate without duplicating this list — a variant added here with no
+ * matching plate renders no strip at all, silently.
+ *
+ * Going from 2 options to 4 changes seededPick's result for
+ * essentially every existing day — accepted deliberately here and
+ * only here, while the archive is entirely fixtures with no real
+ * photograph in it yet. Once real posts exist, changing this list
+ * again would silently rewrite what the past looked like; do not
+ * touch it casually after that point.
+ */
+export const SPREAD_TAPE_VARIANTS = [
+  "washi-ochre-dots",
+  "washi-terracotta",
+  "floral-pressed",
+  "floral-blue",
+] as const satisfies readonly TapeVariant[];
 
 function PairComposition({
   evaPhoto,
@@ -221,19 +298,13 @@ function PairComposition({
   const leadWidth = Math.round(seededIn(`${daySeed}:lw`, 66, 76));
   const followWidth = Math.round(seededIn(`${daySeed}:fw`, 46, 55));
   const tuck = Math.round(seededIn(`${daySeed}:tk`, 56, 88));
-  /* The two washi assets that exist, by their post-rename names
-     (Wave 1's QA-gate rename, now on main). */
-  const tape = seededPick(`${daySeed}:tape`, [
-    "washi-ochre-dots",
-    "washi-terracotta",
-  ] as const);
+  const tape = seededPick(`${daySeed}:tape`, SPREAD_TAPE_VARIANTS);
 
   const row = (photo: Photo, secondInDom: boolean) => {
     const isLead = photo === lead;
     const onLeft = isLead ? leadLeft : !leadLeft;
     const width = isLead ? leadWidth : followWidth;
-    const drop =
-      dropIn !== undefined && (dropIn === "eva") === isEva(photo.authorMemberId);
+    const drop = dropIn !== undefined && (dropIn === "eva") === isEva(photo);
 
     const figure = isLead ? (
       <MountedFigure photo={photo} elevation={4} drop={drop} />
@@ -288,13 +359,106 @@ function PairComposition({
 }
 
 /* ------------------------------------------------------------------ *
+ * The cluster — a curated page holding several photographs (2 to
+ * `MAX_PHOTOS_PER_CURATED_PAGE`, `lib/data/archive.ts`) rather than
+ * the daily ritual's fixed eva/adam pair. Unlike `PairComposition`
+ * this has no fixed authorship shape — a cluster groups by DAY, so it
+ * can hold two of Eva's, one unsigned and one Adam's, any mix — so
+ * every seed here comes from the page itself (`pageSeed`) or a
+ * photo's own stable id, never from a side.
+ *
+ * One leads (largest, elevation 4, no tape — same "the newer
+ * photograph leads" rule PairComposition uses). Every other
+ * photograph follows at elevation 3, alternating sides against the
+ * lead, tucked up to overlap the row above it and corner-taped, same
+ * primitives PairComposition already proved — extended from one
+ * follower to several rather than reinvented. Never a grid: sizes are
+ * unequal and seeded per photo, not per slot index (§4).
+ * ------------------------------------------------------------------ */
+
+function ClusterComposition({
+  photos,
+  pageSeed,
+}: {
+  photos: Photo[];
+  pageSeed: string;
+}) {
+  // Chronological order, oldest first — the page still reads as the
+  // evening actually happened even though several photographs now
+  // share it. The newest leads (PairComposition's own rule); everyone
+  // else follows in the order they were taken.
+  const ordered = [...photos].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const lead = ordered.reduce((newest, p) => (p.createdAt > newest.createdAt ? p : newest), ordered[0]!);
+  const followers = ordered.filter((p) => p !== lead);
+
+  const leadLeft = seededIn(`${pageSeed}:side`, 0, 1) < 0.5;
+  const leadWidth = Math.round(seededIn(`${pageSeed}:lw`, 62, 74));
+  const tape = seededPick(`${pageSeed}:tape`, SPREAD_TAPE_VARIANTS);
+
+  return (
+    <div>
+      <div className={leadLeft ? "" : "flex justify-end"}>
+        <div style={{ width: `${leadWidth}%` }}>
+          <MountedFigure photo={lead} elevation={4} />
+        </div>
+      </div>
+
+      {followers.map((photo, i) => {
+        // Alternate against the lead's side so nothing stacks straight
+        // down the page's centre. Each follower's own id seeds its own
+        // width, tuck and tape corner — never the loop index (§4:
+        // never seed from a position that can shift on insert).
+        const onLeft = i % 2 === 0 ? !leadLeft : leadLeft;
+        const width = Math.round(seededIn(`${photo.id}:w`, 40, 54));
+        const tuck = Math.round(seededIn(`${photo.id}:tk`, 48, 96));
+        return (
+          <div key={photo.id} className={onLeft ? "" : "flex justify-end"} style={{ marginTop: -tuck }}>
+            <div style={{ width: `${width}%` }}>
+              <MountedFigure
+                photo={photo}
+                elevation={3}
+                tape={{
+                  variant: tape,
+                  placement: onLeft ? "top-left" : "top-right",
+                  angle: seededIn(`${photo.id}:t`, -5, 5),
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* One caption per photograph, lead first then the followers in
+          the order they were laid — varied vertical rhythm (§4 move
+          #5), each offset seeded from its own photo so no two land on
+          the same margin. */}
+      {ordered.map((photo, i) => (
+        <PageCaption
+          key={photo.id}
+          photo={photo}
+          className={`${i === 0 ? "mt-7" : "mt-4"} ${
+            seededIn(`${photo.id}:cx`, 0, 1) < 0.5 ? "ml-7 mr-24" : "ml-16 mr-6"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
  * The single figure — a day that kept one photograph. A full page
  * with its own quiet weight: no empty twin, no dashed ring.
  * ------------------------------------------------------------------ */
 
 function SingleFigure({ photo }: { photo: Photo }) {
   const leftward = seededIn(`${photo.id}:x`, 0, 1) < 0.5;
-  const width = Math.round(seededIn(`${photo.id}:w`, 74, 84));
+  // Width raised from 74-84% to 88-96%: a single photograph on a page is a
+  // full, legitimate page (§0 "no empty twin") — it deserves a photograph's
+  // scale, not a thumbnail's. The narrower range made photos read as stamps
+  // inside the opened book at 393 CSS px, where the page area is only ~206px
+  // wide. At 88-96% the photograph fills the page and the slight indent on one
+  // side reads as placement rather than margin. Seeds remain stable (${photo.id}:w).
+  const width = Math.round(seededIn(`${photo.id}:w`, 88, 96));
 
   return (
     <div>

@@ -45,9 +45,9 @@ try {
 `;
 
 /**
- * The tray's measurements live here, on the scroll container itself,
- * because two different things need them and only one of them is in
- * document coordinates.
+ * The tray's and the band's measurements live here, on the scroll
+ * container itself, because two different things need each of them and
+ * only one of those things is in document coordinates.
  *
  *   --dock-footprint  the whole band the tray covers: its tallest
  *                     tool (3.25rem send) + 0.5rem lip + the floor
@@ -56,20 +56,30 @@ try {
  *                     against the bottom edge — an object on the
  *                     table does not hover.
  *
- * `scroll-padding-bottom` is the load-bearing line. A `padding-bottom`
- * further down the tree only lengthens the document, so it buys
- * clearance at exactly one scroll offset — the very end. Every other
- * scroll the browser performs (focusing a link, `scrollIntoView`, a
- * hash target, Safari revealing an input above the keyboard) aligns to
- * the *scrollport*, and the scrollport's bottom edge is the viewport's
- * bottom edge — underneath the tray. Insetting the scrollport is what
- * makes the clearance true at every scroll offset instead of one, and
- * it holds whether the page overflows or not: if there is nothing to
- * scroll, there is no scroll to land wrong.
+ *   --band-height     the masthead's own height: 56px (Design-Lead's
+ *                     figure) plus the safe-area inset it sits inside,
+ *                     not stacked on top of. Fixed like the tray, so
+ *                     it is reserved space for the shared shell's
+ *                     `<main>` the same way `--dock-footprint` is —
+ *                     see `app/(app)/layout.tsx`.
+ *
+ * `scroll-padding-*` is the load-bearing line for both edges. A
+ * `padding` further down the tree only lengthens the document, so it
+ * buys clearance at exactly one scroll offset — the very end (or, for
+ * the top, the very start). Every other scroll the browser performs
+ * (focusing a link, `scrollIntoView`, a hash target, Safari revealing
+ * an input above the keyboard) aligns to the *scrollport*, and the
+ * scrollport's edges are the viewport's edges — underneath the tray,
+ * or under the band. Insetting the scrollport is what makes the
+ * clearance true at every scroll offset instead of one, and it holds
+ * whether the page overflows or not: if there is nothing to scroll,
+ * there is no scroll to land wrong.
  */
-const DOCK_VARS =
+const CHROME_VARS =
   "[--dock-footprint:calc(3.75rem+max(0.5rem,env(safe-area-inset-bottom)))] " +
-  "scroll-pb-[calc(var(--dock-footprint)+1rem)]";
+  "[--band-height:calc(56px+env(safe-area-inset-top))] " +
+  "scroll-pb-[calc(var(--dock-footprint)+1rem)] " +
+  "scroll-pt-[var(--band-height)]";
 
 /**
  * `dir` is FIXED to "ltr" and `lang` is FIXED to "en" — founder decision D7.
@@ -79,7 +89,7 @@ const DOCK_VARS =
  */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" dir="ltr" className={DOCK_VARS} suppressHydrationWarning>
+    <html lang="en" dir="ltr" className={CHROME_VARS} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: modeScript }} />
       </head>

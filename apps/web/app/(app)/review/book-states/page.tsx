@@ -14,6 +14,16 @@ export const metadata: Metadata = {
   title: "Review: book states — dev",
 };
 
+// Forces this route to render per-request rather than being prerendered at
+// build time. Without this, `next build` still statically generates this
+// page — the layout's `notFound()` changes the response status to 404 and
+// the visible UI, but Next still serializes this page's RSC tree into the
+// static build artifact, embedding every fixture caption and photo URL
+// below in `.next/server/app/review/book-states.html` regardless of the
+// 404. `force-dynamic` is what actually stops that: with no static artifact
+// to bake anything into, there is nothing to leak from a build output.
+export const dynamic = "force-dynamic";
+
 /**
  * Development review surface — not reachable from the dock.
  *
@@ -41,7 +51,9 @@ export const metadata: Metadata = {
 
 const DATE_MATCH: Return = {
   reason: "date",
-  label: "A year ago today",
+  // Absolute — the photograph's own date, matching lib/resurface.ts's
+  // "From {longDate}" label. d0729-eva's sharedDay is "2026-07-29".
+  label: "From 29 July 2026",
   photo: PHOTOS["d0729-eva"],
 };
 
@@ -76,8 +88,13 @@ const SINGLE_DAY: SharedDay = SHARED_DAYS.find((d) => d.date === "2026-07-31")!;
 /* Leaves for the openable book states — a fixed pair so the turn
    inside the object can be exercised against known compositions. */
 const REVIEW_LEAVES: BookLeaf[] = [
-  { day: SINGLE_DAY, evaPhoto: PHOTOS["d0731-eva"] },
-  { day: PAIR_DAY, evaPhoto: PHOTOS["d0730-eva"], adamPhoto: PHOTOS["d0730-adam"] },
+  { key: SINGLE_DAY.date, day: SINGLE_DAY, evaPhoto: PHOTOS["d0731-eva"] },
+  {
+    key: PAIR_DAY.date,
+    day: PAIR_DAY,
+    evaPhoto: PHOTOS["d0730-eva"],
+    adamPhoto: PHOTOS["d0730-adam"],
+  },
 ];
 
 function Label({ id, children }: { id: string; children: string }) {

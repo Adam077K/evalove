@@ -31,6 +31,11 @@ all_skills_stored/
 # Archive tools — local install only, never in apps/web
 tools/node_modules/
 
+# Photo ingest — generated derivatives, manifest, and the founder's working
+# authorship sheet. Local working files, never committed; open authorship.tsv
+# directly from tools/ingest/output/ to fill it in.
+tools/ingest/output/
+
 # Export output — written by tools/export/index.ts during local runs and CI;
 # never committed — the point is that it lives in Eva's R2, not this repo
 apps/web/eva-and-adam-archive/

@@ -29,6 +29,20 @@
  *   Unix epoch). Same instant → same item; successive days → different item;
  *   label varies because the item does.
  *
+ * COUPLE-FIRST RULE (Rule 10 — applied before Rule 9):
+ *   Within each candidate set, photographs of both Eva and Adam together
+ *   ("both") are preferred over all others.  Photographs confirmed to contain
+ *   neither of them ("neither") are preferred last.  "unclear" photos sit in
+ *   the middle.  The catalogue classification lives in `lib/people-index.ts`.
+ *
+ *   Priority order: both > unclear > neither.
+ *
+ *   If the archive has no "both" candidates in a given resolution window, the
+ *   full candidate set is used (including "unclear" and "neither") so that the
+ *   resurfacing never goes empty on a day the archive genuinely has content for.
+ *   This degradation is honest: the label still describes WHY this item came
+ *   back (date / hour / month), not what it contains.
+ *
  * VISION §2.2 note: `SHARED_DAYS` in `lib/fixtures/book.ts` is a list of
  * days that happened, never a date range iterated into a grid. Nothing here
  * contradicts that — we search the photo archive, not a range.
@@ -36,8 +50,9 @@
 
 import type { Photo } from "@/lib/types";
 import { PHOTOS } from "@/lib/fixtures/photos";
+import { peopleOf, peoplePriority } from "@/lib/people-index";
 import { MEMBER_PROFILES, localPartsOf, isoDateOfUtcMs, MS_UTC_DAY } from "@/lib/shared-day";
-import { monthOf } from "@/lib/time";
+import { longDate, monthOf } from "@/lib/time";
 
 /* ------------------------------------------------------------------
  * Types
@@ -46,8 +61,9 @@ import { monthOf } from "@/lib/time";
 /**
  * One item from the archive that is relevant right now, plus why it came back.
  *
- * `label` is displayable directly: "A year ago today", "Left at this hour,
- * in June", "Left in the evening, in June", or "From June".
+ * `label` is displayable directly: "From 1 August 2025", "Left at this hour,
+ * in June", "Left in the evening, in June", or "From June". Absolute always —
+ * the date match states the photograph's own date, never how long ago that is.
  */
 export type Return =
   | { reason: "date"; label: string; photo: Photo }
@@ -85,7 +101,35 @@ function partOfDay(hour: number): string {
 }
 
 /**
+ * Narrow a candidate list to the best people-classification available,
+ * then fall back to the full list if the preferred tier is empty.
+ *
+ * Tier order: "both" (couple together) → "unclear" → "neither".
+ * Fixture photos whose IDs are not in the index return `undefined` from
+ * `peopleOf`, which `peoplePriority` maps to the same rank as "unclear".
+ *
+ * The fallback means this function always returns a non-empty slice of
+ * the input when the input is non-empty — resurfacing never goes empty
+ * because the archive lacked couple photographs.
+ */
+function coupleFirst(matches: Photo[]): Photo[] {
+  const bestPriority = matches.reduce(
+    (best, p) => Math.min(best, peoplePriority(peopleOf(p.id))),
+    Infinity,
+  );
+  if (!isFinite(bestPriority)) return matches; // empty input guard
+  const preferred = matches.filter(
+    (p) => peoplePriority(peopleOf(p.id)) === bestPriority,
+  );
+  return preferred.length > 0 ? preferred : matches;
+}
+
+/**
  * Deterministic pick from a non-empty list of candidates.
+ *
+ * Applies couple-first narrowing (Rule 10) before the UTC-day-index
+ * rotation (Rule 9), so the variety rotates within the best people tier
+ * rather than across all candidates regardless of who is in the frame.
  *
  * Sorts oldest-first by sharedDay as a stable tiebreak within a day.
  * Rotates through the sorted list by UTC-day-index (floor of epoch ms
@@ -94,8 +138,10 @@ function partOfDay(hour: number): string {
  *   - next UTC day  → next index → different item      (variety in the label)
  */
 function pickFromMatches(matches: Photo[], now: Date): Photo {
+  // Narrow to the best people tier before rotating (Rule 10).
+  const preferred = coupleFirst(matches);
   // Oldest first — still the right archival instinct, and tiebreak is stable.
-  const sorted = [...matches].sort((a, b) =>
+  const sorted = [...preferred].sort((a, b) =>
     a.sharedDay.localeCompare(b.sharedDay),
   );
   // Days since Unix epoch: changes once per UTC midnight, never within a
@@ -126,7 +172,10 @@ function findDateMatch(now: Date, photos: Photo[]): Return | null {
     p.createdAt > best.createdAt ? p : best,
   );
 
-  return { reason: "date", label: "A year ago today", photo };
+  // Absolute always — state the photograph's own date, not how long ago it
+  // was. "From {date}" continues the same "From {month}" idiom resolution 3
+  // uses below, at the finer resolution a same-day match affords.
+  return { reason: "date", label: `From ${longDate(photo.sharedDay)}`, photo };
 }
 
 function findHourMatch(now: Date, photos: Photo[]): Return {

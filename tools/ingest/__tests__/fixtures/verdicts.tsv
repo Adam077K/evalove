@@ -1,0 +1,52 @@
+file	shooter	confidence	evidence
+16:7:26.JPG	third_party	low	two figures lying on grass, shot from an elevated distant vantage across a fence — both in frame together, no selfie geometry, too small to positively ID as person_a/person_b
+18:7:26-1.JPG	cannot_tell	low	woman in red top (back to camera) and man in white shirt in background of aquarium exhibit — hair color/build don't clearly match established person_a/person_b look; likely bystanders, not the couple
+24:7:26-10.HEIC	cannot_tell	low	tight overhead cheek-to-cheek embrace shot straight down; no hand or arm holding a phone visible in frame on either side; composition nearly symmetric, can't attribute to either person
+24:7:26-11.HEIC	cannot_tell	low	first-person POV group hangout, shooter's own jean legs fill the foreground but can't be confidently tied to person_a or person_b; other two visible figures (wavy-haired woman, checked-shirt woman) don't match either established look — reads as a wider friend group
+24:7:26-13.HEIC	person_a	medium	long-haired figure playing arcade cabinet, back to camera, shot from a few feet away not arm's length — candid unaware framing implies the partner shot it; figure's build/hair consistent with person_b, so shooter is person_a
+24:7:26-14.HEIC	person_a	high	person_b alone, facing camera directly at normal table distance with full torso, table and drinks in frame — not selfie geometry, implies the person across the table (person_a) took it
+24:7:26-15.HEIC	person_a	high	person_b's both hands are visibly occupied holding up her own phone to photograph the sunset in this same frame — since her hands are full with a different phone, this shot of her must have been taken by person_a
+24:7:26-16.HEIC	person_b	medium	couple selfie; woman's face is notably closer/larger and cropped at the bottom edge, man's face smaller and set further back — consistent with her holding the phone at arm's length; burst pair with -17
+24:7:26-17.HEIC	person_b	medium	burst pair with -16 (4s apart), same face-size asymmetry favoring person_b as holder; man is turned in to kiss her cheek rather than facing the lens himself
+24:7:26-18.JPG	third_party	medium	both in frame from behind/side at a comfortable mid-distance including grass, guardrail and skyline — no extended arm or hand visible; duplicate of 24:7:26-4.JPG, same verdict
+24:7:26-19.JPG	cannot_tell	low	pure sunset landscape; only a tiny unidentifiable silhouette (jogger) in frame, nobody from the couple present
+24:7:26-20.HEIC	person_a	high	classic arm's-length selfie: man's face large and close with visible wide-angle distortion in the foreground, woman smaller and unaware in the background reaching for a tote bag — definitive selfie geometry held by person_a
+24:7:26-21.HEIC	person_a	medium	woman alone, back to camera, natural standing distance at a railing, clearly posed for the shot — no selfie geometry, most likely captured by her partner
+24:7:26-22.heic	person_a	medium	group event photo shot from the audience; person_b (pink top, wavy highlighted hair) is one of the people standing at the lectern being photographed, so she can't be the shooter — most likely person_a
+24:7:26-3.HEIC	person_a	high	mirror selfie; the phone is visibly held in the subject's own hand near his face in the reflection — he is both subject and shooter; face shape matches person_a despite the cap obscuring the hairline
+24:7:26-4.JPG	third_party	medium	both in frame from behind/side at a comfortable mid-distance, full torsos and surroundings visible, no extended arm or hand holding a phone anywhere in frame — reads as a bystander shot rather than a propped selfie
+24:7:26-5.JPG	person_b	medium	person_a alone on the wall from behind at natural mid-distance, matching this cluster's pattern of solo behind-shots of one partner by the other — most likely shot by person_b
+24:7:26-6.PNG	person_a	medium	person_b alone, back to camera, natural distance viewing a photo wall — no selfie geometry, most likely her partner captured this candid moment
+24:7:26-7.JPG	person_a	medium	person_b alone on the wall, back to camera, same solo-behind-shot pattern as -5/-6/-15/-21 in this cluster — most likely shot by person_a
+24:7:26-8.JPG	person_b	high	extreme close-up selfie; woman's face is dramatically larger and closer to the lens with visible distortion, man's face is smaller and set further back — she is clearly the one holding the phone
+24:7:26-9.HEIC	person_b	high	overhead shot; a hand with a pink sleeve matching person_b is visibly holding up a phone with the camera-app viewfinder showing on its screen — she is operating the phone taking this very shot
+24:7:26.HEIC	person_a	medium	overhead shot; person_b's arm/hand are both fully occupied lifting a can to her mouth, while person_a's head is entirely out of frame despite his torso being visible directly beneath her — consistent with him holding the phone overhead, his own face nearest the lens and cropped out
+24:7:26.JPG	person_b	high	same close-up arm's-length selfie geometry as -8.JPG from the same night: woman's face fills the lower-left of frame closer to the lens with visible distortion, man's face smaller/further back — she is holding the phone
+1:8:26-1.MOV	cannot_tell	low	two boys horseplaying in a backyard pool, filmed from a stable poolside vantage; neither face matches the established person_a/person_b look — reads as a younger sibling/family pool day, not the couple
+1:8:26-2.HEIC	cannot_tell	low	pool selfie of two teen boys; the closer/larger boy is clearly holding the phone (selfie geometry) but neither face is confidently identifiable as person_a — likely the same family/friend pool day as the video, not the couple
+1:8:26-3.MP4	cannot_tell	low	distant, blurry public-pool diving-board scene; no identifiable individuals, low-resolution re-shared clip
+25:7:26-1.HEIC	cannot_tell	low	tan-skinned hand pointing down from an overlook; no face visible, skin tone alone can't be tied to person_a or person_b
+25:7:26-10.jpg	cannot_tell	low	NYC street/intersection scene, no one from the couple in frame
+25:7:26-2.HEIC	person_a	high	solo close-up selfie leaning against a tree trunk, centered self-portrait framing with slight lens distortion typical of an arm's-length front-camera shot; face matches person_a (dark curly hair, light eyes)
+25:7:26-3.JPG	person_b	medium	solo close selfie shot from a downward angle with visible wide-angle distortion — self-portrait framing means the subject herself is holding the phone; features plausibly match person_b under strong direct sun (which can lighten apparent eye color), though identity is not fully certain
+25:7:26-4.HEIC	cannot_tell	low	hand holding a sketchbook page up against the skyline; only fingertips visible at the frame edge, can't attribute to either person
+27:7:26-1.HEIC	cannot_tell	low	pure sunset/marina landscape, no people in frame
+27:7:26-2.HEIC	cannot_tell	low	palm trees and sunset clouds in a park, no people in frame
+28:7:26-6.MOV	person_a	high	solo close-up selfie-style video frame, direct eye contact with the lens at close range consistent with the front camera held at arm's length by the subject himself; face matches person_a
+30:7:26-1.JPG	cannot_tell	low	overhead breakfast-plate shot resting on someone's lap; only a bare thigh visible, no signal identifying person_a or person_b
+30:7:26.JPG	person_a	medium	person_b alone, back to camera, natural mid-distance framing in an elevated garden — no selfie geometry, most likely captured by her partner
+31:7:26-1.JPG	third_party	high	three young men posed together indoors, all arms occupied hugging each other — none can be holding the phone; a fourth person (friend group party) shot it, and none of the three visible faces closely match the established person_a look
+31:7:26-4.JPG	third_party	high	same scene, pose and reasoning as 31:7:26-1.JPG (burst pair) — third-party friend-group shot
+31:7:26-5.HEIC	person_a	medium	group photo around a kitchen island; the man at bottom-right — dark curly hair, freckled, narrow face matching person_a — is nearest and largest in frame, consistent with holding the phone at arm's length for a group selfie; person_b is not identifiable among the other faces
+2:8:26-1.HEIC	cannot_tell	low	five young men playing cards around a shared pizza; none of the visible faces closely match the established person_a look — reads as an unrelated friend group, shooter unknown
+3:8:26-1.JPG	cannot_tell	low	empty library reading room, no people in frame
+3:8:26-2.JPG	cannot_tell	low	two monitors and a shared desk setup, no people visible — implies two people working together but neither is in frame
+3:8:26-3.JPG	cannot_tell	low	first-person POV shot of bare legs and a cat on a bed; the photographer's own legs are in frame (a self-shot, not third_party), but skin tone/build alone doesn't confirm which partner
+3:8:26-6.HEIC	person_a	high	overhead self-portrait selfie lying on the floor next to a dog; classic extended-arm overhead-selfie framing and the face directly matches person_a (dark curly hair, freckles, narrow face)
+6:8:26-1.JPG	cannot_tell	low	Lisbon street scene with an ornate bank building; only tiny, distant, unidentifiable pedestrians in frame
+6:8:26-2.HEIC	cannot_tell	low	home-office desk setup with dual monitors and a laptop, no people in frame — a work/documentation shot
+6:8:26-3.JPG	cannot_tell	low	decorative ceramic tile wall, no people in frame
+6:8:26-4.JPG	cannot_tell	low	phone screenshot of a Maps app, not a photograph — no people
+6:8:26-5.JPG	person_a	medium	a woman (plausibly person_b) alone, full body, posed and aware, glancing back at the camera from several meters away in an open plaza — this kind of deliberate posed environmental portrait implies her partner was on the other end of the phone
+6:8:26-6.JPG	cannot_tell	low	same desk setup as 6:8:26-2 with red annotation arrows added, no people in frame
+7:8:26-1.JPG	cannot_tell	low	metro train pulling into a platform, strong motion blur, no people in frame
