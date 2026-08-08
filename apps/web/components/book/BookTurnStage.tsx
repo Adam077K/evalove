@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -73,8 +74,51 @@ const FACE_STYLE: CSSProperties = {
 };
 
 export function BookTurnStage({ leaves, ariaLabel, className, turn }: BookTurnStageProps) {
+  // The grid cell this stage renders (see the file comment) auto-sizes to
+  // the TALLEST leaf ever mounted, not the current one — CSS transforms
+  // never affect layout size, so a leaf turned away still claims its own
+  // height. A short leaf therefore sits inside a much taller shared cell,
+  // with the leaf itself top-aligned and dead paper below it before
+  // Prev/Next. Reaching those controls on a tall stack can require
+  // scrolling the window most of the way down — and because the stage's
+  // own height never changes between leaves, that scroll position then
+  // carries straight onto whichever leaf just became current, landing on
+  // its lower half and leaving the running head and lead photograph
+  // above the fold. Measured on `/book/days`: a page turn taking the
+  // window to its true scroll maximum, then the next (shorter) leaf
+  // opening already scrolled past its own top — indistinguishable, on
+  // screen, from a missing photograph.
+  //
+  // The fix is not to resize the cell (every leaf needs the same box to
+  // stack in — see the file comment on why grid-stacking was chosen over
+  // `position: absolute`), it is to stop trusting whatever scroll
+  // position a turn happened to start from. Every committed turn — a
+  // button press or a completed drag, both of which move `currentIndex`
+  // — snaps the stage's own top back under the fixed masthead, the same
+  // correction `/dates` already needed for its own scroll-position bug.
+  // Skipped on first mount: the initial leaf is already exactly where it
+  // should be, and firing this on mount would hide whatever heading sits
+  // above the stage (`/book/days`'s "The days in order").
+  const stageRef = useRef<HTMLDivElement>(null);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    // jsdom (this component's own test file) has no `scrollIntoView` at
+    // all — not a stub, an absent property — so this guards the same gap
+    // `lib/__tests__/setup-env.ts` already works around elsewhere, rather
+    // than adding a jsdom-only mock for one effect.
+    if (typeof stageRef.current?.scrollIntoView === "function") {
+      stageRef.current.scrollIntoView({ block: "start" });
+    }
+  }, [turn.currentIndex]);
+
   return (
     <div
+      ref={stageRef}
       className={cn("relative touch-pan-y select-none [perspective:1200px]", className)}
       style={{ display: "grid" }}
       role="group"
