@@ -67,20 +67,15 @@ describe("Dates page", () => {
 
     // Look for the window sentence in the night section
     const windowSentence = nightSection?.querySelector(".type-title.italic");
-    // Only assert presence or absence, not the text itself
-    // (currentWindow runs against the real implementation)
-    if (windowSentence) {
-      expect(windowSentence.textContent).toBeTruthy();
-    }
+    // Assert positive: the element exists. If the window sentence does not render,
+    // this fails — preventing the test from passing when it should fail.
+    expect(windowSentence).not.toBeNull();
+    expect(windowSentence?.textContent).toBeTruthy();
   });
 
-  it("omits the window sentence when currentWindow returns null", () => {
-    // Note: This test cannot be written without mocking currentWindow deeply,
-    // which would require importing the implementation. Since the brief says
-    // "let currentWindow run against the real implementation rather than
-    // stubbing it", we document this as not testable with the current setup.
-    // The presence test above covers the happy path.
-  });
+  it.todo(
+    "omits the window sentence when currentWindow returns null — untestable without deep-mocking lib/shared-day (untouchable)"
+  );
 
   it("renders both shore images with alt='' and aria-hidden=true", () => {
     const { container } = render(<DatesPage />);
@@ -109,33 +104,28 @@ describe("Dates page", () => {
   it("maintains DOM order: bg-night-sky section → rotated Seam → paper world", () => {
     const { container } = render(<DatesPage />);
 
-    const children = Array.from(container.querySelectorAll("*"));
-    let nightSkyIndex = -1;
-    let seamIndex = -1;
-    let paperIndex = -1;
+    // Find the three critical sections by their actual markers
+    const nightSkySection = container.querySelector(".bg-night-sky");
+    const seamElement = Array.from(container.querySelectorAll("*")).find(
+      (el) => (el.getAttribute("class") ?? "").includes("rotate-180")
+    );
+    const h1 = container.querySelector("h1");
 
-    children.forEach((el, idx) => {
-      const className = el.getAttribute("class") ?? "";
-      if (className.includes("bg-night-sky")) {
-        nightSkyIndex = idx;
-      }
-      if (className.includes("rotate-180")) {
-        seamIndex = idx;
-      }
-      if (className.includes("bg-canvas")) {
-        paperIndex = idx;
-      }
-    });
+    // Assert all three are present (positive assertions first).
+    // If the Seam vanishes, this fails immediately, preventing the test
+    // from passing when the critical composition element is missing.
+    expect(nightSkySection).not.toBeNull();
+    expect(seamElement).not.toBeNull();
+    expect(h1).not.toBeNull();
 
-    // bg-night-sky should come before rotated Seam
-    if (nightSkyIndex >= 0 && seamIndex >= 0) {
-      expect(nightSkyIndex).toBeLessThan(seamIndex);
-    }
+    // Now verify DOM order using compareDocumentPosition
+    // DOCUMENT_POSITION_FOLLOWING (4) means nightSkySection comes before seamElement
+    const nightSkyBeforeSeam = nightSkySection?.compareDocumentPosition(seamElement!);
+    expect(nightSkyBeforeSeam).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 
-    // rotated Seam should come before paper
-    if (seamIndex >= 0 && paperIndex >= 0) {
-      expect(seamIndex).toBeLessThan(paperIndex);
-    }
+    // seamElement comes before h1
+    const seamBeforeH1 = seamElement?.compareDocumentPosition(h1!);
+    expect(seamBeforeH1).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("renders NEW YORK before TEL AVIV — Eva before Adam", () => {
