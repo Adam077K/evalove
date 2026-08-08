@@ -174,6 +174,12 @@ export function groundingFromPhotos(
     const caption = photo.caption?.trim();
     if (caption === undefined || caption === "") continue;
 
+    // `authorMemberId === null` is a deliberately unsigned photo (migration
+    // 12) — same as an id that fails to resolve, its caption is dropped here
+    // rather than grounded under an invented author. `continue` already
+    // covered the "fails to resolve" case; this is the same outcome for the
+    // opposite reason.
+    if (photo.authorMemberId === null) continue;
     const author = slugOf(photo.authorMemberId, roster);
     if (author === null) continue;
 

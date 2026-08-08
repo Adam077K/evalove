@@ -6,6 +6,10 @@ import { defineConfig } from "vitest/config";
 const webRoot = fileURLToPath(new URL(".", import.meta.url));
 // Tools tests live outside the Next.js app root; resolve to absolute paths
 // so vitest can find them regardless of the working directory.
+// tools/ingest reuses apps/web/lib/photo/{exif,guard}.ts and lib/data/photos.ts
+// directly via the "@" alias below — the same alias this config already
+// defines for the app's own tests, which is what lets those imports resolve
+// here without tools/ingest needing a second, separate vitest config.
 const toolsTestsGlobs = [
   resolve(webRoot, "../../tools/export/__tests__/**/*.test.ts"),
   resolve(webRoot, "../../tools/ingest/__tests__/**/*.test.ts"),

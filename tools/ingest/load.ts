@@ -2,10 +2,11 @@
 /**
  * load.ts — Eva & Adam photo ingest, step 6: the database loader
  *
- * Reads manifest.json + authorship.tsv and inserts rows via the EXISTING data
- * layer — `commitPhoto` from `apps/web/lib/data/photos.ts`, unmodified — not a
- * second write path. See gateway.ts and db.ts for how a standalone script
- * reaches that function without booting the whole app's environment.
+ * Reads manifest.json + verdicts.tsv (+ an optional authorship.tsv override)
+ * and inserts rows via the EXISTING data layer — `commitPhoto` from
+ * `apps/web/lib/data/photos.ts`, unmodified — not a second write path. See
+ * gateway.ts and db.ts for how a standalone script reaches that function
+ * without booting the whole app's environment.
  *
  * DRY-RUN BY DEFAULT. Nothing touches Supabase, and no credentials are even
  * required, unless `--commit` is passed explicitly.
@@ -14,18 +15,29 @@
  *   pnpm ingest:load                    dry run — prints the plan, writes nothing
  *   pnpm ingest:load -- --commit        actually uploads + inserts
  *   pnpm ingest:load -- --commit --source <dir>   (needed for the original upload)
+ *   pnpm ingest:load -- --verdicts <path>          override the default verdicts.tsv location
  *
- * WHAT THIS DOES AND DOES NOT COMMIT:
+ * WHO GETS AN AUTHOR, AND HOW (2026-08-07 founder decision — see verdicts.ts
+ * for the mapping, quoted verbatim there):
  *
- *   - Only IMAGE items with a founder-confirmed author (authorship.tsv's
- *     `author_correction` column — a guess alone is never enough, see
- *     manifest.ts) are eligible.
+ *   Every eligible row gets an author automatically, from the authorship-pass
+ *   verdicts (default `/tmp/authorship-pass/verdicts.tsv`, `--verdicts` to
+ *   point elsewhere): `person_a` -> adam, `person_b` -> eva, `cannot_tell` and
+ *   `third_party` -> UNSIGNED (migration 12: `author_member_id is null`, not a
+ *   guess). The founder does not need to hand-fill authorship.tsv for this to
+ *   work — it stays purely a MANUAL OVERRIDE sheet: a non-blank
+ *   `author_correction` there (now accepting `eva`, `adam` OR `unsigned`) wins
+ *   over the automatic verdicts-derived result for that one file. A file with
+ *   neither a verdict nor a manual override is skipped, unresolved, same as
+ *   before.
+ *
+ * WHAT ELSE THIS DOES AND DOES NOT COMMIT:
+ *
  *   - `kind: "book"` is used for every row, never `"daily"`. `"daily"` means
- *     "the one shared card for this day" and `commitPhoto` retires the
- *     author's PRIOR live daily whenever a new one commits for the same day
- *     (`supersedePriorDaily`) — inserting a backlog of many photos per day as
- *     `"daily"` would each retire the one before it, soft-deleting all but the
- *     last photo of every multi-photo day. `"book"` skips that entirely.
+ *     "the one shared card for this day, posted BY a person" and
+ *     `commitPhoto` now refuses a `kind: "daily"` commit with no author
+ *     outright — an unsigned row can only ever be `"book"`, and this loader
+ *     never asks for anything else.
  *   - VIDEO items (3 of them) are NOT committed. `photos.mime` is
  *     `"image/jpeg"` only in the current schema — there is no video kind, no
  *     video mime, and no column for a poster frame relationship. Forcing a
@@ -35,10 +47,15 @@
  *     `commitPhoto` derives it from `deps.now()` — injectable specifically for
  *     this kind of backfill (its own doc comment: "Injected so an issuance
  *     test can predict the paths"). This loader injects
- *     `startOfLocalDay(item.isoDate, author.home_timezone) + 12h` per photo,
- *     so the row files under the filename-derived date the founder named it
- *     with, in the author's own zone — not under today's date. `lib/shared-day`
- *     itself is untouched; only its exported, tested functions are called.
+ *     `startOfLocalDay(item.isoDate, zone) + 12h` per photo, so the row files
+ *     under the filename-derived date the founder named it with — not under
+ *     today's date. For a signed item `zone` is the author's own home zone;
+ *     for an unsigned item there is no author to read one from, so this calls
+ *     the SAME `resolveTz(undefined, undefined)` that `commitPhoto` itself
+ *     falls back to internally for an unsigned commit, rather than inventing
+ *     a second fallback that could disagree with the first and trip
+ *     migration 08's shared-day trigger. `lib/shared-day` itself is
+ *     untouched; only its exported, tested functions are called.
  *   - Idempotent by `client_uuid`, deterministically derived from the source
  *     filename (`deriveClientUuid`) — the SAME key on every rerun. Before
  *     doing any work for an item, the loader checks
@@ -47,29 +64,35 @@
  */
 
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { commitPhoto } from "@/lib/data/photos.ts";
 import type { CommitPhotoInput, PhotoDeps } from "@/lib/data/photos.ts";
 import { photoDisplayPath, photoOriginalPath, photoThumbPath } from "@/lib/schema.ts";
-import { startOfLocalDay, isMemberSlug } from "@/lib/shared-day/index.ts";
-import type { MemberSlug } from "@/lib/types.ts";
+import { startOfLocalDay, isMemberSlug, resolveTz } from "@/lib/shared-day/index.ts";
 
 import { parseFilename } from "./filename.ts";
 import { parseAuthorshipTsv } from "./manifest.ts";
-import type { Manifest, ManifestItem } from "./manifest.ts";
+import type { AuthorshipCorrection, Manifest } from "./manifest.ts";
+import { parseVerdictsTsv } from "./verdicts.ts";
+import type { Verdict } from "./verdicts.ts";
+import { buildPlan } from "./plan.ts";
+import type { Plan } from "./plan.ts";
 import { createIngestClient, uploadObject } from "./db.ts";
 import { ingestGateway } from "./gateway.ts";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const DEFAULT_OUT = resolve(HERE, "output");
 const DEFAULT_SOURCE = resolve(HERE, "../../Eva-app-images");
+/** Where the authorship pass leaves its verdicts. `--verdicts` overrides. */
+const DEFAULT_VERDICTS = "/tmp/authorship-pass/verdicts.tsv";
 
 interface CliArgs {
   manifestPath: string;
   authorshipPath: string;
+  verdictsPath: string;
   source: string;
   commit: boolean;
   limit: number | null;
@@ -79,6 +102,7 @@ function parseArgs(argv: string[]): CliArgs {
   const args = argv.slice(2);
   let outDir = DEFAULT_OUT;
   let source = DEFAULT_SOURCE;
+  let verdictsPath = DEFAULT_VERDICTS;
   let commit = false;
   let limit: number | null = null;
 
@@ -87,6 +111,7 @@ function parseArgs(argv: string[]): CliArgs {
     if (arg === "--commit") commit = true;
     else if (arg === "--out") outDir = resolve(args[++i] ?? "");
     else if (arg === "--source") source = resolve(args[++i] ?? "");
+    else if (arg === "--verdicts") verdictsPath = resolve(args[++i] ?? "");
     else if (arg === "--limit") limit = Number(args[++i]);
     else {
       console.error(`Unknown option: ${arg}`);
@@ -97,6 +122,7 @@ function parseArgs(argv: string[]): CliArgs {
   return {
     manifestPath: join(outDir, "manifest.json"),
     authorshipPath: join(outDir, "authorship.tsv"),
+    verdictsPath,
     source,
     commit,
     limit,
@@ -130,52 +156,39 @@ const SOURCE_MIME: Record<string, string> = {
   png: "image/png",
 };
 
-type Plan =
-  | { action: "commit"; item: ManifestItem; author: MemberSlug }
-  | { action: "skip"; item: ManifestItem; reason: string };
-
-function buildPlan(
-  items: ManifestItem[],
-  authorship: Map<string, { author: "eva" | "adam" | null }>,
-): Plan[] {
-  return items.map((item) => {
-    if (item.kind === "video") {
-      return {
-        action: "skip",
-        item,
-        reason:
-          "video — apps/web photos.mime is \"image/jpeg\" only; no schema support for video yet (needs a CTO/schema decision, not something this loader invents)",
-      };
-    }
-    if (!item.derivatives.display) {
-      return { action: "skip", item, reason: "no display derivative in manifest" };
-    }
-    const correction = authorship.get(item.file);
-    if (!correction || !correction.author) {
-      return {
-        action: "skip",
-        item,
-        reason: "no founder-confirmed author in authorship.tsv (author_correction blank)",
-      };
-    }
-    return { action: "commit", item, author: correction.author };
-  });
-}
-
 async function main(): Promise<void> {
   const args = parseArgs(process.argv);
 
   console.log(`Manifest: ${args.manifestPath}`);
-  console.log(`Authorship: ${args.authorshipPath}`);
+  console.log(`Verdicts: ${args.verdictsPath}`);
+  console.log(`Authorship (manual override): ${args.authorshipPath}`);
   console.log(`Mode: ${args.commit ? "COMMIT (writes to Supabase)" : "DRY RUN (writes nothing)"}`);
 
   const manifest = JSON.parse(readFileSync(args.manifestPath, "utf8")) as Manifest;
-  const authorship = parseAuthorshipTsv(readFileSync(args.authorshipPath, "utf8"));
+
+  // Both sheets are optional now. Neither existing is not an error: an
+  // absent authorship.tsv means "no manual overrides" (the founder should
+  // not have to hand-fill it any more), and — separately — an absent
+  // verdicts.tsv means every file falls back to "no verdict, no override",
+  // i.e. everything is skipped, which is the same safe default this loader
+  // has always had for an unresolved file.
+  const authorship = existsSync(args.authorshipPath)
+    ? parseAuthorshipTsv(readFileSync(args.authorshipPath, "utf8"))
+    : new Map<string, AuthorshipCorrection>();
+  const verdicts = existsSync(args.verdictsPath)
+    ? parseVerdictsTsv(readFileSync(args.verdictsPath, "utf8"))
+    : new Map<string, Verdict>();
+  if (verdicts.size === 0) {
+    console.log(
+      `  (no verdicts found at ${args.verdictsPath} — every file will be skipped unless ` +
+        "authorship.tsv overrides it directly)",
+    );
+  }
 
   let items = manifest.items;
   if (args.limit !== null) items = items.slice(0, args.limit);
 
-  const plan = buildPlan(items, authorship);
+  const plan = buildPlan(items, authorship, verdicts);
   const toCommit = plan.filter((p): p is Extract<Plan, { action: "commit" }> => p.action === "commit");
   const toSkip = plan.filter((p): p is Extract<Plan, { action: "skip" }> => p.action === "skip");
 
@@ -188,10 +201,22 @@ async function main(): Promise<void> {
     console.log(`  ${count}x — ${reason}`);
   }
 
+  // The author tally — eva / adam / unsigned — over everything eligible to
+  // commit, regardless of dry-run or --commit. This is the number a founder
+  // sign-off review reads before anything is written.
+  const tally = { eva: 0, adam: 0, unsigned: 0 };
+  for (const p of toCommit) tally[p.author]++;
+  console.log(
+    `\nAuthor tally over ${toCommit.length} eligible item(s): ` +
+      `adam=${tally.adam} eva=${tally.eva} unsigned=${tally.unsigned}`,
+  );
+
   if (!args.commit) {
     console.log("\nDry run — nothing was written. Eligible items:");
     for (const p of toCommit) {
-      console.log(`  would commit: ${p.item.file} (${p.item.isoDate}, author=${p.author})`);
+      console.log(
+        `  would commit: ${p.item.file} (${p.item.isoDate}, author=${p.author}, source=${p.source})`,
+      );
     }
     console.log("\nRun again with --commit to actually write these.");
     return;
@@ -220,8 +245,10 @@ async function main(): Promise<void> {
         continue;
       }
 
-      const member = memberBySlug.get(author);
-      if (!member || !isMemberSlug(author)) {
+      // `undefined` for an unsigned commit — `author_member_id is null`
+      // (migration 12). No member to look up; nothing here invents one.
+      const member = author === "unsigned" ? undefined : memberBySlug.get(author);
+      if (author !== "unsigned" && (!member || !isMemberSlug(author))) {
         throw new Error(`unknown author slug "${author}" — not in the roster`);
       }
 
@@ -246,11 +273,20 @@ async function main(): Promise<void> {
       const originalMime = SOURCE_MIME[parsed.extension] ?? "application/octet-stream";
       await uploadObject(db, photoOriginalPath(photoId), originalBytes, originalMime);
 
-      // shared_day comes from THIS instant, in the author's own zone — noon
-      // local, safely clear of any DST boundary — never from "now". See the
-      // file header for why this matters and why it is safe to do this way.
+      // shared_day comes from THIS instant, in an anchor zone — noon local,
+      // safely clear of any DST boundary — never from "now". For a signed
+      // item the anchor is the author's own home zone. For an unsigned item
+      // there is no author to read one from, so this reaches for the exact
+      // same fallback `commitPhoto` will independently apply inside itself
+      // (`resolveTz(undefined, member?.home_timezone)` — its own doc comment:
+      // "the zone the shared day opens in"). Deriving the SAME zone here that
+      // commitPhoto derives there is what keeps `noon local` and the
+      // trigger-checked `shared_day` in migration 08 agreeing; inventing a
+      // second, different fallback in this file would risk the two
+      // disagreeing on a date near a boundary.
+      const zone = resolveTz(undefined, member?.home_timezone);
       const createdAt = new Date(
-        startOfLocalDay(item.isoDate, member.home_timezone).getTime() + 12 * 60 * 60 * 1000,
+        startOfLocalDay(item.isoDate, zone).getTime() + 12 * 60 * 60 * 1000,
       );
 
       const deps: PhotoDeps = {
@@ -263,7 +299,11 @@ async function main(): Promise<void> {
         clientUuid,
         photoId,
         kind: "book",
-        author,
+        // Omitted entirely for "unsigned" — CommitPhotoInput.author is
+        // optional precisely so an ingest-only caller can commit a photo
+        // with author_member_id null (migration 12). Every other caller in
+        // this app (app/api/photos/route.ts) always supplies one.
+        ...(author !== "unsigned" ? { author } : {}),
         width: display.width,
         height: display.height,
         bytes: display.bytes,
@@ -294,9 +334,17 @@ async function main(): Promise<void> {
   if (failed > 0) process.exitCode = 1;
 }
 
-main().catch((err: unknown) => {
-  const message = err instanceof Error ? err.message : String(err);
-  console.error(`\nLOAD FAILED: ${message}`);
-  if (err instanceof Error && err.stack) console.error(err.stack);
-  process.exit(1);
-});
+// Only run as the CLI entrypoint (`tsx ingest/load.ts`), never on import.
+// This file is never imported by a test (the resolution logic tests exercise
+// lives in `plan.ts`, which has no Supabase dependency — see its header) —
+// but the guard is cheap insurance against exactly the failure mode that
+// separation avoids: importing this module would otherwise immediately call
+// `main()` against the importer's own `process.argv` and exit the process.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`\nLOAD FAILED: ${message}`);
+    if (err instanceof Error && err.stack) console.error(err.stack);
+    process.exit(1);
+  });
+}

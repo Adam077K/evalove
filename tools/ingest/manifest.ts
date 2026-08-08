@@ -130,9 +130,9 @@ export function guessAuthor(entry: CatalogEntry): AuthorshipGuess {
 }
 
 const TSV_HEADER = [
-  "# authorship.tsv — one row per photograph. Fill in the LAST column only, with 'eva' or 'adam'.",
-  "# guess_author is a best guess (see guess_reason) and is marked as one on purpose — the file",
-  "# format does NOT indicate who took a photo. Confirm or correct every row; leave blank to skip it.",
+  "# authorship.tsv — one row per photograph. Fill in the LAST column only, with 'eva', 'adam' or 'unsigned'.",
+  "# MANUAL OVERRIDE ONLY: load.ts assigns eva/adam/unsigned automatically from the authorship-pass",
+  "# verdicts (verdicts.ts). Fill a row here only to correct one file's automatic result; leave the rest blank.",
   ["file", "date", "subject", "guess_author", "guess_reason", "author_correction"].join("\t"),
 ].join("\n");
 
@@ -163,16 +163,19 @@ export function buildAuthorshipTsv(rows: AuthorshipRow[]): string {
 }
 
 export interface AuthorshipCorrection {
-  /** The founder's correction, if the row was filled in. */
-  author: "eva" | "adam" | null;
+  /** The founder's manual override, if the row was filled in. */
+  author: "eva" | "adam" | "unsigned" | null;
 }
 
 /**
- * Read a founder-edited authorship.tsv back. `author_correction` wins whenever
- * it is non-empty; an empty correction with a non-empty `guess_author` still
- * resolves to `null` — a guess alone is never enough to write a row, per the
- * founder's own statement that the format-based signal isn't trustworthy. The
- * founder must explicitly confirm every author, even ones the guess got right.
+ * Read a founder-edited authorship.tsv back — now a MANUAL OVERRIDE sheet
+ * only. `load.ts` assigns eva/adam/unsigned to every row automatically from
+ * the authorship-pass verdicts (`verdicts.ts`); a non-blank
+ * `author_correction` here wins over that automatic result for that one
+ * file, same idea as before but no longer the only path to a resolved
+ * author. An empty correction with a non-empty `guess_author` still resolves
+ * to `null` — a guess alone is never enough to override anything, per the
+ * founder's own statement that the format-based signal isn't trustworthy.
  */
 export function parseAuthorshipTsv(
   content: string,
@@ -185,7 +188,10 @@ export function parseAuthorshipTsv(
     const file = cols[0];
     if (!file || file === "file") continue; // header row
     const correction = (cols[5] ?? "").trim().toLowerCase();
-    const author = correction === "eva" || correction === "adam" ? correction : null;
+    const author =
+      correction === "eva" || correction === "adam" || correction === "unsigned"
+        ? correction
+        : null;
     byFile.set(file, { author });
   }
   return byFile;

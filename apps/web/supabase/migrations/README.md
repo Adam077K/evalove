@@ -1,6 +1,6 @@
 # apps/web/supabase/migrations
 
-This directory holds the full Postgres schema for Eva & Adam as eleven SQL migration files, plus their reverses in `./down/`. Read this before applying, reversing, or reasoning about any of them — several already point here by name.
+This directory holds the full Postgres schema for Eva & Adam as twelve SQL migration files, plus their reverses in `./down/`. Read this before applying, reversing, or reasoning about any of them — several already point here by name.
 
 ## What applying a migration means here
 
@@ -27,7 +27,7 @@ Two honest routes exist today:
 
 The founder confirmed, directly from the Supabase dashboard, that **tables exist** in project `oqiyzzpcsdlqqcjlpmix`.
 
-**Which of the eleven migrations below are applied, and whether the live schema matches these files exactly, is unverified.** Nobody has checked. Do not round this up to "the schema is current," and do not round it down to "nothing has been applied" — both are guesses this README exists to stop. State it in exactly these terms until someone actually checks: tables exist; the rest is unknown.
+**Which of the twelve migrations below are applied, and whether the live schema matches these files exactly, is unverified.** Nobody has checked. Do not round this up to "the schema is current," and do not round it down to "nothing has been applied" — both are guesses this README exists to stop. State it in exactly these terms until someone actually checks: tables exist; the rest is unknown.
 
 Background, for whoever reads this next: on 2026-08-04, two agents independently read the migration headers' (now-corrected) `NEVER APPLIED` claim plus the 2026-08-02 DECISIONS.md entry above, concluded the schema had never been applied, and escalated an Irreversible-tier sign-off request to the founder over a stale comment. That incident is what this README and the header correction both respond to.
 
@@ -37,7 +37,7 @@ Background, for whoever reads this next: on 2026-08-04, two agents independently
 
 ## The verification that did not happen
 
-Every file in this directory — the eleven migrations, their eleven down files, `../seed.sql`, and `../config.toml` — was authored on a machine with no container runtime. `supabase start`, `supabase db reset`, and `psql` were never available, so **none of this SQL has ever been executed anywhere, local or hosted, by the agent that wrote it.** It was written correct by reasoning about PostgreSQL and the Supabase CLI, not by running it and watching it pass.
+Every file in this directory — the twelve migrations, their twelve down files, `../seed.sql`, and `../config.toml` — was authored on a machine with no container runtime. `supabase start`, `supabase db reset`, and `psql` were never available, so **none of this SQL has ever been executed anywhere, local or hosted, by the agent that wrote it.** It was written correct by reasoning about PostgreSQL and the Supabase CLI, not by running it and watching it pass.
 
 This is a separate fact from "Known state" above. Tables existing in the live project (founder-confirmed) says nothing about whether *this exact SQL* is what created them, or whether it would run cleanly today if it hasn't already. Before trusting this SQL against anything real, run it first against a local stack with a working container runtime, or have someone who can.
 
@@ -61,7 +61,7 @@ Three places in this schema add something beyond the flat SQL block in `LDR-APP-
 
 **A3 — `purge_audit_item_idx` and `purge_audit_outstanding_idx`** (migration 07). Two indexes on `purge_audit` supporting its two real read patterns: "what happened to this specific item" and "what purges are still outstanding." Both are cheap on an append-only table that only grows when something is actually deleted for good.
 
-## The eleven migrations, in order
+## The twelve migrations, in order
 
 | # | File | Creates |
 |---|------|---------|
@@ -76,5 +76,6 @@ Three places in this schema add something beyond the flat SQL block in `LDR-APP-
 | 09 | `20260802090800_views_shared_days_and_days_together.sql` | `v_shared_days`, `v_days_together` |
 | 10 | `20260802090900_rls_deny_all.sql` | RLS enabled, zero policies, every table |
 | 11 | `20260802091000_storage_media_bucket.sql` | the private `media` storage bucket + prefix-enforcement trigger |
+| 12 | `20260807120000_photos_author_optional.sql` | `photos.author_member_id` becomes optional (2026-08-07 founder decision: unsigned photographs are shared, not authored) |
 
-Each has a matching down-migration in `./down/`, reversed in the same numeric order (11 → 01).
+Each has a matching down-migration in `./down/`, reversed in the same numeric order (12 → 01).

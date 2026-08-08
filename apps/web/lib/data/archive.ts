@@ -11,10 +11,13 @@
  *   - The Book's kept days (`liveBookLeaves`) are, by definition, every
  *     daily photo that is not still today.
  *
- * Every `Photo` this module returns carries `authorSlug` — resolved once
- * against the roster, attached here, so nothing downstream re-derives
+ * Every SIGNED `Photo` this module returns carries `authorSlug` — resolved
+ * once against the roster, attached here, so nothing downstream re-derives
  * identity from a raw id (see the note on `authorSlug` in `lib/types.ts`
- * and on `slugOf` in `components/book/compose.ts`).
+ * and on `authorshipOf` in `components/book/compose.ts`). A deliberately
+ * UNSIGNED photo (`authorMemberId === null`, migration 12) carries no
+ * `authorSlug` and never will — that absence is not a miss to fix here, it
+ * is the point.
  */
 
 import type { IsoDate, MemberSlug, Photo, PhotoKind, SharedDay } from "@/lib/types";
@@ -33,7 +36,8 @@ const MAX_ARCHIVE_PAGES = 500;
 
 /**
  * Every live photo of the given kind (or every kind, if omitted), oldest
- * cursor last, each carrying `authorSlug`.
+ * cursor last. Every SIGNED photo carries `authorSlug`; an unsigned one
+ * (`authorMemberId === null`) carries none, on purpose.
  */
 export async function listAllPhotos(
   deps: PhotoDeps,
@@ -52,7 +56,12 @@ export async function listAllPhotos(
       limit: MAX_PAGE_SIZE,
     });
     for (const photo of result.photos) {
-      const slug = slugById.get(photo.authorMemberId);
+      // `authorMemberId === null` is a deliberately unsigned photo (migration
+      // 12) — it gets no `authorSlug` attached, same as an unresolved id, but
+      // for the opposite reason: `authorshipOf` (compose.ts) tells the two
+      // apart by the id, not by whether a slug ended up attached.
+      const slug =
+        photo.authorMemberId === null ? undefined : slugById.get(photo.authorMemberId);
       out.push(slug === undefined ? photo : { ...photo, authorSlug: slug });
     }
     if (result.nextCursor === null) return out;
