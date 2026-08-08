@@ -20,6 +20,12 @@
  * viewport. It runs under the dock's transparent gutters on purpose;
  * the tappable content sits above `--dock-footprint`.
  *
+ * The same photo appears above on the paper table (MemoryOnTable, 2026-08-08)
+ * and here as a navigation thumbnail — the two serve different purposes.
+ * MemoryOnTable is the memory itself (content, full size, on the table).
+ * This thumbnail is navigation context: "The Book holds this and more."
+ * Same subject, different jobs, different scales.
+ *
  * `whatCameBack` is the live wiring and must survive any re-skin — the page
  * (`app/(app)/today/page.tsx`) computes it against the real archive and
  * passes the result in, since it needs the whole archive's photographs and

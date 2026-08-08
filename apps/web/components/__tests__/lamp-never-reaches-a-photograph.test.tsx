@@ -70,6 +70,7 @@ import { whatCameBack } from "@/lib/resurface";
 import { BookSheet } from "@/components/book/BookSheet";
 import { ResurfacedItem } from "@/components/book/ResurfacedItem";
 import { TodayDoorway } from "@/components/home/TodayDoorway";
+import { MemoryOnTable } from "@/components/home/MemoryOnTable";
 import ReviewBookStatesPage from "@/app/(app)/review/book-states/page";
 import ReviewTodayPairPage from "@/app/(app)/review/today-pair/page";
 
@@ -446,6 +447,21 @@ describe.each(["day", "night"])("no lamp above a photograph — %s", (mode) => {
     const returned = whatCameBack(new Date("2026-08-02T15:00:00Z"));
     render(<TodayDoorway returned={returned} />);
     expectNoLampAbovePhotographs(`today doorway (${mode})`);
+  });
+
+  it("the memory on the paper table (MemoryOnTable)", () => {
+    // MemoryOnTable renders the resurfaced memory photograph directly on
+    // the PAPER table — added 2026-08-08 when the founder asked for "under
+    // it, picture of us from twenty fourth of July." The photograph must
+    // never receive a lamp filter just like every other surface.
+    const returned = whatCameBack(new Date("2026-08-02T15:00:00Z"));
+    // `returned` is always non-null when the fixture archive is non-empty
+    // (the archive has photos; findHourMatch resolves to resolution 3 at
+    // worst). If whatCameBack somehow returned null the test itself is
+    // misconfigured, not the component, so a null-guard throw is correct.
+    if (returned === null) throw new Error("fixture archive returned null — test misconfigured");
+    render(<MemoryOnTable returned={returned} />);
+    expectNoLampAbovePhotographs(`memory on table (${mode})`);
   });
 
   it("every mount a photograph can land in — polaroid chin, torn sheet, stock border", () => {

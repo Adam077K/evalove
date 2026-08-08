@@ -15,6 +15,7 @@ import { offsetNote } from "@/lib/stamp";
 import { photoDeps } from "@/lib/data";
 import { liveTodayObject } from "@/lib/data/today";
 import { liveWhatCameBack } from "@/lib/data/archive";
+import { MemoryOnTable } from "@/components/home/MemoryOnTable";
 import { parseProfile, PROFILE_KEY } from "@/lib/session/profile";
 import type { MemberSlug } from "@/lib/types";
 
@@ -113,6 +114,17 @@ export default async function TodayPage() {
           lastLeft={today.lastLeft}
           recentDailies={today.recentDailies}
         />
+
+        {/* The memory — a photograph from the archive placed on the table
+            below the main item. The founder asked for "under it, picture
+            of us from twenty fourth of July, is memory we bring up."
+            `returned` is from `liveWhatCameBack` (above), which uses the
+            real archive — the same selection the Book corner has always
+            used, now surfaced here where it can be seen.
+            The label above it ("Left at this hour, in July") is the text
+            the founder asked for: a fact in the app's own voice, never a
+            prompt. Renders only when the archive is non-empty. */}
+        {returned !== null && <MemoryOnTable returned={returned} />}
 
         {/* The sealed thing, when one is waiting. An object among
             objects — its own offset, never a full-width row. ml-8
