@@ -63,7 +63,7 @@ function shellSkeleton(container: HTMLElement) {
 }
 
 describe("AppLayout — the shared shell", () => {
-  it("wraps unrelated children in an identical band + seam + main", () => {
+  it("wraps unrelated children in an identical band + main", () => {
     const { container: today } = render(
       <AppLayout>
         <div data-testid="today">A photograph, a caption, a sealed note.</div>
