@@ -55,13 +55,10 @@ const { default: AppLayout } = await import("../layout");
 function shellSkeleton(container: HTMLElement) {
   const header = container.querySelector("header");
   const main = container.querySelector("main");
-  const seam = main?.firstElementChild as HTMLElement | null;
   return {
     headerClassName: header?.className ?? null,
     headerHeightVar: header?.style.height ?? null,
     mainClassName: main?.className ?? null,
-    seamClassName: seam?.className ?? null,
-    seamIsAriaHidden: seam?.getAttribute("aria-hidden") ?? null,
   };
 }
 
@@ -105,6 +102,9 @@ describe("AppLayout — the shared shell", () => {
     const firstChild = main?.firstElementChild as HTMLElement | null;
     // After the seam moved to Dates, the shell no longer owns the torn edge.
     // main's first child is whatever the route renders, never rotate-180.
+    // Assert the positive side first: firstChild exists and is the route's content
+    expect(firstChild).not.toBeNull();
+    // Then assert it is not a seam
     expect(firstChild?.className ?? "").not.toContain("rotate-180");
   });
 
