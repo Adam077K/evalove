@@ -115,8 +115,15 @@ export default async function BookPage() {
           {/* ---- 1 · The book — tap to open, swipe to turn ---- */}
           {/* pr-6 keeps the fore-edge fully on screen with room to
               grow; the spine takes the one bleed edge on the left.
-              The bottom margin clears the hanging ribbon's tail. */}
-          <div className="mb-48 pr-6">
+              The bottom margin clears the hanging ribbon's tail — mb-24
+              rather than the original mb-48: at 393x852 the extra 96px
+              put "The days in order" (the doors section below) entirely
+              inside the fixed dock's tray on first paint (measured:
+              link at 823-850px, tray from 783px) — sliced on every
+              arrival, before anyone had touched anything. mb-24 still
+              clears the ribbon (checked against the closed cover, which
+              has the longest ribbon drop) with room to spare. */}
+          <div className="mb-24 pr-6">
             <BookObject
               returned={returned}
               leaves={pages}
@@ -126,7 +133,10 @@ export default async function BookPage() {
           </div>
 
           {/* ---- 2 · The doors — type on hairline rules ---- */}
-          <div className="mt-20 px-5 md:px-8">
+          {/* mt-12, not the original mt-20 — same first-paint dock-clip
+              fix as above, taken from the doors' side of the gap
+              instead of the ribbon's. */}
+          <div className="mt-12 px-5 md:px-8">
             {/* "Ask for something" (Echo, quoting their archive word for
                 word) used to live here. Removed rather than repointed:
                 PRODUCT-VISION-V2 §2.4 says the strictly-quoting search
