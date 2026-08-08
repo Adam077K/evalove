@@ -55,18 +55,15 @@ const { default: AppLayout } = await import("../layout");
 function shellSkeleton(container: HTMLElement) {
   const header = container.querySelector("header");
   const main = container.querySelector("main");
-  const seam = main?.firstElementChild as HTMLElement | null;
   return {
     headerClassName: header?.className ?? null,
     headerHeightVar: header?.style.height ?? null,
     mainClassName: main?.className ?? null,
-    seamClassName: seam?.className ?? null,
-    seamIsAriaHidden: seam?.getAttribute("aria-hidden") ?? null,
   };
 }
 
 describe("AppLayout — the shared shell", () => {
-  it("wraps unrelated children in an identical band + seam + main", () => {
+  it("wraps unrelated children in an identical band + main", () => {
     const { container: today } = render(
       <AppLayout>
         <div data-testid="today">A photograph, a caption, a sealed note.</div>
@@ -95,16 +92,20 @@ describe("AppLayout — the shared shell", () => {
     expect(main?.className).toContain("pt-[var(--band-height)]");
   });
 
-  it("hosts the torn edge rotated, not mirrored, immediately above route content", () => {
+  it("main's first child is not a seam — the seam belongs to Dates now (founder, 2026-08-08)", () => {
     const { container } = render(
       <AppLayout>
         <div />
       </AppLayout>,
     );
     const main = container.querySelector("main");
-    const seam = main?.firstElementChild as HTMLElement;
-    expect(seam.className).toContain("rotate-180");
-    expect(seam.className).not.toMatch(/scale-y/i);
+    const firstChild = main?.firstElementChild as HTMLElement | null;
+    // After the seam moved to Dates, the shell no longer owns the torn edge.
+    // main's first child is whatever the route renders, never rotate-180.
+    // Assert the positive side first: firstChild exists and is the route's content
+    expect(firstChild).not.toBeNull();
+    // Then assert it is not a seam
+    expect(firstChild?.className ?? "").not.toContain("rotate-180");
   });
 
   it("renders exactly one masthead landmark, fixed at the top", () => {

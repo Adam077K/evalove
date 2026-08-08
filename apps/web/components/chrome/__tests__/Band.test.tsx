@@ -48,24 +48,51 @@ describe("Band", () => {
     expect(header?.style.height).toBe("var(--band-height)");
   });
 
+  it("carries bg-canvas material", () => {
+    const { container } = render(<Band />);
+    const header = container.querySelector("header");
+    expect(header?.className).toContain("bg-canvas");
+  });
+
   /**
    * Eva first, everywhere the two of them appear in sequence — the
    * same rule `MEMBERS: readonly [Member, Member] = [EVA, ADAM]`
-   * (lib/fixtures/members.ts) and Today's own DECO section already
-   * hold ("New York first; the gold is hers"). New York is Eva's city
+   * (lib/fixtures/members.ts) and Dates' own DECO section already
+   * hold ("New York first; the ink is hers"). New York is Eva's city
    * (`EVA.homeTimezone === "America/New_York"`); Tel Aviv is Adam's.
    * This is the most visible surface in the app — on every route — so
    * asserted, not left to be remembered: New York must precede Tel
-   * Aviv in the rendered order, and Eva's reading carries the gold
+   * Aviv in the rendered order, and Eva's reading carries the stronger
    * tone, both by DOM order and by document position.
    */
-  it("holds Eva-first: New York precedes Tel Aviv, gold is hers", () => {
+  it("holds Eva-first: New York precedes Tel Aviv in DOM order, ink is hers", () => {
     const { container } = render(<Band />);
-    const text = container.textContent ?? "";
-    expect(text.indexOf("NEW YORK")).toBeGreaterThanOrEqual(0);
-    expect(text.indexOf("TEL AVIV")).toBeGreaterThan(text.indexOf("NEW YORK"));
 
-    const gold = container.querySelector(".text-night-gold");
-    expect(gold?.textContent).toBe("NEW YORK");
+    // Assert clock order by DOM — both readings rendered, New York first
+    const allSpans = container.querySelectorAll("span");
+    let newYorkIndex = -1;
+    let telAvivIndex = -1;
+
+    allSpans.forEach((span, idx) => {
+      if (span.textContent?.includes("NEW YORK")) {
+        newYorkIndex = idx;
+      }
+      if (span.textContent?.includes("TEL AVIV")) {
+        telAvivIndex = idx;
+      }
+    });
+
+    expect(newYorkIndex).toBeGreaterThanOrEqual(0);
+    expect(telAvivIndex).toBeGreaterThan(newYorkIndex);
+
+    // Tone now lives on the <p> so city + time both inherit it — asserting
+    // on span.text-* would miss a regression where the time stayed at full
+    // ink while only the label was muted. Both sides are asserted positively:
+    // p.text-ink is Eva's reading; p.text-mute is Adam's. toContain because
+    // the <p> textContent includes the time string alongside the city label.
+    const evaReading = container.querySelector("p.text-ink");
+    expect(evaReading?.textContent).toContain("NEW YORK");
+    const adamReading = container.querySelector("p.text-mute");
+    expect(adamReading?.textContent).toContain("TEL AVIV");
   });
 });
