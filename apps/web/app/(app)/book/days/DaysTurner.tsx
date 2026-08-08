@@ -34,6 +34,8 @@ export function DaysTurner({ pages }: { pages: BookLeaf[] }) {
               evaPhoto={leaf.evaPhoto}
               adamPhoto={leaf.adamPhoto}
               unsignedPhoto={leaf.unsignedPhoto}
+              photos={leaf.photos}
+              pageKey={leaf.key}
             />
           </BookSheet>
         ))}

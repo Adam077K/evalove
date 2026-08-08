@@ -52,6 +52,12 @@ import {
  *                     has not posted simply is not on the page. The
  *                     `live` prop survives so existing callers
  *                     compile; it no longer changes what renders.
+ *   cluster (curated) a curated page holding several photographs at
+ *                     once (`BookLeaf.photos`, 2 to
+ *                     `MAX_PHOTOS_PER_CURATED_PAGE`) — any mix of
+ *                     authorship, since it groups by day, not by the
+ *                     daily ritual's one-each pairing. See
+ *                     `ClusterComposition`.
  *   neither posted    null — the book skips the date in silence.
  */
 
@@ -62,16 +68,38 @@ type SpreadProps = {
   /** A curated leaf's deliberately unsigned photo — see `BookLeaf.unsignedPhoto`.
       Never set alongside `evaPhoto`/`adamPhoto`; always renders as a single. */
   unsignedPhoto?: Photo;
+  /** A curated leaf holding several photographs — see `BookLeaf.photos`.
+      Never set alongside `evaPhoto`/`adamPhoto`/`unsignedPhoto`. */
+  photos?: Photo[];
+  /**
+   * Seeds a `photos` cluster's page-level composition choices (which side
+   * leads, the tape variant) — the role `day.date` plays for
+   * `PairComposition`. Must be unique PER PAGE, not per day: several
+   * cluster pages can share a date (`lib/data/archive.ts`), so callers pass
+   * the leaf's own `key`, never `day.date` alone, or every cluster page on
+   * a busy day would compose identically.
+   */
+  pageKey?: string;
   /** Accepted for compatibility; a live day renders like a closed one. */
   live?: boolean;
   /** Plays the drop-into-place entrance on that side, on pair completion. */
   dropIn?: "eva" | "adam";
 };
 
-export function Spread({ day, evaPhoto, adamPhoto, unsignedPhoto, dropIn }: SpreadProps) {
+export function Spread({
+  day,
+  evaPhoto,
+  adamPhoto,
+  unsignedPhoto,
+  photos,
+  pageKey,
+  dropIn,
+}: SpreadProps) {
+  const cluster = photos !== undefined && photos.length >= 2;
+
   /* Nothing posted, nothing curated: the book skips the date in silence.
      No marker. */
-  if (!evaPhoto && !adamPhoto && !unsignedPhoto) return null;
+  if (!evaPhoto && !adamPhoto && !unsignedPhoto && !cluster) return null;
 
   const head = runningHeadDate(day.date);
   const headIndent = Math.round(seededIn(`${day.date}:h`, 0, 44));
@@ -86,7 +114,9 @@ export function Spread({ day, evaPhoto, adamPhoto, unsignedPhoto, dropIn }: Spre
         {head}
       </p>
 
-      {only ? (
+      {cluster ? (
+        <ClusterComposition photos={photos!} pageSeed={pageKey ?? day.date} />
+      ) : only ? (
         <SingleFigure photo={only} />
       ) : (
         <PairComposition
@@ -309,6 +339,93 @@ function PairComposition({
         photo={adamPhoto}
         className={`mt-4 ${leadLeft ? "ml-24 mr-5" : "ml-5 mr-24"}`}
       />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * The cluster — a curated page holding several photographs (2 to
+ * `MAX_PHOTOS_PER_CURATED_PAGE`, `lib/data/archive.ts`) rather than
+ * the daily ritual's fixed eva/adam pair. Unlike `PairComposition`
+ * this has no fixed authorship shape — a cluster groups by DAY, so it
+ * can hold two of Eva's, one unsigned and one Adam's, any mix — so
+ * every seed here comes from the page itself (`pageSeed`) or a
+ * photo's own stable id, never from a side.
+ *
+ * One leads (largest, elevation 4, no tape — same "the newer
+ * photograph leads" rule PairComposition uses). Every other
+ * photograph follows at elevation 3, alternating sides against the
+ * lead, tucked up to overlap the row above it and corner-taped, same
+ * primitives PairComposition already proved — extended from one
+ * follower to several rather than reinvented. Never a grid: sizes are
+ * unequal and seeded per photo, not per slot index (§4).
+ * ------------------------------------------------------------------ */
+
+function ClusterComposition({
+  photos,
+  pageSeed,
+}: {
+  photos: Photo[];
+  pageSeed: string;
+}) {
+  // Chronological order, oldest first — the page still reads as the
+  // evening actually happened even though several photographs now
+  // share it. The newest leads (PairComposition's own rule); everyone
+  // else follows in the order they were taken.
+  const ordered = [...photos].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const lead = ordered.reduce((newest, p) => (p.createdAt > newest.createdAt ? p : newest), ordered[0]!);
+  const followers = ordered.filter((p) => p !== lead);
+
+  const leadLeft = seededIn(`${pageSeed}:side`, 0, 1) < 0.5;
+  const leadWidth = Math.round(seededIn(`${pageSeed}:lw`, 62, 74));
+  const tape = seededPick(`${pageSeed}:tape`, SPREAD_TAPE_VARIANTS);
+
+  return (
+    <div>
+      <div className={leadLeft ? "" : "flex justify-end"}>
+        <div style={{ width: `${leadWidth}%` }}>
+          <MountedFigure photo={lead} elevation={4} />
+        </div>
+      </div>
+
+      {followers.map((photo, i) => {
+        // Alternate against the lead's side so nothing stacks straight
+        // down the page's centre. Each follower's own id seeds its own
+        // width, tuck and tape corner — never the loop index (§4:
+        // never seed from a position that can shift on insert).
+        const onLeft = i % 2 === 0 ? !leadLeft : leadLeft;
+        const width = Math.round(seededIn(`${photo.id}:w`, 40, 54));
+        const tuck = Math.round(seededIn(`${photo.id}:tk`, 48, 96));
+        return (
+          <div key={photo.id} className={onLeft ? "" : "flex justify-end"} style={{ marginTop: -tuck }}>
+            <div style={{ width: `${width}%` }}>
+              <MountedFigure
+                photo={photo}
+                elevation={3}
+                tape={{
+                  variant: tape,
+                  placement: onLeft ? "top-left" : "top-right",
+                  angle: seededIn(`${photo.id}:t`, -5, 5),
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* One caption per photograph, lead first then the followers in
+          the order they were laid — varied vertical rhythm (§4 move
+          #5), each offset seeded from its own photo so no two land on
+          the same margin. */}
+      {ordered.map((photo, i) => (
+        <PageCaption
+          key={photo.id}
+          photo={photo}
+          className={`${i === 0 ? "mt-7" : "mt-4"} ${
+            seededIn(`${photo.id}:cx`, 0, 1) < 0.5 ? "ml-7 mr-24" : "ml-16 mr-6"
+          }`}
+        />
+      ))}
     </div>
   );
 }

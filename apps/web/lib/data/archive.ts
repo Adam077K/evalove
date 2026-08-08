@@ -131,18 +131,20 @@ interface OrderedLeaf {
 }
 
 /**
- * One curated page: `book_entries` points at a single photo, and — per
- * the migration's own comment ("a page is EITHER a photo OR a finished
- * date's artifact") — one entry IS one page, never a container for more
- * than one photograph. A day with many photographs therefore becomes
- * several entries, each its own single-photo leaf, not one leaf holding
- * several photographs; `Spread.tsx`'s existing `single` composition (the
- * one a day that kept only one photograph already renders through) is
- * the whole rendering story for a curated leaf — nothing new to build
- * there. `date_id`-pointing entries (a finished date's artifact) are out
- * of scope for this reader; they are simply not yet producible by
- * anything in the app, so skipping them here loses nothing today and
- * the skip is explicit rather than a silent cast.
+ * One curated page holding exactly one photograph: `book_entries` points at
+ * a single photo per row — per the migration's own comment ("a page is
+ * EITHER a photo OR a finished date's artifact") — and that constraint is
+ * unchanged and untouched here. `Spread.tsx`'s existing `single` composition
+ * is the whole rendering story for a lone curated leaf — nothing new to
+ * build there. `date_id`-pointing entries (a finished date's artifact) are
+ * out of scope for this reader; they are simply not yet producible by
+ * anything in the app, so skipping them here loses nothing today and the
+ * skip is explicit rather than a silent cast.
+ *
+ * A day with SEVERAL curated photographs no longer becomes several of
+ * these — see `toCuratedClusterLeaf` and `MAX_PHOTOS_PER_CURATED_PAGE`
+ * below (founder ask, 2026-08-08: "add more than one pic in book page").
+ * This function now only ever fires for a chunk of exactly one.
  */
 function toCuratedLeaf(entryId: string, position: number, photo: Photo): OrderedLeaf {
   const signedEva = photo.authorSlug === "eva";
@@ -164,6 +166,79 @@ function toCuratedLeaf(entryId: string, position: number, photo: Photo): Ordered
 }
 
 /**
+ * How many curated photographs share one page before the next page opens.
+ *
+ * "A day with many photographs gets a few pages, not one crowded one" — the
+ * founder's own words (`tools/book-placement/plan.ts`), first honoured as
+ * one photo per page. The founder has now asked for the Book to "hold more
+ * than 1 image in the page" (2026-08-08), so the same sentence is honoured
+ * one grain smaller: several photographs to a page instead of one, so a
+ * long evening (24 July: 21 curated photographs) becomes a handful of pages
+ * rather than twenty-one single-photo page turns or one overloaded page. 3
+ * is chosen, not derived: the design law's composition rules (unequal
+ * pairs, mass hierarchy, overlap, rotation) are proven at 2 (the daily
+ * pair) and this stays close to that scale rather than reaching for a page
+ * dense enough to start reading as a grid.
+ */
+export const MAX_PHOTOS_PER_CURATED_PAGE = 3;
+
+/**
+ * Split `items` into groups no larger than `maxSize`, sizes as even as
+ * possible — never a lonely group of one tacked onto otherwise-full groups
+ * (4 items at max 3 becomes 2+2, not 3+1, so no page reads like a mistake).
+ * `Math.ceil` decides how many groups there are; the remainder is spread
+ * one-per-group from the front, deterministic for a given input length and
+ * order — the same input always chunks the same way.
+ */
+function chunkEvenly<T>(items: readonly T[], maxSize: number): T[][] {
+  if (items.length === 0) return [];
+  const groupCount = Math.ceil(items.length / maxSize);
+  const base = Math.floor(items.length / groupCount);
+  let remainder = items.length % groupCount;
+  const chunks: T[][] = [];
+  let i = 0;
+  for (let g = 0; g < groupCount; g++) {
+    const size = base + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder--;
+    chunks.push(items.slice(i, i + size));
+    i += size;
+  }
+  return chunks;
+}
+
+/**
+ * Several curated entries folded onto one page. `book_entries` still gives
+ * each photograph its own row — `book_entries_photo_idx`'s one-row-per-photo
+ * rule is untouched, and so is the migration's XOR constraint; nothing here
+ * is a schema change. What changes is only how many of those rows become ONE
+ * `BookLeaf`/page: a chunk from `chunkEvenly`, in `position` order (the same
+ * ascending "reading order" `bookManifest()` already uses), instead of one
+ * leaf per row. `Spread.tsx` renders this through a new composition (a
+ * "cluster") that is deliberately NOT the daily pair's eva/adam shape — a
+ * curated page's photographs can be any mix of authors, including several
+ * from the same person or several unsigned, because grouping here is by DAY,
+ * never by the daily ritual's one-each pairing.
+ *
+ * `key` is built from every entry id in the group, not just the first, so
+ * two groups can never collide even if a future placement run changes chunk
+ * boundaries.
+ */
+function toCuratedClusterLeaf(
+  entryIds: readonly string[],
+  position: number,
+  photos: readonly Photo[],
+): OrderedLeaf {
+  return {
+    leaf: {
+      key: `book:${entryIds.join(",")}`,
+      day: toSharedDay(photos[0]!.sharedDay, photos),
+      photos: [...photos],
+    },
+    position,
+  };
+}
+
+/**
  * The kept days, newest first — the real equivalent of the fixture
  * `bookLeaves()` that used to live in `components/book/leaves.ts`.
  *
@@ -179,12 +254,15 @@ function toCuratedLeaf(entryId: string, position: number, photo: Photo): Ordered
  * ritual — the opening gathering's archive, laid onto pages by
  * `tools/book-placement`) merged in alongside the daily leaves, closing the
  * gap this function's own doc comment used to flag: a curated photo's day
- * can carry several leaves, so leaves are no longer one-per-date. Within a
- * date shared by a daily leaf and one or more curated leaves, the daily
- * leaf sorts first (it is the day itself; the curated leaves are more of
- * that day, added afterward) and the curated leaves then follow in
- * `book_entries.position` order — the same ascending "reading order"
- * `bookManifest()` (`lib/data/book.ts`) already uses.
+ * can carry several leaves, so leaves are no longer one-per-date. A day's
+ * curated entries are further chunked into groups of up to
+ * `MAX_PHOTOS_PER_CURATED_PAGE` (`toCuratedClusterLeaf`), so several
+ * photographs from a busy day can share one page instead of each opening
+ * its own. Within a date shared by a daily leaf and one or more curated
+ * leaves, the daily leaf sorts first (it is the day itself; the curated
+ * leaves are more of that day, added afterward) and the curated leaves then
+ * follow in `book_entries.position` order — the same ascending "reading
+ * order" `bookManifest()` (`lib/data/book.ts`) already uses.
  */
 export async function liveBookLeaves(
   deps: PhotoDeps,
@@ -221,7 +299,7 @@ export async function liveBookLeaves(
     // shape `listAllPhotos` already gives every other reader in this file.
     const archive = await listAllPhotos(deps);
     const photoById = new Map(archive.map((p) => [p.id, p]));
-    curatedLeaves = entryRows
+    const resolved = entryRows
       .map(toBookEntry)
       .filter((entry): entry is Extract<typeof entry, { photoId: string }> => "photoId" in entry)
       .flatMap((entry) => {
@@ -229,8 +307,28 @@ export async function liveBookLeaves(
         // A stale reference (the photo was purged after the entry was
         // written): skip rather than throw — one missing page must not
         // break every other page in the book.
-        return photo === undefined ? [] : [toCuratedLeaf(entry.id, entry.position, photo)];
-      });
+        return photo === undefined ? [] : [{ entry, photo }];
+      })
+      .sort((a, b) => a.entry.position - b.entry.position);
+
+    const byDay = new Map<IsoDate, typeof resolved>();
+    for (const r of resolved) {
+      const list = byDay.get(r.photo.sharedDay);
+      if (list) list.push(r);
+      else byDay.set(r.photo.sharedDay, [r]);
+    }
+
+    curatedLeaves = [...byDay.values()].flatMap((dayRows) =>
+      chunkEvenly(dayRows, MAX_PHOTOS_PER_CURATED_PAGE).map((group) =>
+        group.length === 1
+          ? toCuratedLeaf(group[0]!.entry.id, group[0]!.entry.position, group[0]!.photo)
+          : toCuratedClusterLeaf(
+              group.map((g) => g.entry.id),
+              group[0]!.entry.position,
+              group.map((g) => g.photo),
+            ),
+      ),
+    );
   }
 
   const leaves: BookLeaf[] = [...dailyLeaves, ...curatedLeaves]

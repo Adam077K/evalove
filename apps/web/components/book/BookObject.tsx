@@ -329,6 +329,8 @@ export function BookObject({ returned, leaves, leafCount, begun }: BookObjectPro
                       evaPhoto={leaf.evaPhoto}
                       adamPhoto={leaf.adamPhoto}
                       unsignedPhoto={leaf.unsignedPhoto}
+                      photos={leaf.photos}
+                      pageKey={leaf.key}
                     />
                   </BookSheet>
                 )),

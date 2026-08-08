@@ -172,13 +172,13 @@ describe("liveBookLeaves", () => {
   });
 
   describe("curated (book_entries) leaves", () => {
-    it("turns each book_entries row into its own single-photo leaf, even when several share a day", async () => {
+    it("folds several same-day book_entries rows into ONE cluster leaf, up to MAX_PHOTOS_PER_CURATED_PAGE (2026-08-08: 'add more than one pic in book page')", async () => {
       const gw = fakeGateway();
       const now = new Date("2026-08-05T18:00:00Z");
       gw.photos = [
         row({ id: "p1", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T10:00:00Z" }),
         row({ id: "p2", kind: "book", author_member_id: ADAM_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T11:00:00Z" }),
-        row({ id: "p3", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T12:00:00Z" }),
+        row({ id: "p3", kind: "book", author_member_id: null, shared_day: "2026-07-24", created_at: "2026-07-24T12:00:00Z" }),
       ];
       gw.bookEntries = [
         bookEntryRow({ id: "e1", photo_id: "p1", position: 100 }),
@@ -188,18 +188,61 @@ describe("liveBookLeaves", () => {
 
       const { leaves, leafCount } = await liveBookLeaves(deps(gw, now), now);
 
-      // Three distinct pages, not one leaf holding three photos.
-      expect(leaves).toHaveLength(3);
-      expect(leafCount).toBe(3);
-      // Every key is unique even though every date is the same — the bug a
-      // shared `day.date` React key would have hidden.
-      expect(new Set(leaves.map((l) => l.key)).size).toBe(3);
-      expect(leaves.every((l) => l.day.date === "2026-07-24")).toBe(true);
-      // Ordered by book_entries.position, ascending.
-      expect(leaves.map((l) => l.evaPhoto?.id ?? l.adamPhoto?.id)).toEqual(["p1", "p2", "p3"]);
-      // Each leaf carries exactly one photograph, on the correct side.
-      expect(leaves[0]).toMatchObject({ evaPhoto: { id: "p1" }, adamPhoto: undefined });
-      expect(leaves[1]).toMatchObject({ evaPhoto: undefined, adamPhoto: { id: "p2" } });
+      // One page holding three photographs, not three single-photo pages.
+      expect(leaves).toHaveLength(1);
+      expect(leafCount).toBe(1);
+      expect(leaves[0]!.day.date).toBe("2026-07-24");
+      // Ordered by book_entries.position, ascending, and no
+      // evaPhoto/adamPhoto/unsignedPhoto set on a cluster leaf — the mixed
+      // authorship (signed, signed, deliberately unsigned) lives entirely
+      // in `photos`.
+      expect(leaves[0]!.photos?.map((p) => p.id)).toEqual(["p1", "p2", "p3"]);
+      expect(leaves[0]!.evaPhoto).toBeUndefined();
+      expect(leaves[0]!.adamPhoto).toBeUndefined();
+      expect(leaves[0]!.unsignedPhoto).toBeUndefined();
+      // Key carries every entry id, so it stays unique even against a
+      // future differently-chunked run.
+      expect(leaves[0]!.key).toBe("book:e1,e2,e3");
+    });
+
+    it("chunks a busy day evenly rather than leaving a lonely trailing page (4 -> 2+2, not 3+1)", async () => {
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = ["p1", "p2", "p3", "p4"].map((id, i) =>
+        row({
+          id,
+          kind: "book",
+          author_member_id: EVA_ROW.id,
+          shared_day: "2026-07-24",
+          created_at: `2026-07-24T${10 + i}:00:00Z`,
+        }),
+      );
+      gw.bookEntries = ["e1", "e2", "e3", "e4"].map((id, i) =>
+        bookEntryRow({ id, photo_id: `p${i + 1}`, position: (i + 1) * 100 }),
+      );
+
+      const { leaves } = await liveBookLeaves(deps(gw, now), now);
+
+      expect(leaves).toHaveLength(2);
+      expect(leaves.map((l) => l.photos?.map((p) => p.id))).toEqual([
+        ["p1", "p2"],
+        ["p3", "p4"],
+      ]);
+    });
+
+    it("a single curated photo on a day still becomes an ordinary single-photo leaf, not a one-item cluster", async () => {
+      const gw = fakeGateway();
+      const now = new Date("2026-08-05T18:00:00Z");
+      gw.photos = [
+        row({ id: "p1", kind: "book", author_member_id: EVA_ROW.id, shared_day: "2026-07-24", created_at: "2026-07-24T10:00:00Z" }),
+      ];
+      gw.bookEntries = [bookEntryRow({ id: "e1", photo_id: "p1", position: 100 })];
+
+      const { leaves } = await liveBookLeaves(deps(gw, now), now);
+
+      expect(leaves).toHaveLength(1);
+      expect(leaves[0]!.photos).toBeUndefined();
+      expect(leaves[0]).toMatchObject({ evaPhoto: { id: "p1" }, key: "book:e1" });
     });
 
     it("sorts a curated day newest-first against ordinary kept days", async () => {
