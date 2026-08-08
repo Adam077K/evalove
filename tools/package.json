@@ -8,7 +8,8 @@
     "ingest:prepare": "tsx ingest/prepare.ts",
     "ingest:load": "tsx ingest/load.ts",
     "book:place": "tsx book-placement/place.ts",
-    "authorship:fix": "tsx authorship-fix/apply.ts"
+    "authorship:fix": "tsx authorship-fix/apply.ts",
+    "caption:fix": "tsx caption-fix/apply.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.800.0",
