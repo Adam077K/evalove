@@ -8,30 +8,30 @@ import { cn } from "@/lib/utils";
 import type { Member } from "@/lib/types";
 
 /**
- * The masthead — DECO, and the one §0 exception (design law, revised
- * 2026-08-06): nothing above the item may be about the item, except
- * this. It renders once, in `app/(app)/layout.tsx`, above every route,
- * fixed — the founder's own framing is "paper is what they made; the
- * clocks are the distance BETWEEN them, which is DECO," so a clock
- * printed on the paper below would be a claim about what they made
- * that isn't true. It sits outside the paper on purpose, on its own
- * material: solid `--night-sky`, day and night alike (place, not
- * time — the same rule Seam already holds).
+ * The masthead — paper now, and the one §0 exception (design law,
+ * revised 2026-08-08): nothing above the item may be about the item,
+ * except this. It renders once, in `app/(app)/layout.tsx`, above every
+ * route, fixed.
+ *
+ * Material change (founder, 2026-08-08): the Band moved off the
+ * `--night-*` scale and onto the paper scale (`--canvas` ground with a
+ * `--line` hairline bottom edge). The clocks are still the distance
+ * between the two cities — DECO as instrumentation — but the masthead
+ * now sits on the same substrate as the paper world below it. The night
+ * window belongs to Dates; the Band is the room's header, not the sky.
+ *
+ * EVA-FIRST. Eva's city reads at full `--ink` (the darker reading);
+ * Adam's reads at `--mute` (the receded reading). Weight and darkness
+ * carry the distinction — never hue, never `--eva`/`--adam` (those are
+ * authorship inks and a city label is not authorship). The product law
+ * that Eva's name precedes Adam's is held by `MEMBERS[0] = EVA` in
+ * `lib/fixtures/members.ts`; this component inherits it, never
+ * re-asserts it.
  *
  * CONTENTS ARE BYTE-IDENTICAL ON EVERY ROUTE. No per-route branching,
  * no contents map — this file does not read `usePathname`.
  *
- * The logic is `DualClocks.tsx`'s, reused rather than reinvented: the
- * 10s tick, `partnerPresence` (lib/shared-day, untouchable), the
- * breathing presence dot. The *presentation* is new — DualClocks was a
- * tall vertical rail built for a "Home" surface that never shipped;
- * this is one compact row, sized for a 56px band that runs on every
- * screen rather than one.
- *
- * HYDRATION. DualClocks rendered a shimmer-in-a-`.well` before its
- * first client tick — a skeleton, which the one-exception rule above
- * forbids outright for this element (never empty, never loading). So
- * this follows `LiveLocalTime.tsx`'s proven pattern instead: a lazy
+ * HYDRATION. This follows `LiveLocalTime.tsx`'s proven pattern: a lazy
  * `useState(() => new Date())` initializer means there is always a
  * real clock reading, even in the server-rendered HTML — it may be a
  * few seconds stale until the client's own tick catches up, and
@@ -39,7 +39,7 @@ import type { Member } from "@/lib/types";
  * with an empty first paint.
  *
  * Text only, no `font-deco` — Poiret One is reserved for DECO titling
- * ≥32px (Today's two full-size city names); at this scale the band
+ * ≥32px (Dates' two full-size city names); at this scale the band
  * reads as instrumentation the app is producing, not authored titling,
  * so it stays in the sans, same register as the gap stamp.
  */
@@ -54,12 +54,12 @@ export function Band() {
   return (
     <header
       aria-label="Where Eva and Adam are right now"
-      className="fixed inset-x-0 top-0 z-30 bg-night-sky"
+      className="fixed inset-x-0 top-0 z-30 border-b border-line bg-canvas"
       style={{ height: "var(--band-height)", paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="flex h-14 w-full items-center justify-between px-5 md:px-8">
-        <ClockReading member={MEMBERS[0]} now={now} tone="text-night-gold" />
-        <ClockReading member={MEMBERS[1]} now={now} tone="text-night-mute" />
+        <ClockReading member={MEMBERS[0]} now={now} tone="text-ink" />
+        <ClockReading member={MEMBERS[1]} now={now} tone="text-mute" />
       </div>
     </header>
   );
@@ -78,7 +78,7 @@ function ClockReading({
   return (
     <p
       suppressHydrationWarning
-      className="type-micro flex items-baseline gap-1.5 normal-case text-night-ink"
+      className="type-micro flex items-baseline gap-1.5 normal-case text-ink"
     >
       <PresenceDot presence={presence.presence} />
       <span className={cn("tracking-[0.14em]", tone)}>
@@ -95,11 +95,11 @@ function PresenceDot({ presence }: { presence: string }) {
     <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
       {presence !== "unknown" && (
         <span
-          className="absolute top-0 left-0 h-1.5 w-1.5 rounded-full bg-night-mute"
+          className="absolute top-0 left-0 h-1.5 w-1.5 rounded-full bg-mute"
           style={{ animation: "breathe 3.2s var(--ease-io) infinite" }}
         />
       )}
-      <span className="relative h-1.5 w-1.5 rounded-full bg-night-mute" />
+      <span className="relative h-1.5 w-1.5 rounded-full bg-mute" />
     </span>
   );
 }

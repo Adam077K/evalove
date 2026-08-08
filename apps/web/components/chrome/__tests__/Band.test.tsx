@@ -65,7 +65,11 @@ describe("Band", () => {
     expect(text.indexOf("NEW YORK")).toBeGreaterThanOrEqual(0);
     expect(text.indexOf("TEL AVIV")).toBeGreaterThan(text.indexOf("NEW YORK"));
 
-    const gold = container.querySelector(".text-night-gold");
-    expect(gold?.textContent).toBe("NEW YORK");
+    // After the Band moved to paper, Eva's city carries text-ink (full
+    // darkness — the stronger reading) and Adam's carries text-mute (the
+    // receded reading). The guard is: TEL AVIV is the muted one, which
+    // means New York is NOT muted — the distinction holds by exclusion.
+    const muted = container.querySelector(".text-mute");
+    expect(muted?.textContent).toBe("TEL AVIV");
   });
 });

@@ -95,16 +95,17 @@ describe("AppLayout — the shared shell", () => {
     expect(main?.className).toContain("pt-[var(--band-height)]");
   });
 
-  it("hosts the torn edge rotated, not mirrored, immediately above route content", () => {
+  it("main's first child is not a seam — the seam belongs to Dates now (founder, 2026-08-08)", () => {
     const { container } = render(
       <AppLayout>
         <div />
       </AppLayout>,
     );
     const main = container.querySelector("main");
-    const seam = main?.firstElementChild as HTMLElement;
-    expect(seam.className).toContain("rotate-180");
-    expect(seam.className).not.toMatch(/scale-y/i);
+    const firstChild = main?.firstElementChild as HTMLElement | null;
+    // After the seam moved to Dates, the shell no longer owns the torn edge.
+    // main's first child is whatever the route renders, never rotate-180.
+    expect(firstChild?.className ?? "").not.toContain("rotate-180");
   });
 
   it("renders exactly one masthead landmark, fixed at the top", () => {
