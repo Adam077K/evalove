@@ -169,7 +169,8 @@ describe("all Supabase access lives in lib/data", () => {
 function secretsToLookFor(): { name: string; value: string }[] {
   return [
     "SUPABASE_SERVICE_ROLE_KEY",
-    "APP_PASSWORD_HASH",
+    "APP_PASSWORD_HASH_EVA",
+    "APP_PASSWORD_HASH_ADAM",
     "VAULT_PASSPHRASE_HASH",
     "SESSION_SECRET",
     "ANTHROPIC_API_KEY",

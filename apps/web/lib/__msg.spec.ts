@@ -12,8 +12,9 @@ test("msg", async () => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://abc.supabase.co";
   process.env.NEXT_PUBLIC_SESSION_SECRET = "leaked";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "";
-  process.env.APP_PASSWORD_HASH = h("a", salt);
-  process.env.VAULT_PASSPHRASE_HASH = h("b", salt);
+  process.env.APP_PASSWORD_HASH_EVA = h("a", salt);
+  process.env.APP_PASSWORD_HASH_ADAM = h("b");
+  process.env.VAULT_PASSPHRASE_HASH = h("c", salt);
   process.env.SESSION_SECRET = randomBytes(32).toString("base64");
   try {
     await import("./env");

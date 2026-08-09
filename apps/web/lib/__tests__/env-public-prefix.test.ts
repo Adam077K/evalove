@@ -54,7 +54,8 @@ function scryptHash(password: string): string {
 const REQUIRED_ENV: Readonly<Record<string, string>> = {
   NEXT_PUBLIC_SUPABASE_URL: "https://example-project.supabase.co",
   SUPABASE_SERVICE_ROLE_KEY: randomBytes(48).toString("hex"),
-  APP_PASSWORD_HASH: scryptHash("the-app-password"),
+  APP_PASSWORD_HASH_EVA: scryptHash("evas-password"),
+  APP_PASSWORD_HASH_ADAM: scryptHash("adams-different-password"),
   VAULT_PASSPHRASE_HASH: scryptHash("an-independent-vault-passphrase"),
   SESSION_SECRET: randomBytes(48).toString("base64"),
 };
