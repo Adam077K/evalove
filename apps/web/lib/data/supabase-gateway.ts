@@ -29,13 +29,17 @@ import type { SupabaseClient } from "./client";
 import { DataError } from "./errors";
 import {
   BOOK_ENTRY_COLUMNS,
+  DATE_PLAN_COLUMNS,
   PHOTO_COLUMNS,
   type BookEntryRow,
+  type DatePlanRow,
   type PhotoRow,
 } from "./rows";
 import type {
   BookEntryPatch,
   DataGateway,
+  DatePlanPatch,
+  DatePlanQuery,
   MemberRow,
   PhotoPageQuery,
   PhotoPatch,
@@ -381,6 +385,102 @@ export function supabaseGateway(): DataGateway {
         throw translate("updateBookEntry", error, { id });
       }
       return data as unknown as BookEntryRow;
+    },
+
+    /* -- date plans ----------------------------------------------- */
+
+    async insertDatePlan(row: DatePlanRow): Promise<DatePlanRow> {
+      const db = await serviceClient();
+      const { data, error } = await db
+        .from("date_plans")
+        .insert(row)
+        .select(DATE_PLAN_COLUMNS)
+        .single();
+
+      if (error) {
+        throw translate("insertDatePlan", error, {
+          kind: row.kind,
+          sharedDay: row.shared_day,
+          windowId: row.window_id,
+        });
+      }
+      return data as unknown as DatePlanRow;
+    },
+
+    async findDatePlanById(id: string): Promise<DatePlanRow | null> {
+      const db = await serviceClient();
+      const { data, error } = await db
+        .from("date_plans")
+        .select(DATE_PLAN_COLUMNS)
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        if (error.code === NO_ROWS) return null;
+        throw translate("findDatePlanById", error, { id });
+      }
+      return data as unknown as DatePlanRow;
+    },
+
+    async findLiveDatePlanInSlot(args: {
+      kind: string;
+      sharedDay: string;
+      windowId: string;
+    }): Promise<DatePlanRow | null> {
+      const db = await serviceClient();
+      const { data, error } = await db
+        .from("date_plans")
+        .select(DATE_PLAN_COLUMNS)
+        .eq("kind", args.kind)
+        .eq("shared_day", args.sharedDay)
+        .eq("window_id", args.windowId)
+        .in("status", ["proposed", "agreed"])
+        .limit(1);
+
+      if (error) throw translate("findLiveDatePlanInSlot", error, args);
+      const rows = (data ?? []) as unknown as DatePlanRow[];
+      return rows[0] ?? null;
+    },
+
+    async listDatePlans(query: DatePlanQuery): Promise<DatePlanRow[]> {
+      const db = await serviceClient();
+
+      let q = db.from("date_plans").select(DATE_PLAN_COLUMNS);
+
+      if (query.statuses !== undefined) q = q.in("status", [...query.statuses]);
+      if (query.sharedDay !== undefined) q = q.eq("shared_day", query.sharedDay);
+      if (query.startingAtOrAfter !== undefined) {
+        q = q.gte("starts_at", query.startingAtOrAfter);
+      }
+
+      // Soonest first, id breaking the tie so the order is total and a
+      // re-read never shuffles two dates that start at the same second.
+      const { data, error } = await q
+        .order("starts_at", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(query.limit);
+
+      if (error) throw translate("listDatePlans", error, { query });
+      return (data ?? []) as unknown as DatePlanRow[];
+    },
+
+    async updateDatePlan(
+      id: string,
+      patch: DatePlanPatch,
+    ): Promise<DatePlanRow | null> {
+      const db = await serviceClient();
+      const { data, error } = await db
+        .from("date_plans")
+        .update(patch)
+        .eq("id", id)
+        .select(DATE_PLAN_COLUMNS)
+        .single();
+
+      if (error) {
+        if (error.code === NO_ROWS) return null;
+        throw translate("updateDatePlan", error, { id, patch });
+      }
+      return data as unknown as DatePlanRow;
     },
 
     /* -- storage -------------------------------------------------- */

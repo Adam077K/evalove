@@ -19,10 +19,12 @@
 import { describe, expect, it } from "vitest";
 import { commitPhoto, type CommitPhotoInput, type PhotoDeps } from "../photos";
 import { DataError } from "../errors";
-import type { BookEntryRow, PhotoRow } from "../rows";
+import type { BookEntryRow, DatePlanRow, PhotoRow } from "../rows";
 import type {
   BookEntryPatch,
   DataGateway,
+  DatePlanPatch,
+  DatePlanQuery,
   MemberRow,
   PhotoPageQuery,
   PhotoPatch,
@@ -108,6 +110,26 @@ class FakeGateway implements DataGateway {
   }
   createSignedUploadUrl(_path: string): Promise<{ url: string; token: string }> {
     return this.notImplemented("createSignedUploadUrl");
+  }
+  /* -- date plans: not used by the functions under test -- */
+  insertDatePlan(_row: DatePlanRow): Promise<DatePlanRow> {
+    return this.notImplemented("insertDatePlan");
+  }
+  findDatePlanById(_id: string): Promise<DatePlanRow | null> {
+    return this.notImplemented("findDatePlanById");
+  }
+  findLiveDatePlanInSlot(_args: {
+    kind: string;
+    sharedDay: string;
+    windowId: string;
+  }): Promise<DatePlanRow | null> {
+    return this.notImplemented("findLiveDatePlanInSlot");
+  }
+  listDatePlans(_query: DatePlanQuery): Promise<DatePlanRow[]> {
+    return this.notImplemented("listDatePlans");
+  }
+  updateDatePlan(_id: string, _patch: DatePlanPatch): Promise<DatePlanRow | null> {
+    return this.notImplemented("updateDatePlan");
   }
   removeObjects(_paths: readonly string[]): Promise<string[]> {
     return this.notImplemented("removeObjects");

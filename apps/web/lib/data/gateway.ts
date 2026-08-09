@@ -22,7 +22,9 @@
  * imports the Supabase SDK.
  */
 
-import type { BookEntryRow, PhotoRow } from "./rows";
+import type { DatePlanStatus } from "@/lib/types";
+
+import type { BookEntryRow, DatePlanRow, PhotoRow } from "./rows";
 
 /* ------------------------------------------------------------------ *
  * Members
@@ -92,6 +94,39 @@ export interface BookEntryPatch {
   position?: number;
   caption?: string | null;
   date_label?: string | null;
+}
+
+/**
+ * A read against `date_plans`.
+ *
+ * No keyset cursor and no `before`. This table holds one row per date two
+ * people propose to each other, so the whole live set fits in a single small
+ * page; a paging contract here would be machinery guarding nothing. `limit` is
+ * still required so a bug cannot turn into an unbounded select.
+ */
+export interface DatePlanQuery {
+  /** Restrict to these statuses. Omitted means every status. */
+  statuses?: readonly DatePlanStatus[];
+  /** Only plans filed under this shared day. */
+  sharedDay?: string;
+  /** Only plans starting at or after this instant. */
+  startingAtOrAfter?: string;
+  limit: number;
+}
+
+/**
+ * The columns an answer or a marking is allowed to write.
+ *
+ * Deliberately not `Partial<DatePlanRow>`: `kind`, `shared_day`, `window_id`
+ * and `starts_at` are what was agreed, and nothing in this application may
+ * quietly move a date after the fact. Changing when it happens means proposing
+ * a different one.
+ */
+export interface DatePlanPatch {
+  status?: DatePlanStatus;
+  answered_by?: string | null;
+  answered_at?: string | null;
+  happened_at?: string | null;
 }
 
 /* ------------------------------------------------------------------ *
@@ -168,6 +203,35 @@ export interface DataGateway {
   listBookEntries(): Promise<BookEntryRow[]>;
 
   updateBookEntry(id: string, patch: BookEntryPatch): Promise<BookEntryRow | null>;
+
+  /* -- date plans ------------------------------------------------- */
+
+  /**
+   * Insert a proposal.
+   *
+   * Throws `DataError('conflict')` when the partial unique index refuses it —
+   * which is the double-tap case, not a caller error. `proposeDate` turns that
+   * into the row that is already there, so asking twice reads as asking once.
+   */
+  insertDatePlan(row: DatePlanRow): Promise<DatePlanRow>;
+
+  findDatePlanById(id: string): Promise<DatePlanRow | null>;
+
+  /**
+   * The live plan occupying one (kind, day, window) slot, if there is one.
+   *
+   * Live means `proposed` or `agreed` — the two statuses the partial unique
+   * index covers. Used to answer a double-tap with the existing row.
+   */
+  findLiveDatePlanInSlot(args: {
+    kind: string;
+    sharedDay: string;
+    windowId: string;
+  }): Promise<DatePlanRow | null>;
+
+  listDatePlans(query: DatePlanQuery): Promise<DatePlanRow[]>;
+
+  updateDatePlan(id: string, patch: DatePlanPatch): Promise<DatePlanRow | null>;
 
   /* -- storage ---------------------------------------------------- */
 

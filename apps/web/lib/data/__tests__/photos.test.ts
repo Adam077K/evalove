@@ -19,9 +19,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { softDeletePhoto, type PhotoDeps } from "../photos";
 import { DataError } from "../errors";
-import type { BookEntryRow, PhotoRow } from "../rows";
+import type { BookEntryRow, DatePlanRow, PhotoRow } from "../rows";
 import type {
   DataGateway,
+  DatePlanPatch,
+  DatePlanQuery,
   MemberRow,
   PhotoPatch,
   PhotoPageQuery,
@@ -159,6 +161,26 @@ class FakeGateway implements DataGateway {
     return this.notImplemented("downloadObject");
   }
 
+  /* -- date plans: not used by the functions under test -- */
+  insertDatePlan(_row: DatePlanRow): Promise<DatePlanRow> {
+    return this.notImplemented("insertDatePlan");
+  }
+  findDatePlanById(_id: string): Promise<DatePlanRow | null> {
+    return this.notImplemented("findDatePlanById");
+  }
+  findLiveDatePlanInSlot(_args: {
+    kind: string;
+    sharedDay: string;
+    windowId: string;
+  }): Promise<DatePlanRow | null> {
+    return this.notImplemented("findLiveDatePlanInSlot");
+  }
+  listDatePlans(_query: DatePlanQuery): Promise<DatePlanRow[]> {
+    return this.notImplemented("listDatePlans");
+  }
+  updateDatePlan(_id: string, _patch: DatePlanPatch): Promise<DatePlanRow | null> {
+    return this.notImplemented("updateDatePlan");
+  }
   removeObjects(_paths: readonly string[]): Promise<string[]> {
     return this.notImplemented("removeObjects");
   }

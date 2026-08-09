@@ -20,6 +20,8 @@ import type {
   AttributionSource,
   BookEntry,
   ColorSpace,
+  DatePlan,
+  DatePlanStatus,
   ImageMime,
   OriginalLocation,
   Photo,
@@ -212,4 +214,64 @@ export function toBookEntry(row: BookEntryRow): BookEntry {
       `The check constraint book_entry_is_photo_xor_date should have made this ` +
       `impossible; investigate the write that produced it.`,
   );
+}
+
+/* ------------------------------------------------------------------ *
+ * public.date_plans
+ * ------------------------------------------------------------------ */
+
+/**
+ * A row of `public.date_plans`, exactly as `20260810120000_date_plans.sql`
+ * declares it.
+ *
+ * `shared_day` is a `date` column and PostgREST renders it as `YYYY-MM-DD`,
+ * which is already `IsoDate`. The three `timestamptz` columns arrive as RFC
+ * 3339 strings.
+ */
+export interface DatePlanRow {
+  id: string;
+  kind: string;
+  status: DatePlanStatus;
+  proposed_by: string;
+  shared_day: string;
+  window_id: string;
+  starts_at: string;
+  note: string | null;
+  answered_by: string | null;
+  answered_at: string | null;
+  happened_at: string | null;
+  created_at: string;
+}
+
+/** Every column of `public.date_plans`, for an explicit `select`. */
+export const DATE_PLAN_COLUMNS = [
+  "id",
+  "kind",
+  "status",
+  "proposed_by",
+  "shared_day",
+  "window_id",
+  "starts_at",
+  "note",
+  "answered_by",
+  "answered_at",
+  "happened_at",
+  "created_at",
+].join(",");
+
+export function toDatePlan(row: DatePlanRow): DatePlan {
+  return {
+    id: row.id,
+    kind: row.kind,
+    status: row.status,
+    proposedBy: row.proposed_by,
+    sharedDay: row.shared_day,
+    windowId: row.window_id,
+    startsAt: row.starts_at,
+    ...maybe("note", row.note),
+    ...maybe("answeredBy", row.answered_by),
+    ...maybe("answeredAt", row.answered_at),
+    ...maybe("happenedAt", row.happened_at),
+    createdAt: row.created_at,
+  };
 }
