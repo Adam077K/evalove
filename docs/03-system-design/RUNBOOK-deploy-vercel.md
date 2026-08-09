@@ -23,7 +23,9 @@
 
 The order matters twice, and both places are easy to get wrong.
 
-1. **Establish what is actually in Supabase** (§5) — *before* the first deploy. The build reads the database. If the schema is not there, the build fails, and the failure looks like a Next.js error rather than a database one.
+1. **Establish what is actually in Supabase** (§5) — *before* the first deploy. Not because the build needs it: as of this branch the build does **not** touch the database, verified by building successfully against a hostname that does not resolve. Because the *app* needs it, and the way it fails is misleading. A missing table or a paused project shows up as a 503 on sign-in, from a rate limiter that fails closed, pointing at nothing.
+
+   Worth knowing that this changed here. Before the `force-dynamic` fix in §9.1, `/book` and `/book/days` were prerendered, so `next build` **did** query Supabase and would fail outright if the schema was absent — a build error that read as a Next.js problem. That is gone. It is a real improvement: a Supabase blip can no longer fail a deploy.
 2. **Create / configure the Vercel project** (§2).
 3. **Generate credentials and set environment variables** (§3), including a *brand-new* `SESSION_SECRET` (§6).
 4. **Deploy.**
@@ -176,7 +178,9 @@ Two of those messages tell you to "see `apps/web/README.md`". **That file does n
 
 ### §5.1 — Why this is step one
 
-Two of the app's routes read the database, and **the build reads it too**. `apps/web/supabase/migrations/README.md` records honestly that nobody has ever checked which of the 13 migration files are applied to project `oqiyzzpcsdlqqcjlpmix` — only that *tables exist*, confirmed from the dashboard on 2026-08-04. That is not enough to deploy on. Find out.
+Three of the app's routes read the database on every request — `/today`, `/book`, `/book/days`. The build itself no longer does (§1). `apps/web/supabase/migrations/README.md` records honestly that nobody has ever checked which of the 13 migration files are applied to project `oqiyzzpcsdlqqcjlpmix` — only that *tables exist*, confirmed from the dashboard on 2026-08-04. That is not enough to deploy on. Find out.
+
+The failure mode if you skip this is the reason it is step one: the deploy goes green, and then sign-in returns 503 with nothing in the Vercel log naming a table.
 
 None of the queries below writes anything. Run them in the Supabase dashboard → **SQL Editor**. They are read-only catalogue lookups, they are yours to run and not an agent's, and — stated plainly — **they have never been executed anywhere** (§10), so treat a syntax error as a typo in this document rather than as a finding about your database.
 
@@ -391,6 +395,10 @@ The most useful list in this document. Everything below is reasoned or read, **n
 - The `.env` quoting table in §3.3 — all four rows, on the installed Next.
 - The middleware matcher table in §8.1 — every row.
 - `/book` and `/book/days` were `○ (Static)` before the fix and are `ƒ (Dynamic)` after it.
+- **A clean-room build with `apps/web` as the only directory present** — extracted by `git archive` with nothing above it — installs and builds to completion. This is the check that actually validates Root Directory = `apps/web` and "include files outside root directory: off"; no module reaches above `apps/web`.
+- After the §9.1 fix, the build completes with `NEXT_PUBLIC_SUPABASE_URL` pointing at a hostname that does not resolve. The build no longer reads the database.
+- `/robots.txt` serves `User-Agent: *` / `Disallow: /` as `text/plain`, and `/manifest.webmanifest` serves the expected JSON — read out of the build output, not inferred from the source.
+- The proposed `middleware.ts` diff in §8.2 typechecks and compiles cleanly (applied to a scratch copy; the file on this branch is untouched).
 
 **Not verified, because nobody has deployed this:**
 1. **That any of it works on Vercel at all.** No deployment was made, no project created, no `vercel` command run. Zero of this configuration has been executed by Vercel.
