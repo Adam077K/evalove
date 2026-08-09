@@ -230,18 +230,48 @@ describe("the Dates screen — the order that was the bug", () => {
     );
   });
 
-  it("offers a way to ask, with both wall clocks on it", () => {
+  it("offers a way to ask, addressed to the other one", () => {
     const { container } = screen();
-    const text = container.textContent ?? "";
+    // A real control, not the word "Ask" appearing somewhere in the document.
+    const ask = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.startsWith("Ask "),
+    );
+    expect(ask, "no Ask button on the screen").toBeDefined();
+    // The viewer defaults to Eva, so the button is addressed to Adam. If this
+    // ever reads "Ask Eva" by default, the proposal is being addressed to
+    // whoever is making it.
+    expect(ask?.textContent).toBe("Ask Adam");
+  });
 
-    // The thing to press.
-    expect(text).toContain("Ask");
-    // Both cities, Eva's first — a single clock on a date screen is the one
-    // place a reader cannot tell whose it is.
-    const newYork = text.lastIndexOf("New York");
-    const telAviv = text.lastIndexOf("Tel Aviv");
-    expect(newYork).toBeGreaterThanOrEqual(0);
-    expect(telAviv).toBeGreaterThanOrEqual(0);
+  it("puts both wall clocks on every hour it offers, Eva's city first", () => {
+    // The load-bearing assertion of the whole feature. A date between two
+    // clocks seven hours apart is not "8pm" — it is one hour with two
+    // readings, and an hour showing one of them is an hour one of them has to
+    // do arithmetic on.
+    //
+    // Asserted as ORDER INSIDE EACH CHIP, not as presence anywhere in the
+    // document. The first version of this test read `lastIndexOf("New York")`
+    // against the whole screen and asserted only that it was >= 0 — which the
+    // DECO band's own "NEW YORK", fifteen hundred pixels up the page, would
+    // have satisfied on its own with every chip blank. That is the exact
+    // shape of assertion this project keeps shipping, written by the person
+    // warning about it.
+    const { container } = screen();
+    const hours = Array.from(container.querySelectorAll("button[aria-pressed]"));
+    expect(hours.length, "no hour to choose").toBeGreaterThan(0);
+
+    for (const chip of hours) {
+      const text = chip.textContent ?? "";
+      const newYork = text.indexOf("New York");
+      const telAviv = text.indexOf("Tel Aviv");
+      expect(newYork, `"${text}" does not name New York`).toBeGreaterThanOrEqual(0);
+      expect(telAviv, `"${text}" does not name Tel Aviv`).toBeGreaterThanOrEqual(0);
+      expect(newYork, `"${text}" puts Tel Aviv first`).toBeLessThan(telAviv);
+      // A reading, not a band name: "12:00 pm in New York, 7:00 pm in Tel Aviv".
+      expect(/\d{1,2}:\d{2}\s*(?:am|pm)/i.test(text), `"${text}" has no clock`).toBe(
+        true,
+      );
+    }
   });
 });
 
