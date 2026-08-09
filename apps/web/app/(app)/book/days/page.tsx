@@ -11,6 +11,30 @@ export const metadata: Metadata = {
 };
 
 /**
+ * Rendered per request, never prerendered. Deploy-only bug, found by reading
+ * `next build`'s route table rather than the source (2026-08-10).
+ *
+ * This page awaits `liveBookLeaves` — a real database read — and touches no
+ * request-scoped API: no `cookies()`, no `headers()`, no `searchParams`. Next
+ * therefore classified it `○ (Static)` and PRERENDERED IT AT BUILD TIME,
+ * baking whatever the archive held during the deploy into a static artefact
+ * on the CDN. It would then serve exactly that, unchanged, until the next
+ * deploy: Eva adds a photograph in New York, this page never learns.
+ *
+ * `next dev` renders every request dynamically, so on the LAN this was
+ * invisible. It appears only once deployed, which is why it survived to here.
+ *
+ * Compare `app/(app)/today/page.tsx`, which is `ƒ (Dynamic)` for free —
+ * it reads the `profile` cookie, and that opts it out. Nothing about this
+ * page's data is more cacheable than Today's; it just lacked the accident.
+ * `supabase-js` issues an ordinary `fetch` that Next is free to cache, so
+ * a live read is not on its own enough to make a route dynamic. Say so.
+ *
+ * `/book` has the same shape and the same line, for the same reason.
+ */
+export const dynamic = "force-dynamic";
+
+/**
  * The days in order — chronological view, reachable but not default.
  *
  * A server component that awaits `liveBookLeaves` (`lib/data/archive.ts`) —

@@ -12,6 +12,18 @@ export const metadata: Metadata = {
 };
 
 /**
+ * Rendered per request, never prerendered. The whole finding is written out on
+ * `app/(app)/book/days/page.tsx`; this is the same bug on the same day.
+ *
+ * Short version: this page awaits `liveBookLeaves` and `liveWhatCameBack` —
+ * two real database reads — and touches no request-scoped API, so `next build`
+ * classified it `○ (Static)` and froze the archive into the deployment. The
+ * Book would have opened, on the internet, to whatever was true the day it
+ * shipped. Of the two routes this is the worse one: it is where the dock goes.
+ */
+export const dynamic = "force-dynamic";
+
+/**
  * The Book — the object they made, on your lap.
  *
  * ALWAYS PAPER, no exceptions (§1). At night this surface is the same
