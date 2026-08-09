@@ -67,6 +67,61 @@ const EXCLUDED_ROUTES = new Set(["echo", "review/book-states", "review/today-pai
 const COLUMN_IMPORT = /from\s+["']@\/components\/chrome\/Column["']/;
 const COLUMN_USAGE = /<Column[\s>]/;
 
+/**
+ * A route may hand its whole body to one component, so the question is asked
+ * of the route's render tree rather than of one file.
+ *
+ * `/dates` does exactly that (2026-08-10): its `page.tsx` does the reads and
+ * renders `<DatesScreen>`, which owns the composition. That split exists so
+ * `/review/dates` can render the identical screen without a session — the only
+ * way anyone in this environment can actually look at it. Reading the page file
+ * alone would have reported "no gutter" about a route that has one, and the
+ * fix for that report would have been an entry in `EXCLUDED_ROUTES`, which is
+ * how a guard quietly stops guarding.
+ *
+ * This FOLLOWS one hop, it does not exempt. A page that delegates to a
+ * component with no `<Column>`, and is not on `FULL_BLEED_ROUTES`, still fails
+ * — a wider net than the original single-file read, not a narrower one. One
+ * hop is deliberate: two would be a module-graph walk, and a route needing
+ * three hops to find its own gutter has a different problem.
+ */
+const LOCAL_COMPONENT_IMPORT = /from\s+["']@\/(components\/[^"']+)["']/g;
+const COMPONENT_EXTENSIONS = ["", ".tsx", ".ts"];
+
+function resolveComponent(specifier: string): string | null {
+  const base = path.join(APP_GROUP_DIR, "..", "..", specifier);
+  for (const ext of COMPONENT_EXTENSIONS) {
+    if (fs.existsSync(base + ext) && fs.statSync(base + ext).isFile()) {
+      return base + ext;
+    }
+  }
+  return null;
+}
+
+function importsAndRendersColumn(source: string): boolean {
+  return COLUMN_IMPORT.test(source) && COLUMN_USAGE.test(source);
+}
+
+/** Whether this file, or one component it renders, imports and renders Column. */
+function reachesColumn(source: string): boolean {
+  if (importsAndRendersColumn(source)) return true;
+
+  for (const match of source.matchAll(LOCAL_COMPONENT_IMPORT)) {
+    const specifier = match[1];
+    if (specifier === undefined) continue;
+
+    // Only follow a component the file actually renders. An unused import
+    // must not be able to satisfy the check.
+    const name = specifier.split("/").pop() ?? "";
+    if (name === "" || !new RegExp(`<${name}[\\s/>]`).test(source)) continue;
+
+    const resolved = resolveComponent(specifier);
+    if (resolved === null) continue;
+    if (importsAndRendersColumn(fs.readFileSync(resolved, "utf8"))) return true;
+  }
+  return false;
+}
+
 /** Every `page.tsx` under `dir`, as a route path relative to `dir` (e.g.
     "book/days"), skipping dotfiles and `__tests__` directories. */
 function findPageRoutes(dir: string, base = ""): string[] {
@@ -107,14 +162,14 @@ describe("route classification — every app/(app) route makes an explicit gutte
       if (FULL_BLEED_ROUTES.has(route)) return; // named, deliberate choice
 
       const source = fs.readFileSync(path.join(APP_GROUP_DIR, route, "page.tsx"), "utf8");
-      const usesColumn = COLUMN_IMPORT.test(source) && COLUMN_USAGE.test(source);
 
       expect(
-        usesColumn,
+        reachesColumn(source),
         `app/(app)/${route}/page.tsx is neither in FULL_BLEED_ROUTES nor ` +
-          `imports/renders <Column> in route-classification.test.ts — ` +
-          `classify it explicitly (add to one of the named sets, or wrap the ` +
-          `route in <Column>) before this passes.`,
+          `imports/renders <Column> — directly or through the one component ` +
+          `it hands its body to — in route-classification.test.ts. Classify ` +
+          `it explicitly (add to one of the named sets, or wrap the route in ` +
+          `<Column>) before this passes.`,
       ).toBe(true);
     },
   );
@@ -137,5 +192,29 @@ describe("route classification — every app/(app) route makes an explicit gutte
   it("FULL_BLEED_ROUTES and EXCLUDED_ROUTES do not overlap", () => {
     const overlap = [...FULL_BLEED_ROUTES].filter((route) => EXCLUDED_ROUTES.has(route));
     expect(overlap).toEqual([]);
+  });
+
+  /* -- the follow, checked in both directions ---------------------- */
+
+  it("following one hop still fails a component with no gutter", () => {
+    // Without this, the hop added for /dates would turn the whole check into a
+    // formality: every page delegates to something, and "it delegates" would
+    // be indistinguishable from "it has a gutter".
+    const delegatesToGutter =
+      'import { DatesScreen } from "@/components/dates/DatesScreen";\n' +
+      "export default function P() { return <DatesScreen />; }";
+    const delegatesToNothing =
+      'import { HostedDates } from "@/components/dates/HostedDates";\n' +
+      "export default function P() { return <HostedDates />; }";
+
+    expect(reachesColumn(delegatesToGutter)).toBe(true);
+    expect(reachesColumn(delegatesToNothing)).toBe(false);
+  });
+
+  it("an unused import cannot satisfy the check", () => {
+    const unused =
+      'import { DatesScreen } from "@/components/dates/DatesScreen";\n' +
+      "export default function P() { return <div />; }";
+    expect(reachesColumn(unused)).toBe(false);
   });
 });

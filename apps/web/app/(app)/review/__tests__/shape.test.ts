@@ -98,6 +98,49 @@ function importSpecifiers(source: string): string[] {
 
 const FORBIDDEN_PACKAGE_SPECIFIERS = [/^next\/headers(\/.*)?$/];
 
+/**
+ * Files whose `fetch(` is a control's event handler, not a render-time read.
+ *
+ * NARROW BY CONSTRUCTION. Each entry exempts ONE file from ONE rule — the
+ * `fetch(` rule. Everything else still applies to these files: they may not
+ * call `cookies()`, may not import `next/headers`, and may not import anything
+ * under `lib/data/`. A review harness still cannot render live content.
+ * "Render" is the word doing the work here: the property this file protects is
+ * that what a reviewer looks at came from fixtures, and a button that would
+ * POST if somebody pressed it has put nothing on the screen.
+ *
+ * Why this list exists at all: `/review/dates` is the first review harness for
+ * a screen whose entire point is that it has controls. The founder's complaint
+ * about `/dates` was that there was nothing on it to do — a harness that had
+ * to strip the buttons out to be allowed would fail to review the exact defect
+ * it was built to check. The alternative, loosening the regex to "no fetch
+ * outside an event handler", is not something a regex can decide.
+ *
+ * The bar for a new entry is the bar on the sibling guard's allowlist
+ * (`lib/__tests__/copy-law-tree.test.ts`): a deliberate, reviewable line with
+ * a reason, never a way to make this test green.
+ */
+const FETCH_IN_HANDLER_ALLOWLIST: { file: string; reason: string }[] = [
+  {
+    file: "components/dates/ProposeADate.tsx",
+    reason:
+      "POST /api/dates, inside the Ask button's own click handler. Nothing is " +
+      "fetched to draw the seven kinds, the day rail or the clock readback — " +
+      "those are content and pure zone arithmetic.",
+  },
+  {
+    file: "components/dates/BetweenThem.tsx",
+    reason:
+      "PATCH /api/dates/[id], inside the Yes / Not this one / We did this " +
+      "handlers. Every plan it draws arrives as a prop from the page above it.",
+  },
+];
+
+function fetchIsAllowedIn(label: string): boolean {
+  const normalised = label.split(sep).join("/").replace(/^\/+/, "");
+  return FETCH_IN_HANDLER_ALLOWLIST.some((entry) => entry.file === normalised);
+}
+
 function isServerDataModule(resolvedPath: string): boolean {
   const marker = `${sep}lib${sep}data${sep}`;
   return `${resolvedPath}${sep}`.includes(marker) || resolvedPath.endsWith(`${sep}lib${sep}data.ts`);
@@ -115,7 +158,7 @@ function violationsIn(file: string, seen: Set<string> = new Set()): string[] {
   const violations: string[] = [];
   const label = relativeToWebRoot(file);
 
-  if (/\bfetch\s*\(/.test(source)) {
+  if (/\bfetch\s*\(/.test(source) && !fetchIsAllowedIn(label)) {
     violations.push(`${label} calls fetch(...) — review harnesses render fixtures only`);
   }
   if (/\bcookies\s*\(\s*\)/.test(source)) {
@@ -161,4 +204,42 @@ describe("review harnesses stay fixture-only", () => {
       expect(violationsIn(file)).toEqual([]);
     },
   );
+
+  /* -- the allowlist, kept honest ---------------------------------- */
+
+  it("every allowlisted file exists and really does call fetch", () => {
+    // An entry that names a moved or deleted file is a dead exemption that
+    // reads as active. An entry for a file with no `fetch(` in it is an
+    // exemption that was never needed and would go on covering whatever the
+    // file becomes.
+    for (const entry of FETCH_IN_HANDLER_ALLOWLIST) {
+      const full = resolve(webRoot, entry.file);
+      expect(existsSync(full), `${entry.file} is allowlisted but not on disk`).toBe(
+        true,
+      );
+      expect(
+        /\bfetch\s*\(/.test(readFileSync(full, "utf8")),
+        `${entry.file} is allowlisted for fetch(...) but does not call it`,
+      ).toBe(true);
+    }
+  });
+
+  it("the exemption covers fetch only — nothing else is forgiven", () => {
+    // The narrowness is the whole argument for the list existing. If an
+    // allowlisted file ever reaches for request state or for the data layer,
+    // it must still be reported.
+    for (const entry of FETCH_IN_HANDLER_ALLOWLIST) {
+      const source = readFileSync(resolve(webRoot, entry.file), "utf8");
+      expect(/\bcookies\s*\(\s*\)/.test(source), entry.file).toBe(false);
+      expect(/from\s+["']@\/lib\/data/.test(source), entry.file).toBe(false);
+      expect(/from\s+["']next\/headers["']/.test(source), entry.file).toBe(false);
+    }
+  });
+
+  it("the fetch rule still fires for a file that is not on the list", () => {
+    // Guards the guard: `fetchIsAllowedIn` returning true for everything would
+    // leave every test above green.
+    expect(fetchIsAllowedIn("components/dates/DatesScreen.tsx")).toBe(false);
+    expect(fetchIsAllowedIn("components/dates/ProposeADate.tsx")).toBe(true);
+  });
 });
