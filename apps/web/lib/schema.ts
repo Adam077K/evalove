@@ -143,6 +143,13 @@ export const RELATIONS = {
   vaultItems: "vault_items",
   dates: "dates",
   dateTurns: "date_turns",
+  /**
+   * A date one of them proposes and the other agrees to — distinct from
+   * `dates`, which is a turn-taking game the app hosts. See the header of
+   * `supabase/migrations/20260810120000_date_plans.sql` for why it is its own
+   * table rather than four permanently-null columns on that one.
+   */
+  datePlans: "date_plans",
   bookEntries: "book_entries",
   activityState: "activity_state",
   activityLog: "activity_log",
