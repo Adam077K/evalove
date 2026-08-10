@@ -705,3 +705,256 @@ Short lists here are suspicious, so this one is not short.
   hit in its first hour and I have not answered it.
 - **The slop test is the founder's alone.** Nothing in this document is a verdict
   on whether the port will look good.
+
+---
+---
+
+# Second pass
+
+*A second design-lead went over the first pass against the source. Everything above
+stands except where corrected below. This section closes two questions the brief
+asked that the first pass left open, adds one accessibility finding that blocks T1,
+and corrects three claims.*
+
+---
+
+## The crop decision, resolved — and the brief's premise is wrong
+
+The brief says: *"The mock and React crop in opposite directions — mock `.lf .mount img`
+is a 266×196 landscape box; React `Polaroid.tsx` uses fixed portrait aspects with
+`object-cover`. Your tasks must say which one the port converges on."*
+
+**Neither. The table does not crop at all.** `apps/web/public/design-H.html:213`:
+
+```css
+.bare img,.print img{ display:block; width:100%; height:auto; background:#3a3129; }
+```
+
+`height:auto`. A loose photograph on the wood is laid at its own aspect ratio, always,
+whatever shape it is. The mount (`.print`) is 9px of paper padding around it plus a
+33px chin — it is drawn *around* the photograph, so it takes the photograph's shape
+for free. **The founder's leaf ruling is already the table's behaviour in the mock he
+approved.**
+
+The `266×196` box the brief cites is line **717**, `.lf .mount img` — and `.lf` is
+declared at line 668 as design-H's **book leaf**, the mock's internal book. That
+surface is not ported at all (`/book` is merged and better). The brief compared the
+mock's book against React's book and drew a conclusion about the table.
+
+Every crop in all 2415 lines, exhaustively:
+
+| line | selector | what it is |
+|---|---|---|
+| 560 | `.well img` | a well in the deck |
+| 717 | `.lf .mount img` | **the book leaf** — not ported |
+| 747 | `.stack .top img` | the top of a day-pile |
+| 819 | `.daygrid figure img` | a cell in the opened day |
+| 854 | `.frames button img` | a contact-sheet frame, `aspect-ratio:1` |
+| 1028 | `.past .row img` | a 46×46 row thumbnail in Dates |
+
+Not one is a loose photograph on the wood. So the rule the port converges on, derived
+rather than invented:
+
+> **A photograph shown at its own size is never cropped. A photograph shown as a
+> thumbnail — a pile top, a grid cell, a contact-sheet frame, a list row — is always
+> cropped to its cell.**
+
+Three consequences for the tasks above:
+
+1. **T1's `Print.tsx` and `Bare.tsx` must not use `Polaroid.tsx`.** That component is
+   built on two **keyed frame images** (`polaroid-frame-chin.webp` 795×1024,
+   `polaroid-frame-empty.webp` 900×1024) whose transparent windows are fixed
+   percentages of a fixed-aspect PNG. A keyed frame *cannot* take an arbitrary
+   photograph's shape — stretching it to a landscape box stretches the keyed paper
+   border and its printed grain with it. `Polaroid` belongs to The Book, where a
+   polaroid crops to its aperture on purpose (its own header says so). The table's
+   mount is CSS: a background gradient blended with `paper-coldpress-stock.webp`,
+   padding, and a chin. **Two different mounts for two different surfaces is correct,
+   not duplication.** Say so in the T1 brief or a worker will "unify" them.
+2. **`feat/leaf-takes-shape` does not block this port.** It is fixing The Book. The
+   board never had the bug.
+3. **T2 can compute every position server-side without loading a single image.**
+   `photos.width` and `photos.height` are `not null` (`20260802090200_photos.sql:56`).
+   The aspect of every photograph is known before paint, so the placement rule is
+   pure arithmetic and the board has no layout shift. Add that to T2's criteria.
+
+---
+
+## The nearly-empty board, answered
+
+The brief asks what the board looks like when nearly empty, and calls it the common
+case. It is — and the first pass answered it with a requirement ("the placement rule
+must decide where the emptiness goes") rather than a design. Here is the design.
+
+**Look at `PROBE-0-table-as-approved.png` again and count.** At 393×852, the approved
+first screen holds: a torn date scrap, **one** mounted portrait with a chin, **one**
+bare landscape with a paper label beside it, a strip of washi, a pressed butterfly —
+and the bottom two-fifths is walnut with nothing on it.
+
+**That is the ordinary day.** One from Eva, one from Adam. The screen the founder
+approved is already the two-photograph case; the emptiness is not a degradation of
+the mock to be designed around, it is the mock. Nobody has to invent what a sparse
+board looks like — it has been looked at and approved.
+
+So the answer is not "fill it". It is:
+
+**1 · The vocabulary is fixed and small.** design-H's own eight objects
+(lines 1107–1202) are 3 `print` and 5 `bare`, widths 122–250px in a 950px world,
+rotations −6.2° to +5.6°. A print carries its caption in its chin; a bare photograph
+gets a `.label` — a small paper tag lying next to it (line 1121: `Lisbon, 6 August`).
+Both are captions; they are two different pieces of furniture. Mount-vs-bare is not
+orientation-driven — the single landscape in the mock is bare, which is a sample of
+one and proves nothing. Treat it as seeded variety, with one hard constraint: **a
+photograph with a caption may be a print or a bare-plus-label, but the chin only
+exists on a print.**
+
+**2 · The bottom is held by things that are always there.** The night end — the couple
+at the window, the clock band, the invitation — does not depend on how many
+photographs exist. It is present on a two-photograph day and on a nineteen-photograph
+day. So the world never bottoms out into pure wood: it ends on the fixed furniture.
+Photograph count changes the *distance* between the top cluster and the night end,
+and nothing else. That single fact makes T2's derived height tractable — it is
+`top cluster + gap(n) + night end`, where only `gap(n)` varies.
+
+**3 · The emptiness has a floor and a ceiling.** Bare wood is what makes it a table.
+Below roughly half a screen of it between clusters, the objects read as a grid;
+above roughly a screen and a half, the pan feels broken. `gap(n)` clamps between
+those. That is a number for T2 to tune against a screenshot, not a formula to derive.
+
+**4 · What is forbidden.** No decoration added to fill space — no extra stickers,
+washi or scraps scaled to photograph count. That is the exact move that produced the
+four rejected directions. No empty state, no dashed rectangle, no prompt to add
+something: composing is never solicited. **An empty region of a table is not a state
+that needs a message.** On day one, with zero photographs, the board is the date
+scrap and the night end, and that is a finished screen.
+
+---
+
+## The accessibility finding that blocks T1
+
+design-H line 5:
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1,
+      user-scalable=no, viewport-fit=cover">
+```
+
+`user-scalable=no` with `maximum-scale=1` disables browser pinch-zoom. That is a
+**WCAG 2.1 AA failure of SC 1.4.4 Resize Text**, and combined with
+`touch-action:none` on `#viewport` (line 110) there is no path left to magnify a
+photograph by the platform's own means.
+
+The shipped app does **not** currently do this — `apps/web/app/layout.tsx:22`'s
+`viewport` export sets `viewportFit: "cover"` and neither `userScalable` nor
+`maximumScale`. Zoom works today. **Porting the mock's meta tag would be an
+accessibility regression on a screen that previously passed**, and it is the kind of
+line that arrives in a diff looking like boilerplate.
+
+**T1 acceptance, added:** the app's `viewport` export is not modified. The board
+suppresses default touch behaviour on its own surface only, never on `<body>`, and
+`user-scalable` is never set. The board's own pinch is an addition to platform zoom,
+not a replacement for it. A test asserts the exported `viewport` object has no
+`userScalable` or `maximumScale` key, and that test has been watched to fail.
+
+This is also the one place where the mock is simply wrong and must not be followed.
+It is a two-person private app and neither of them may need it this year; the reason
+to hold the line is that the whole product is photographs, and being unable to
+enlarge one is a product failure before it is a compliance one.
+
+---
+
+## Corrections to the first pass
+
+**1 · An unsigned photograph cannot appear among today's loose photographs.**
+The first pass has T3 and T4 both branching on `author_member_id` being null on the
+table. `20260807120000_photos_author_optional.sql:60`:
+
+```sql
+check (kind <> 'daily' or author_member_id is not null);
+```
+
+Unsigned is structurally impossible for `kind = 'daily'`. It exists only for
+`kind = 'book'` — curated photographs. Today's loose photographs are `daily`, so they
+always have an author. Precisely:
+
+- **T3** — the loose photographs on the wood always carry a byline. A "no byline"
+  branch there is a branch that can never execute, which is a prepared place. Drop it.
+- **T4** — the deck spans days and can reach `book`-kind photographs, so the deck
+  **does** need the null branch, and its test is real. Keep it there.
+
+**2 · There is no alt text, and there is no column to put it in.** Every photograph in
+design-H carries a hand-written sentence — line 1119: *"A woman standing in a wide
+stone square in Lisbon, the Rua Augusta arch behind her in bright sun."* The `photos`
+table has `caption text` (line 48) and nothing else that could serve. **A caption is
+not a description**: "Lisbon, 6 August" tells a screen-reader user nothing about the
+photograph, and using it as `alt` produces prose that reads as if it were a
+description when it is not. This is unresolved and it is the founder's call, with
+three options, cheapest first: `alt=""` plus a visible caption (honest, and correct
+when the caption is genuinely adjacent text); a nullable `alt` column somebody types
+into; or generated descriptions, which means sending their photographs to a model,
+which this product's premise forbids. **Recommendation: `alt=""` with the caption as
+visible adjacent text, and flag it to the founder.** Do not let a worker default to
+`alt={caption}`.
+
+**3 · The approved mock exists in exactly one place, and it must stay out of git.**
+`apps/web/public/design-H.html` and its eight photographs `design-p1.jpg`…`design-p8.jpg`
+are **untracked files in the main repo's working tree, on no branch.** Six tasks
+depend on a file that one `git clean -fd` would destroy, with no copy anywhere, and
+every line reference in this document would become unresolvable.
+
+I started to preserve it on this branch and stopped. `.gitignore:54-56`:
+
+```
+# local design mockups + personal photos used in them - never commit
+apps/web/public/design-*
+design-*.html
+```
+
+The exclusion is deliberate and the reason is good: `design-p1.jpg`…`p8.jpg` are real
+photographs of Eva and Adam. Committing them would put two people's private
+photographs into git history permanently, on a repo with a remote, to solve a backup
+problem. **Do not force-add them, and do not let a worker do it to "fix" a broken
+`<img>` while porting.**
+
+The risk is still real and still unmitigated. It needs a remedy that is not a commit
+— a copy outside the repository, on the founder's own machine, is the whole fix and
+takes one `cp`. **This is the founder's call and it is the cheapest item in this
+document.** If he wants the structure under version control, the HTML alone could be
+committed with its photo references left pointing at ignored paths, so the layout
+survives even though the photographs do not; that is a separate decision and it is
+also his, since `design-*.html` is named in that same deliberate line.
+
+**4 · `patchBookEntry` is not wired anywhere, and there is no route to wire it to.**
+The brief says wire it. Verified: it is defined at `apps/web/lib/data/book.ts:58`,
+re-exported at `lib/data/index.ts:48`, and its only other mention in the codebase is
+a comment in `app/api/dates/[id]/route.ts:44`. There is **no `/api/book/[id]`
+route** — so "wire the UI" is really "write an API route, then a curation surface,
+then wire it". The first pass is right that it does not belong to the board (the
+board has no curated spread), and it is more expensive than the brief implies. It
+stays out of this decomposition. `DELETE /api/photos/[id]` is different: the route
+exists, and T4 is a genuine first caller. That half of the brief's item 7 is correct.
+
+**5 · `feat/leaf-takes-shape` has zero commits and a clean worktree** as of
+2026-08-10 17:15. The brief says to assume the behaviour, and per the section above
+the board does not depend on it — but nobody should plan a merge order around work
+that has not started.
+
+---
+
+## What the second pass did not assess
+
+- **I did not open design-H on a phone either.** The first pass's first bullet stands
+  unchanged and is still the most important line in this document.
+- **I opened one probe shot, PROBE-0.** PROBE-1 through PROBE-8 remain unopened by
+  both passes.
+- **I did not verify the `world height` arithmetic** in "the bottom is held by things
+  that are always there" against the mock's actual y-coordinates below 1400. It is
+  reasoned from the object inventory, not measured.
+- **I did not check `20260808_add_people_column.sql`.** There is a `people` column on
+  something and neither pass knows what it is for or whether the board should show it.
+- **I did not run the accessibility check against a built page** — there is nothing
+  built. The WCAG finding above is read off the mock's source and the app's current
+  `viewport` export, and it needs QA-Lead against a running T1 before anyone calls it
+  closed.
+- **Neither pass has asked Eva anything.** Every claim about what these two want from
+  a table is inference from a mock one of them approved.
