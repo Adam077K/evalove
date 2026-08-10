@@ -32,8 +32,13 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 
 let failed = false;
+// --lie inverts every declared shape in the page, to watch the shape test
+// fail. A run with --lie that reports "all images loaded" means the test is
+// dead and no screenshot from this harness should be trusted.
+const LIE = process.argv.includes("--lie");
+
 for (const [p, file] of PANELS) {
-  await page.goto(`${BASE}?p=${p}`, { waitUntil: "load" });
+  await page.goto(`${BASE}?p=${p}${LIE ? "&lie=1" : ""}`, { waitUntil: "load" });
   await page.waitForFunction(() => window.__READY === true, null, { timeout: 15000 });
   // Fonts settle, GSAP-free so no motion to wait on.
   await page.evaluate(() => document.fonts.ready);

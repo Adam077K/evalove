@@ -239,7 +239,11 @@ var panel = q.get("p") || "tableB";
    and describing a photograph nobody on the team has opened is how a wrong
    caption gets into the repository. */
 function img(ph, when){
-  return '<img src="'+ph.src+'" data-shape="'+ph.shape+'" alt="Photograph, '+when+'">';
+  /* ?lie=1 inverts every declaration so the shape test is made to fail on
+     demand. An assertion nobody has ever seen fail is not an assertion.
+     `node shoot-orientation-probe.mjs --lie` exercises this. */
+  var shape = q.get("lie") ? (ph.shape === "land" ? "port" : "land") : ph.shape;
+  return '<img src="'+ph.src+'" data-shape="'+shape+'" alt="Photograph, '+when+'">';
 }
 
 /* design-H's own day header, at design-H's own coordinates. */
