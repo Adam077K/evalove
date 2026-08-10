@@ -228,7 +228,11 @@ m08 AS (
     '20260802090700_shared_day_function_and_triggers.sql' AS migration_file,
     EXISTS (SELECT 1 FROM functions
             WHERE fname = 'shared_day_of'
-              AND fargs LIKE '%timestamptz%')
+              -- pg_get_function_identity_arguments uses format_type() internally,
+              -- which returns the canonical SQL name 'timestamp with time zone'
+              -- for the timestamptz alias — so '%timestamptz%' would never match.
+              -- '%timestamp%' catches both the canonical and alias forms safely.
+              AND fargs LIKE '%timestamp%')
                                                 AS fn_shared_day_ok,
     EXISTS (SELECT 1 FROM functions
             WHERE fname = 'enforce_shared_day_matches_tz')
