@@ -1,0 +1,549 @@
+/*
+ * board.css — scoped to .board-root
+ *
+ * All classes use the `board-` prefix to prevent collisions with any
+ * other component (the shipped codebase has an unscoped `.card` rule
+ * that once silently sized an unrelated element — these classes are
+ * named so that cannot happen here).
+ *
+ * z-index contract:
+ *   0       surface ::before (light gradients)
+ *   2       .board-grain — film grain on the night half, UNDER objects
+ *   10+     .board-obj — every object on the wood, ABOVE grain
+ *   24      .board-inst — instruments (same level as design-H)
+ *   28      .board-label / .board-tape
+ *   30      .board-tape (high tape)
+ *   40+     topZ counter — picked-up objects
+ *
+ * This contract is asserted by grain-z-order.test.tsx. Never move
+ * .board-grain above 9 or .board-obj below 10 without also watching
+ * that test fail first.
+ *
+ * Photo treatment rules:
+ *   - No filter on any img except "none"
+ *   - No mix-blend-mode or backdrop-filter at or above z-index 10
+ *   - .board-print's paper tooth comes from background-blend-mode on
+ *     the mount's OWN two background layers; it cannot reach the photograph
+ *     because a child always paints above its parent's background.
+ *
+ * See design-H.html:217, design-H.html:259, design-H.html:1044 for the
+ * three places design-H encodes this rule with reasoning.
+ */
+
+/* ── variables (duplicated from design-H to avoid a globals.css dependency) */
+.board-root {
+  --wood: url("https://d8j0ntlcm91z4.cloudfront.net/user_3GsJ2DSZxGcIbdUGLeK8PnRpye2/hf_20260809_114925_187e2b68-0ab4-488c-99a2-2930c98ccf13.png");
+  --board-paper: #f2ecdf;
+  --board-bone: #efe7d6;
+  --board-print: #fcf8ef;
+  --board-verso: #e7dcc1;
+  --board-edge: #d8ccb1;
+  --board-kraft: #a98a63;
+  --board-ink: #1a1611;
+  --board-ink-2: #6b6053;
+  --board-hand-eva: #7a2a1c;
+  --board-hand-adam: #2f3a52;
+  --board-accent: #2c5a37;
+  --board-lie: 0 1px 1px rgba(0,0,0,.34), 0 7px 12px rgba(0,0,0,.40), 0 20px 34px rgba(0,0,0,.26);
+  --board-held: 0 2px 3px rgba(0,0,0,.30), 0 20px 30px rgba(0,0,0,.46), 0 44px 74px rgba(0,0,0,.36);
+  --board-hand-face: "Caveat Variable", "Bradley Hand", "Noteworthy", cursive;
+  --board-ui: -apple-system, BlinkMacSystemFont, "Outfit Variable", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ── viewport shell */
+.board-viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+
+.board-viewport.board-panning {
+  cursor: grabbing;
+}
+
+.board-viewport::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  z-index: 0;
+  background: #241811 var(--wood) center / cover no-repeat;
+  opacity: 0.6;
+}
+
+/* ── the table surface */
+.board-surface {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 950px;
+  height: 2860px;
+  transform-origin: 0 0;
+  background: #2a1c12 var(--wood) center / cover no-repeat;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.42), 0 18px 64px rgba(0,0,0,.62);
+  will-change: transform;
+}
+
+/* day sun, dusk, lamp — painted on the wood, stops below every object */
+.board-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(340px 250px at 430px 1900px, rgba(217,164,65,.32), rgba(217,164,65,0) 76%),
+    radial-gradient(46% 15% at 26% 4%, rgba(255,232,190,.16), rgba(0,0,0,0) 74%),
+    linear-gradient(104deg, rgba(255,224,176,.07) 0%, rgba(0,0,0,0) 30%),
+    linear-gradient(180deg,
+      rgba(0,0,0,0)        0%,
+      rgba(0,0,0,0)       31%,
+      rgba(10,22,46,.10)  37%,
+      rgba(10,22,46,.24) 41.5%,
+      rgba(9,22,48,.48)   45%,
+      rgba(8,22,50,.76) 47.5%,
+      #061733           49.5%,
+      #04122a             75%,
+      #030d20            100%);
+}
+
+.board-world {
+  position: absolute;
+  inset: 0;
+}
+
+/* ── film grain — z-index 2, UNDER every object (z-index 10+) */
+/*
+ * TRAP-TEST TARGET: grain-z-order.test.tsx asserts that .board-grain has
+ * a lower z-index than .board-obj. Do not change either value without
+ * watching that test fail first. See spec §0.3 and §T1 constraint 5.
+ */
+.board-grain {
+  position: absolute;
+  z-index: 2;         /* must stay below .board-obj (z-index: 10) */
+  left: 0;
+  right: 0;
+  top: 1150px;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  /* mix-blend-mode:overlay at z-index 2 blends with the table surface (z-index 1).
+     Objects are z-index 10+, so grain paints UNDER every photograph. This is
+     the same mechanic as design-H.html:200-206. */
+}
+
+/* ── objects — all at z-index 10 or above */
+.board-obj {
+  position: absolute;
+  z-index: 10;        /* must stay above .board-grain (z-index: 2) */
+}
+
+.board-pickup {
+  cursor: grab;
+  will-change: transform;
+}
+
+.board-pickup:active {
+  cursor: grabbing;
+}
+
+/* ── photographs on the wood — height:auto, NEVER cropped (design-H:213) */
+/*
+ * The table never crops a loose photograph. The mount draws around the
+ * photograph's own shape. See spec §"second pass / crop decision".
+ * Do not set height to a fixed value; do not use object-fit:cover here.
+ */
+
+/* bare photograph (no mount) */
+.board-bare img,
+.board-print img {
+  display: block;
+  width: 100%;
+  height: auto;           /* never cropped — design-H:213 */
+  background: #3a3129;
+  filter: none;           /* never filter a photograph — design-H law */
+}
+
+.board-bare {
+  border-radius: 2px;
+  box-shadow: var(--board-lie);
+  transition: box-shadow 0.26s cubic-bezier(.22,.7,.3,1);
+}
+
+.board-bare img {
+  border-radius: 2px;
+}
+
+/* mounted photograph (paper surround + chin) */
+.board-print {
+  /*
+   * The mount's paper tooth comes from blending this element's OWN two
+   * background layers. background-blend-mode cannot reach the photograph
+   * because a child always paints above its parent's background.
+   * mix-blend-mode could, so it is not used here. (design-H:217)
+   */
+  background:
+    linear-gradient(168deg, #fdfaf2, #f7f1e3 62%, #f1e9d8),
+    url("/materials/paper-coldpress-stock.webp") center / 210% auto;
+  background-blend-mode: multiply;
+  padding: 9px 9px 0;
+  border-radius: 2px;
+  box-shadow: var(--board-lie);
+  transition: box-shadow 0.26s cubic-bezier(.22,.7,.3,1);
+}
+
+.board-chin {
+  display: block;
+  font-family: var(--board-hand-face);
+  font-size: 15px;
+  line-height: 33px;
+  height: 33px;
+  color: var(--board-hand-eva);
+  text-align: center;
+}
+
+.board-chin.board-his {
+  color: var(--board-hand-adam);
+}
+
+.board-chin.board-left {
+  text-align: left;
+  padding-left: 6px;
+}
+
+/* held state */
+.board-bare.board-held,
+.board-print.board-held {
+  box-shadow: var(--board-held);
+}
+
+/* ── torn paper scrap */
+.board-scrap {
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.30)) drop-shadow(0 9px 13px rgba(0,0,0,.42));
+}
+
+.board-scrap .board-sheet {
+  background: var(--board-bone) url("/materials/paper-bone-laid.webp") center / 180% auto;
+  padding: 12px 14px 18px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+}
+
+/*
+ * Verbatim clip-path polygons from design-H.html:244-252.
+ * These are the torn edges. They must be copied exactly — any change
+ * alters the visual silhouette of the scraps.
+ */
+.board-torn-b {
+  clip-path: polygon(0 0,100% 0,100% 84%,96.2% 95%,91.4% 87%,87.9% 97%,81.2% 90%,
+    77.4% 99%,70.1% 88%,64.8% 97%,59.9% 89%,53.1% 100%,47.6% 90%,41.2% 97%,
+    36.7% 88%,29.4% 99%,24.1% 91%,18.2% 97%,12.6% 87%,6.4% 98%,2.1% 90%,0 96%);
+}
+
+.board-torn-tb {
+  clip-path: polygon(0 5%,5.4% 1%,11.8% 6%,19.3% 2%,24.6% 7%,32.1% 1%,39.8% 5%,
+    46.2% 1%,53.7% 6%,60.1% 2%,68.4% 5%,74.9% 1%,82.3% 6%,89.1% 2%,95.4% 5%,100% 1%,
+    100% 96%,94.2% 100%,87.6% 94%,80.9% 99%,73.4% 95%,66.8% 100%,59.1% 94%,
+    52.4% 99%,45.7% 95%,38.2% 100%,31.6% 94%,24.9% 99%,17.3% 95%,10.8% 100%,4.2% 96%,0 99%);
+}
+
+.board-hand {
+  font-family: var(--board-hand-face);
+  color: var(--board-hand-eva);
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+
+.board-hand.board-his {
+  color: var(--board-hand-adam);
+}
+
+/* ── furniture */
+
+/* tape — opaque, no backdrop-filter (design-H:259) */
+.board-tape {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+}
+
+/*
+ * Real washi is slightly translucent. It is not allowed to be here,
+ * because a translucent thing lying on a print tints the print. The
+ * tape is opaque and earns its depth from its own shadow instead. (design-H:259)
+ * filter:drop-shadow is permitted — it composites outside the alpha channel
+ * and touches no pixel of the image beneath.
+ */
+.board-tape img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.34));
+}
+
+/* pressed sticker */
+.board-press {
+  position: absolute;
+  pointer-events: none;
+}
+
+.board-press img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.42)) drop-shadow(0 10px 16px rgba(0,0,0,.30));
+}
+
+/* handwritten label */
+.board-label {
+  position: absolute;
+  z-index: 28;
+  background: linear-gradient(170deg, #ece2ca, #e2d6ba);
+  padding: 4px 9px 5px;
+  border-radius: 1px;
+  font-family: var(--board-hand-face);
+  font-size: 13px;
+  color: var(--board-hand-adam);
+  white-space: nowrap;
+  box-shadow: 0 1px 1px rgba(0,0,0,.30), 0 5px 9px rgba(0,0,0,.34);
+}
+
+.board-label.board-hers {
+  color: var(--board-hand-eva);
+}
+
+/* pin */
+.board-pin {
+  position: absolute;
+  z-index: 16;
+  width: 24px;
+  pointer-events: none;
+}
+
+.board-pin img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,.52)) drop-shadow(0 9px 12px rgba(0,0,0,.34));
+}
+
+/* ── day header scrap */
+.board-places {
+  width: 372px;
+}
+
+.board-places .board-sheet {
+  padding: 15px 18px 46px;
+}
+
+.board-eyebrow {
+  font-family: var(--board-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.30em;
+  text-transform: uppercase;
+  color: var(--board-kraft);
+}
+
+.board-citybox {
+  display: inline-block;
+  margin-top: 11px;
+  border: 1px solid currentColor;
+  padding: 5px 11px 4px;
+  font-family: var(--board-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.30em;
+  text-transform: uppercase;
+  color: var(--board-ink);
+}
+
+.board-clock {
+  display: block;
+  margin-top: 9px;
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-variation-settings: "opsz" 120, "wght" 400, "WONK" 0;
+  font-size: 57px;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--board-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.board-rule {
+  height: 1px;
+  background: var(--board-edge);
+  margin: 14px 0 9px;
+}
+
+.board-cue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--board-hand-face);
+  font-size: 14px;
+  color: var(--board-kraft);
+}
+
+/* ── couple at the window */
+.board-couple {
+  width: 318px;
+  cursor: grab;
+}
+
+.board-couple .board-mount {
+  padding: 9px;
+  background: linear-gradient(168deg, #f0e6cf, #e4d8ba);
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(0,0,0,.44), 0 14px 26px rgba(0,0,0,.5),
+              0 32px 56px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.6);
+  transition: box-shadow 0.26s cubic-bezier(.22,.7,.3,1);
+}
+
+/* artwork image — no filter (drop-shadow is on the mount, not the image) */
+.board-couple-art {
+  display: block;
+  width: 300px;
+  height: 398px;
+  background: url("/materials/deco-window-interior.webp") center / 100% auto no-repeat #0a1730;
+  box-shadow: 0 1px 3px rgba(60,42,18,.4) inset;
+}
+
+.board-couple.board-held .board-mount {
+  box-shadow: var(--board-held);
+}
+
+/* ── tome (closed book) */
+.board-tome {
+  width: 206px;
+  cursor: pointer;
+}
+
+.board-tome .board-lid {
+  position: relative;
+  height: 146px;
+  border-radius: 3px 6px 6px 3px;
+  background: linear-gradient(100deg, #4a5a3c 0%, #5d6f49 22%, #4c5c3d 60%, #3d4a31 100%);
+  box-shadow: 0 2px 3px rgba(0,0,0,.4), 0 14px 26px rgba(0,0,0,.5),
+              0 34px 56px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+.board-tome .board-lid::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 15px;
+  border-radius: 3px 0 0 3px;
+  background: linear-gradient(90deg, #2f3a26, #465435 62%, #39462d);
+  box-shadow: 1px 0 0 rgba(0,0,0,.35);
+}
+
+.board-tome .board-lid::after {
+  content: "";
+  position: absolute;
+  right: -5px; top: 7px; bottom: 7px; width: 6px;
+  border-radius: 0 2px 2px 0;
+  background: repeating-linear-gradient(180deg, #e5dcc4 0 2px, #cdc0a1 2px 3px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+
+.board-tome .board-emb {
+  position: absolute;
+  left: 34px; right: 20px; top: 44px;
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-variation-settings: "opsz" 96, "wght" 400, "WONK" 1;
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: rgba(232,223,200,.82);
+  text-shadow: 0 1px 0 rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.08);
+}
+
+.board-tome .board-emb small {
+  display: block;
+  margin-top: 9px;
+  font-family: var(--board-ui);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(232,223,200,.5);
+}
+
+/* ── stacks (day piles) */
+.board-stack {
+  position: absolute;
+  z-index: 10;
+  cursor: pointer;
+}
+
+.board-stack .board-pile {
+  position: relative;
+}
+
+.board-stack .board-sh {
+  position: absolute;
+  left: 0; right: 0;
+  height: 100%;
+  background: linear-gradient(178deg, #fbf6ea, #e7dcc2);
+  border-radius: 2px;
+  box-shadow: 0 1px 0 rgba(90,66,30,.28);
+}
+
+.board-stack .board-top {
+  position: relative;
+  background: #fcf8ef;
+  padding: 6px 6px 0;
+  border-radius: 2px;
+  box-shadow: 0 1px 1px rgba(0,0,0,.3), 0 8px 14px rgba(0,0,0,.4), 0 20px 30px rgba(0,0,0,.26);
+  transition: box-shadow 0.26s cubic-bezier(.22,.7,.3,1);
+}
+
+/* stack top image — cropped to its cell (design-H:747) */
+.board-stack .board-top img {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  background: #3a3129;
+  filter: none;
+}
+
+.board-stack .board-cap {
+  display: block;
+  font-family: var(--board-hand-face);
+  font-size: 12px;
+  line-height: 24px;
+  height: 24px;
+  color: var(--board-hand-adam);
+  text-align: center;
+}
+
+.board-stack.board-held .board-top {
+  box-shadow: var(--board-held);
+}
+
+/* ── cork board (archive) */
+.board-corkboard {
+  --cork: url("https://d8j0ntlcm91z4.cloudfront.net/user_3GsJ2DSZxGcIbdUGLeK8PnRpye2/hf_20260809_114925_76b2ed1d-ed1b-4762-9a3a-ef73bf20985b.png");
+  width: 462px;
+  height: 490px;
+  border-radius: 5px;
+  background: #8a5f36 var(--cork) center / cover no-repeat;
+  box-shadow: 0 2px 2px rgba(0,0,0,.34), 0 14px 26px rgba(0,0,0,.46),
+    0 40px 66px rgba(0,0,0,.30), inset 0 0 0 6px rgba(72,44,20,.34),
+    inset 0 0 46px rgba(50,28,10,.42);
+  z-index: 6;
+}
+
+/* ── reduced motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  .board-bare,
+  .board-print,
+  .board-stack .board-top {
+    transition: none;
+  }
+}
