@@ -69,6 +69,37 @@ Nine sentences describing her day were rewritten today, for the second time, ent
 from Adam's account. Question 1 of `2026-08-03-EVA-FIVE-QUESTIONS.md` is that exact
 taxonomy. That file says its own value decays fast; it is seven days old.
 
+**THE METHOD CHANGE, AND IT IS THE POINT OF THIS SESSION.** For most of the day this
+project did what it always does: reason about screens from source. In the last half hour
+one was actually run. Ten minutes of running found four things a full day of reading had
+not, **none of which exist in a diff**:
+
+1. **The board opened 374px past the composition the founder approved.**
+   `design-H:1548` is `gsap.set(srf, {x:-40, y:0})`; the port arrived at
+   `matrix(...,-209,-374)`. Root cause: **`Draggable.applyBounds()` fires *during*
+   `Draggable.create()` and silently overrides any position set beforehand.** The fix is
+   ordering — `gsap.set` after creation, then `update()` with no args. Fixed and verified
+   live at `matrix(1, 0, 0, 1, -40, 0)`.
+2. **Two clocks for New York on one screen**, twenty pixels apart, disagreeing — the
+   shared Band's live time against the board's own paper masthead. Visual proof for the
+   decomposition's recommendation that the Band not render on `/today`.
+3. **Pan holds 60fps** — median 16.7ms, p95 18.1ms, worst 18.7ms over 89 frames, no
+   spikes. Desktop Chromium, so a floor and not a verdict.
+4. **The first render was a lie and was nearly judged.** Nine 404s where the photographs
+   go, because they are gitignored and the worktree lacked them. **A broken image and a
+   loaded one are identical in a screenshot.** `naturalWidth > 0` on every `img` before
+   judging anything is now in every brief.
+
+**How it was run without touching the founder's environment:** each worktree has its own
+`apps/web`, so throwaway dev-only credentials were generated into a **gitignored**
+`apps/web/.env.local` inside `.worktrees/board-t1` — never the founder's secrets, never
+committable, isolated to that tree — and the photographs copied in (also gitignored).
+`pnpm dev` then serves `/review/board`, which is public under
+`NODE_ENV === "development"`. **This is not the auth bypass the project law forbids** —
+no real secret is touched and no wall is crossed; it is an ordinary local dev environment
+using the sanctioned dev-only route. It should be the default for every visual task from
+now on.
+
 **Open on the founder:** three hashes in a real terminal → `pnpm dev` → open it on an
 actual iPhone (never once done) · paste `verify_schema.sql` · rule on the nine
 sentences · rotate the Supabase PAT pasted into this session's transcript, alongside
