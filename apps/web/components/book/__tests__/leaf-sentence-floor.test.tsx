@@ -56,7 +56,7 @@ vi.mock("@/components/materials", () => ({
     id: _id,
     context: _ctx,
     elevation: _el,
-    className: _cn,
+    className,
     style: _st,
   }: {
     children: React.ReactNode;
@@ -65,7 +65,7 @@ vi.mock("@/components/materials", () => ({
     elevation?: number;
     className?: string;
     style?: React.CSSProperties;
-  }) => createElement("div", { "data-testid": "mounted" }, children),
+  }) => createElement("div", { "data-testid": "mounted", className }, children),
   Torn: ({
     children,
     variant: _v,
@@ -198,16 +198,22 @@ function assertSentenceAfterImage(img: HTMLElement, sentence: HTMLElement, label
  * pushed the `.say` sentence below that overflow boundary — it disappeared
  * entirely. The fix (flex layout with a min-height floor) must be intact in the
  * React component. This assertion catches any regression that re-introduces a
- * clipping ancestor via inline style.
+ * clipping ancestor via inline style OR Tailwind class.
  *
- * Only inline styles are checked; class-based overflow is not detectable in
- * jsdom (CSS stylesheets are not evaluated). Inline styles are the only vector
- * that a programmatic mutation (the PROBE-8 scenario) would use.
+ * Two detection vectors:
+ * 1. Inline styles: overflow:hidden + fixed px height (direct mutations)
+ * 2. Tailwind classes: overflow-hidden OR overflow-clip on any ancestor with h-[Xpx]
+ *    (the jsdom-detectable variant of Tailwind's fixed-height classes)
+ *
+ * The second vector requires walking up and checking className for patterns because
+ * jsdom does not evaluate CSS stylesheets. The Mounted/MountBacking containers are
+ * the intended targets of this check.
  */
 function assertNoClippingAncestor(sentence: HTMLElement, label: string): void {
   const offenders: string[] = [];
   let node = sentence.parentElement;
   while (node !== null && node !== document.body) {
+    // Vector 1: Inline styles (high confidence)
     const s = node.style;
     const overflow = s.overflow || s.overflowY;
     const h = s.height;
@@ -216,6 +222,24 @@ function assertNoClippingAncestor(sentence: HTMLElement, label: string): void {
         `<${node.tagName.toLowerCase()} style="overflow:${overflow}; height:${h}">`,
       );
     }
+
+    // Vector 2: Tailwind classes (jsdom-detectable pattern)
+    // Look for overflow-hidden OR overflow-clip paired with any height class.
+    // Height patterns: h-N (shorthand: h-0, h-1, h-4, etc.) or h-[Xpx/dvh/etc]
+    // These are the mutation patterns that would reproduce PROBE-8 in Tailwind.
+    const className = node.className ?? "";
+    const hasOverflowClass =
+      /\boverflow-(?:hidden|clip)\b/.test(className) &&
+      /\bh-(?:\d+|\[[0-9.]+(?:px|dvh|dvw|em|rem|vh|vw|%)\])\b/.test(className);
+
+    if (hasOverflowClass) {
+      const overflowMatch = className.match(/\boverflow-(?:hidden|clip)\b/)?.[0];
+      const heightMatch = className.match(/\bh-(?:\d+|\[[^\]]+\])\b/)?.[0];
+      offenders.push(
+        `<${node.tagName.toLowerCase()} className="...${overflowMatch} ${heightMatch}...">`,
+      );
+    }
+
     node = node.parentElement;
   }
   expect(
@@ -287,27 +311,27 @@ describe("instrument — each assertion fires when the bug is present", () => {
   });
 
   /**
-   * Assertion C — Mutation B simulation.
+   * Assertion C — Two mutation vectors.
    *
-   * This is the direct equivalent of wrapping the caption <p> in
-   * `<div style={{ overflow: "hidden", height: "0px" }}>` inside
-   * ResurfacedItem — the mutation that reproduces PROBE-8.
+   * Vector 1 (inline style): Wrapping the caption <p> in
+   * `<div style={{ overflow: "hidden", height: "0px" }}>` inside ResurfacedItem.
+   * This is the original PROBE-8 scenario.
    *
-   * The DOM structure here is exactly what that mutation would produce:
-   * a fixed-height overflow:hidden ancestor between the sentence node
-   * and the root. assertNoClippingAncestor walks up from sentence.parentElement
-   * and must find and report this ancestor.
+   * Vector 2 (Tailwind class): Adding className with both overflow-hidden and h-[Xpx]
+   * to an ancestor (e.g., the Mounted container). The CEO's exact mutation:
+   * className={leftward ? "-ml-2 overflow-hidden h-4" : "-mr-2 overflow-hidden h-4"}
    *
-   * MUTATION B OUTPUT (this test captures what would appear in the full
-   * suite if the bug were reintroduced in ResurfacedItem.tsx):
+   * Both must trigger the assertion. This test proves Vector 1; a separate mutation
+   * proof comes after.
    *
+   * VECTOR 1 OUTPUT (inline style):
    *   AssertionError: instrument:b-sim: ancestor with overflow:hidden + fixed
    *   px height clips the sentence — PROBE-8 regression
    *
    *   Expected: []
    *   Received: ['<div style="overflow:hidden; height:0px">']
    */
-  it("Assertion C (Mutation B simulation): fires when overflow:hidden ancestor clips sentence", () => {
+  it("Assertion C (Mutation B simulation — inline style): fires when overflow:hidden ancestor clips sentence", () => {
     // Build the exact DOM structure Mutation B would introduce:
     // a div with overflow:hidden + height:0px wrapping the sentence.
     const clip = document.createElement("div");
@@ -347,8 +371,38 @@ describe("instrument — each assertion fires when the bug is present", () => {
     document.body.appendChild(clip2);
     const sentence2 = document.createElement("p");
     clip2.appendChild(sentence2);
-    expect(() => assertNoClippingAncestor(sentence2, "instrument:b-sim")).toThrow();
+    expect(() => assertNoClippingAncestor(sentence2, "instrument:b-sim-inline")).toThrow();
     document.body.removeChild(clip2);
+  });
+
+  /**
+   * VECTOR 2 (Tailwind class): overflow-hidden + h-[Xpx].
+   *
+   * This is the CEO's mutation on Mounted: adding both overflow-hidden and h-4
+   * to the className. The assertion now walks ancestors and checks for this pattern
+   * because jsdom does not evaluate CSS.
+   *
+   * VECTOR 2 OUTPUT:
+   *   AssertionError: instrument:b-sim-tailwind: ancestor with overflow:hidden + fixed
+   *   px height clips the sentence — PROBE-8 regression
+   *
+   *   Expected: []
+   *   Received: ['<div className="...overflow-hidden h-4...">']
+   */
+  it("Assertion C (Mutation B simulation — Tailwind class): fires when overflow-hidden + h-[Xpx] ancestor clips sentence", () => {
+    // Build a DOM structure with Tailwind classes that would reproduce PROBE-8:
+    // The CEO's exact mutation: Mounted gets className with "overflow-hidden h-4"
+    const clip = document.createElement("div");
+    clip.className = "mt-7 overflow-hidden h-4 flex justify-end";
+    document.body.appendChild(clip);
+
+    const sentence = document.createElement("p");
+    sentence.className = "leading-snug text-ink";
+    clip.appendChild(sentence);
+
+    // assertNoClippingAncestor must detect this Tailwind pattern and throw.
+    expect(() => assertNoClippingAncestor(sentence, "instrument:b-sim-tailwind")).toThrow();
+    document.body.removeChild(clip);
   });
 });
 
