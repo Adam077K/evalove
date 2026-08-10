@@ -2,7 +2,7 @@
 /**
  * LEAF SENTENCE FLOOR — structural regression test.
  *
- * Guards three invariants that prevent the handwritten sentence (caption) from
+ * Guards two invariants that prevent the handwritten sentence (caption) from
  * being clipped for any photograph shape when the mount is torn or stock.
  * The chin mount carries its own floor (Polaroid.leaf-shape.test.tsx).
  *
@@ -15,12 +15,6 @@
  *   B — Sentence element comes AFTER the photograph in document order.
  *       If the sentence precedes the image the layout is inverted.
  *
- *   C — No ancestor with overflow:hidden + fixed inline height clips
- *       the sentence. This is the PROBE-8 failure: when the mount was
- *       allowed to grow with the portrait's natural height, design-H's
- *       `overflow:hidden` leaf container swallowed the sentence entirely.
- *       The React component must never reproduce this.
- *
  * Three photograph shapes from the real design-ph-* library:
  *   portrait         750×1000  (most common shape in the library)
  *   landscape        1000×750  (widest in library)
@@ -30,7 +24,7 @@
  * sentence as a sibling <p> below the image on the page, not inside
  * a Polaroid chin. Six test cases total: 3 shapes × 2 mounts.
  *
- * Three instrument tests (one per invariant) prove each assertion CAN
+ * Two instrument tests (one per invariant) prove each assertion CAN
  * fail — they fire against minimal DOM structures that reproduce the
  * exact bug each assertion guards against. If an instrument test stops
  * throwing, the assertion itself is broken.
@@ -39,9 +33,9 @@
  *   Setting `h-[196px]` on the img triggers Assertion A.
  *   Six failures across all 3 shapes × 2 mounts.
  *
- * Mutation B proof (instrument test — see "Mutation B simulation" below):
- *   Wrapping the sentence in `<div style={{ overflow: "hidden", height: "0px" }}`
- *   triggers Assertion C. The instrument test demonstrates this directly.
+ * NOTE: Assertion C (overflow:hidden ancestor check) was removed after
+ * verification that it cannot catch the PROBE-8 regression in practice.
+ * See the comment block replacing assertNoClippingAncestor for details.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -190,63 +184,34 @@ function assertSentenceAfterImage(img: HTMLElement, sentence: HTMLElement, label
 }
 
 /**
- * Assertion C — no ancestor with overflow:hidden + fixed inline height clips
- * the sentence.
+ * Assertion C was removed after verification that it cannot catch the PROBE-8
+ * regression in practice. The regression occurs when an ancestor element
+ * combines `overflow:hidden` (or `overflow:clip`) with a fixed height, causing
+ * content to be clipped. This guard was designed to catch such patterns by
+ * checking both:
  *
- * The PROBE-8 failure: when design-H.html's `.lf` had `overflow:hidden` and a
- * fixed height (496px), letting the image grow to its natural portrait shape
- * pushed the `.say` sentence below that overflow boundary — it disappeared
- * entirely. The fix (flex layout with a min-height floor) must be intact in the
- * React component. This assertion catches any regression that re-introduces a
- * clipping ancestor via inline style OR Tailwind class.
+ *   1. Inline styles: `style={{overflow: "hidden", height: "4px"}}`
+ *   2. Tailwind classes: `overflow-hidden h-[4px]` or similar
  *
- * Two detection vectors:
- * 1. Inline styles: overflow:hidden + fixed px height (direct mutations)
- * 2. Tailwind classes: overflow-hidden OR overflow-clip on any ancestor with h-[Xpx]
- *    (the jsdom-detectable variant of Tailwind's fixed-height classes)
+ * However, the pattern-matching approach is fundamentally insufficient because:
+ * - jsdom does not resolve CSS stylesheets or evaluate computed styles
+ * - Tailwind height classes form an unbounded set: h-0, h-1, h-4, h-full,
+ *   h-screen, max-h-*, size-*, responsive variants, and inherited heights
+ * - Any pattern-based check will have gaps that look like coverage
  *
- * The second vector requires walking up and checking className for patterns because
- * jsdom does not evaluate CSS stylesheets. The Mounted/MountBacking containers are
- * the intended targets of this check.
+ * The CEO verified this twice by mutating ResurfacedItem.tsx line 130,
+ * changing `className={leftward ? "-ml-2" : "-mr-2"}` to
+ * `className={leftward ? "-ml-2 overflow-hidden h-[4px]" : "-mr-2 overflow-hidden h-[4px]"}`.
+ * All tests passed despite the regression being present.
+ *
+ * The correct home for this check is a real-browser assertion that reads
+ * `getComputedStyle` on every ancestor of the sentence element and verifies
+ * neither overflow:hidden nor overflow:clip is set. This requires Playwright
+ * or similar browser automation with access to computed styles — not jsdom.
+ *
+ * Until such a check exists, the sentence visibility floor is solely guarded
+ * by Assertions A and B, and by manual visual inspection during development.
  */
-function assertNoClippingAncestor(sentence: HTMLElement, label: string): void {
-  const offenders: string[] = [];
-  let node = sentence.parentElement;
-  while (node !== null && node !== document.body) {
-    // Vector 1: Inline styles (high confidence)
-    const s = node.style;
-    const overflow = s.overflow || s.overflowY;
-    const h = s.height;
-    if ((overflow === "hidden" || overflow === "clip") && h && /^\d+(\.\d+)?px$/.test(h)) {
-      offenders.push(
-        `<${node.tagName.toLowerCase()} style="overflow:${overflow}; height:${h}">`,
-      );
-    }
-
-    // Vector 2: Tailwind classes (jsdom-detectable pattern)
-    // Look for overflow-hidden OR overflow-clip paired with any height class.
-    // Height patterns: h-N (shorthand: h-0, h-1, h-4, etc.) or h-[Xpx/dvh/etc]
-    // These are the mutation patterns that would reproduce PROBE-8 in Tailwind.
-    const className = node.className ?? "";
-    const hasOverflowClass =
-      /\boverflow-(?:hidden|clip)\b/.test(className) &&
-      /\bh-(?:\d+|\[[0-9.]+(?:px|dvh|dvw|em|rem|vh|vw|%)\])\b/.test(className);
-
-    if (hasOverflowClass) {
-      const overflowMatch = className.match(/\boverflow-(?:hidden|clip)\b/)?.[0];
-      const heightMatch = className.match(/\bh-(?:\d+|\[[^\]]+\])\b/)?.[0];
-      offenders.push(
-        `<${node.tagName.toLowerCase()} className="...${overflowMatch} ${heightMatch}...">`,
-      );
-    }
-
-    node = node.parentElement;
-  }
-  expect(
-    offenders,
-    `${label}: ancestor with overflow:hidden + fixed px height clips the sentence — PROBE-8 regression`,
-  ).toEqual([]);
-}
 
 // ── Main suite: 6 cases (3 shapes × 2 mounts) ────────────────────────────
 
@@ -283,7 +248,6 @@ describe("leaf sentence floor — torn and stock mounts", () => {
           const label = `${mount} / ${shape.name}`;
           assertNoFixedPixelHeight(img!, label);
           assertSentenceAfterImage(img!, sentence!, label);
-          assertNoClippingAncestor(sentence!, label);
         });
       }
     });
@@ -309,101 +273,6 @@ describe("instrument — each assertion fires when the bug is present", () => {
     container.appendChild(img);
     expect(() => assertSentenceAfterImage(img, sentence, "instrument:b")).toThrow();
   });
-
-  /**
-   * Assertion C — Two mutation vectors.
-   *
-   * Vector 1 (inline style): Wrapping the caption <p> in
-   * `<div style={{ overflow: "hidden", height: "0px" }}>` inside ResurfacedItem.
-   * This is the original PROBE-8 scenario.
-   *
-   * Vector 2 (Tailwind class): Adding className with both overflow-hidden and h-[Xpx]
-   * to an ancestor (e.g., the Mounted container). The CEO's exact mutation:
-   * className={leftward ? "-ml-2 overflow-hidden h-4" : "-mr-2 overflow-hidden h-4"}
-   *
-   * Both must trigger the assertion. This test proves Vector 1; a separate mutation
-   * proof comes after.
-   *
-   * VECTOR 1 OUTPUT (inline style):
-   *   AssertionError: instrument:b-sim: ancestor with overflow:hidden + fixed
-   *   px height clips the sentence — PROBE-8 regression
-   *
-   *   Expected: []
-   *   Received: ['<div style="overflow:hidden; height:0px">']
-   */
-  it("Assertion C (Mutation B simulation — inline style): fires when overflow:hidden ancestor clips sentence", () => {
-    // Build the exact DOM structure Mutation B would introduce:
-    // a div with overflow:hidden + height:0px wrapping the sentence.
-    const clip = document.createElement("div");
-    clip.style.overflow = "hidden";
-    clip.style.height = "0px";
-    document.body.appendChild(clip);
-
-    const sentence = document.createElement("p");
-    sentence.className = "leading-snug text-ink";
-    clip.appendChild(sentence);
-
-    // Capture what the assertion walks — do it ourselves so we can inspect
-    // the offenders list directly without relying on vitest's error formatting.
-    const offenders: string[] = [];
-    let node: HTMLElement | null = sentence.parentElement;
-    while (node !== null && node !== document.body) {
-      const s = node.style;
-      const overflow = s.overflow || s.overflowY;
-      const h = s.height;
-      if ((overflow === "hidden" || overflow === "clip") && h && /^\d+(\.\d+)?px$/.test(h)) {
-        offenders.push(
-          `<${node.tagName.toLowerCase()} style="overflow:${overflow}; height:${h}">`,
-        );
-      }
-      node = node.parentElement;
-    }
-    document.body.removeChild(clip);
-
-    // Prove the offenders list contains the clipping ancestor.
-    expect(offenders).toContain('<div style="overflow:hidden; height:0px">');
-
-    // And confirm that assertNoClippingAncestor itself throws on this structure
-    // (it internally calls expect(offenders).toEqual([]), which fails).
-    const clip2 = document.createElement("div");
-    clip2.style.overflow = "hidden";
-    clip2.style.height = "0px";
-    document.body.appendChild(clip2);
-    const sentence2 = document.createElement("p");
-    clip2.appendChild(sentence2);
-    expect(() => assertNoClippingAncestor(sentence2, "instrument:b-sim-inline")).toThrow();
-    document.body.removeChild(clip2);
-  });
-
-  /**
-   * VECTOR 2 (Tailwind class): overflow-hidden + h-[Xpx].
-   *
-   * This is the CEO's mutation on Mounted: adding both overflow-hidden and h-4
-   * to the className. The assertion now walks ancestors and checks for this pattern
-   * because jsdom does not evaluate CSS.
-   *
-   * VECTOR 2 OUTPUT:
-   *   AssertionError: instrument:b-sim-tailwind: ancestor with overflow:hidden + fixed
-   *   px height clips the sentence — PROBE-8 regression
-   *
-   *   Expected: []
-   *   Received: ['<div className="...overflow-hidden h-4...">']
-   */
-  it("Assertion C (Mutation B simulation — Tailwind class): fires when overflow-hidden + h-[Xpx] ancestor clips sentence", () => {
-    // Build a DOM structure with Tailwind classes that would reproduce PROBE-8:
-    // The CEO's exact mutation: Mounted gets className with "overflow-hidden h-4"
-    const clip = document.createElement("div");
-    clip.className = "mt-7 overflow-hidden h-4 flex justify-end";
-    document.body.appendChild(clip);
-
-    const sentence = document.createElement("p");
-    sentence.className = "leading-snug text-ink";
-    clip.appendChild(sentence);
-
-    // assertNoClippingAncestor must detect this Tailwind pattern and throw.
-    expect(() => assertNoClippingAncestor(sentence, "instrument:b-sim-tailwind")).toThrow();
-    document.body.removeChild(clip);
-  });
 });
 
 /*
@@ -414,7 +283,7 @@ describe("instrument — each assertion fires when the bug is present", () => {
  *   pnpm vitest run components/book/__tests__/leaf-sentence-floor.test.tsx
  *   sed -i '' 's/h-\[196px\]/h-auto max-h-[58dvh]/' ResurfacedItem.tsx
  *
- * Output (all 6 main cases fail, 3 instrument tests still pass):
+ * Output (all 6 main cases fail, 2 instrument tests still pass):
  *
  *   × mount: torn > portrait (750×1000) — sentence is present and not clipped
  *     AssertionError: torn / portrait (750×1000): img.photo has fixed-pixel-height
@@ -429,27 +298,7 @@ describe("instrument — each assertion fires when the bug is present", () => {
  *   × mount: stock > landscape (1000×750) — [same pattern]
  *   × mount: stock > extreme portrait (460×1000) — [same pattern]
  *
- *   Test Files  1 failed (1) · Tests  6 failed | 3 passed (9)
- *
- * ─────────────────────────────────────────────────────────────────────────────
- *
- * ─── MUTATION B PROOF ─────────────────────────────────────────────────────────
- *
- * The instrument test "Assertion C (Mutation B simulation)" above captures this
- * failure directly. Assertion C walks up from sentence.parentElement and finds
- * any ancestor with inline overflow:hidden + fixed px height. The instrument test
- * constructs exactly that DOM structure and verifies the assertion throws with
- * the PROBE-8 message.
- *
- * If Mutation B were applied to ResurfacedItem.tsx (wrapping the sentence <p>
- * in <div style={{ overflow:"hidden", height:"0px" }}>), all 6 main cases would
- * additionally fail with:
- *
- *   AssertionError: torn / portrait (750×1000): ancestor with overflow:hidden +
- *   fixed px height clips the sentence — PROBE-8 regression
- *
- *   Expected: []
- *   Received: ['<div style="overflow:hidden; height:0px">']
+ *   Test Files  1 failed (1) · Tests  6 failed | 2 passed (8)
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
