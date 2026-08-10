@@ -5,11 +5,22 @@
 # the screen captures those reports cite. Reference material for the
 # people building the product, not an input to the build.
 #
-# If Vercel's project root is ever set to `apps/web` rather than the
-# repository root, this file stops applying — Vercel reads
-# `.vercelignore` from the deployment root. In that case the paths
-# below are already outside the upload and this file is harmless, but
-# check before assuming it is doing anything.
+# THAT CAVEAT RESOLVED — THIS FILE IS NOW THE DORMANT ONE.
+#
+# It used to end on an open question: "if Vercel's project root is ever
+# set to `apps/web` rather than the repository root, this file stops
+# applying." The root IS `apps/web` now, deliberately. `apps/web` is a
+# self-contained Next.js project with its own package.json and its own
+# pnpm lockfile; pointing Vercel at the repository root would aim it at
+# `gsa-startup-kit`, the agent kit, which is not the product.
+# See docs/03-system-design/RUNBOOK-deploy-vercel.md §2.
+#
+# So Vercel reads `apps/web/.vercelignore`, not this file. Every path
+# below is already outside `apps/web` and therefore already outside the
+# upload — this file changes nothing under the current configuration.
+# It is kept because it stays correct for the other case (anyone who
+# moves the root back gets these exclusions again), and because
+# deleting it would delete the record of why the root is where it is.
 docs/
 war-room/
 war-room-dashboard/

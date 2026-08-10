@@ -1,0 +1,53 @@
+# apps/web/.vercelignore — the deployment root's ignore file.
+#
+# WHY THIS FILE EXISTS AND NOT ONLY THE ONE AT THE REPOSITORY ROOT.
+#
+# Vercel reads `.vercelignore` from the DEPLOYMENT ROOT, which is whatever the
+# project's "Root Directory" setting points at. This project sets Root Directory
+# to `apps/web` (see docs/03-system-design/RUNBOOK-deploy-vercel.md §2), so THIS
+# file is the one that applies and `../../.vercelignore` is not.
+#
+# That was the open caveat written into the repository-root file: it warned that
+# it would stop applying if the root were ever set to `apps/web`, and left the
+# question there. It is settled now — the root IS `apps/web`, deliberately, and
+# both files say so. Do not delete either one without reading the other.
+#
+# Most of what the root file excluded (docs/, war-room/, guides/, .agent/,
+# .claude/, root *.png) is already outside `apps/web` and therefore already
+# outside the upload. This file only has to deal with what is INSIDE apps/web
+# and is not an input to the build.
+#
+# UNVERIFIED, and it matters: `.vercelignore` is documented for the file upload
+# a CLI deploy performs. Whether it also prunes the working tree of a Git-
+# integration build has not been tested by anyone on this project — nobody has
+# deployed this configuration yet. Treat the entries below as a size and
+# hygiene measure, never as a security boundary. Nothing secret is kept out of
+# a deployment by this file; nothing secret is in the repository at all.
+
+# Playwright end-to-end suite and its config. Never imported by the build —
+# `next build` compiles from app/, components/ and lib/ only.
+e2e/
+playwright.config.ts
+
+# Vitest config. Same reason.
+vitest.config.ts
+
+# The SQL schema. Applied to Supabase by a human from the dashboard or the
+# Supabase CLI (RUNBOOK-deploy-vercel.md §4), never by the Next.js build. No
+# module imports this directory.
+supabase/
+
+# Test and browser-automation output. Local artefacts; also gitignored, listed
+# here so a stray local run cannot be uploaded by a CLI deploy.
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# NOT excluded, deliberately:
+#   __tests__/   — colocated under lib/ and app/. Left in the upload because
+#                  nobody has verified that no shipping module reaches into one
+#                  for a fixture, and a wrong guess here is a broken build on
+#                  the founder's first deploy rather than a saved megabyte.
+#   public/      — every byte of it is served, including the two ~6 MB PNGs the
+#                  service-worker build already warns about (see §7).
