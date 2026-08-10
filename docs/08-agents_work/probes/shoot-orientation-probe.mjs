@@ -1,6 +1,13 @@
-import { chromium } from "@playwright/test";
+// Playwright lives in apps/web, this script lives in docs/. ESM resolves from
+// the importing file, so resolve it explicitly and the script runs from anywhere.
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as presolve } from "node:path";
+const HERE = dirname(fileURLToPath(import.meta.url));
+const req = createRequire(presolve(HERE, "../../../apps/web/package.json"));
+const { chromium } = req("@playwright/test");
 
-const OUT = "/Users/adamks/VibeCoding/evalove";
+const OUT = "/Users/adamks/VibeCoding/evalove/.worktrees/board-probe/docs/08-agents_work/probes/shots";
 const BASE = "http://127.0.0.1:4599/design-probe-orient.html";
 
 const PANELS = [
