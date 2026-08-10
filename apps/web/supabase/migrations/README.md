@@ -61,7 +61,7 @@ Three places in this schema add something beyond the flat SQL block in `LDR-APP-
 
 **A3 — `purge_audit_item_idx` and `purge_audit_outstanding_idx`** (migration 07). Two indexes on `purge_audit` supporting its two real read patterns: "what happened to this specific item" and "what purges are still outstanding." Both are cheap on an append-only table that only grows when something is actually deleted for good.
 
-## The twelve migrations, in order
+## The migrations, in order
 
 | # | File | Creates |
 |---|------|---------|
@@ -77,5 +77,11 @@ Three places in this schema add something beyond the flat SQL block in `LDR-APP-
 | 10 | `20260802090900_rls_deny_all.sql` | RLS enabled, zero policies, every table |
 | 11 | `20260802091000_storage_media_bucket.sql` | the private `media` storage bucket + prefix-enforcement trigger |
 | 12 | `20260807120000_photos_author_optional.sql` | `photos.author_member_id` becomes optional (2026-08-07 founder decision: unsigned photographs are shared, not authored) |
+| 13 | `20260808_add_people_column.sql` | `photos.people`, plus a backfill of the 52 ingested photographs |
+| 14 | `20260810120000_date_plans.sql` | `date_plans` — a date one of them proposes and the other agrees to |
 
-Each has a matching down-migration in `./down/`, reversed in the same numeric order (12 → 01).
+Each of 01–12 has a matching down-migration in `./down/`, reversed in the same numeric order. 14 has one too (`down/20260810120000_date_plans.down.sql`); 13 does not.
+
+**13 and 14 have never been applied anywhere, and that is a stronger claim than the "unverified" above.** For 01–12 the honest statement is the one in "Known state": tables exist, which files produced them is unknown. 13 says in its own header that it is unapplied. 14 was written on 2026-08-10 and has never been executed against any database, local or hosted — no agent in this environment can run it, and none should try to. Both need the founder to apply them by hand, and both are Irreversible tier like everything else in this directory.
+
+14 does not continue the `NNNN` sequence of 01–12 because it is not part of that founding set. It carries a Supabase CLI timestamp, the same as 12, it depends only on migration 02 (`members`), and it can be applied on its own at any point after that one.

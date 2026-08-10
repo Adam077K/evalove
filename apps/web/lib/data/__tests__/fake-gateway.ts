@@ -16,15 +16,18 @@
  * would go silently untested by a fake that ignores the cursor.
  */
 
+import { DataError } from "../errors";
 import type {
   DataGateway,
+  DatePlanPatch,
+  DatePlanQuery,
   MemberRow,
   PhotoPageQuery,
   PhotoPatch,
   BookEntryPatch,
   PurgeAuditInsert,
 } from "../gateway";
-import type { BookEntryRow, PhotoRow } from "../rows";
+import type { BookEntryRow, DatePlanRow, PhotoRow } from "../rows";
 
 export const EVA_ROW: MemberRow = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -94,10 +97,33 @@ export function bookEntryRow(
   return { ...base, ...overrides };
 }
 
+/** A minimal, valid `DatePlanRow`. Tests override what they care about. */
+export function datePlanRow(
+  overrides: Partial<DatePlanRow> &
+    Pick<DatePlanRow, "id" | "kind" | "proposed_by" | "shared_day" | "window_id">,
+): DatePlanRow {
+  const base: DatePlanRow = {
+    id: overrides.id,
+    kind: overrides.kind,
+    status: "proposed",
+    proposed_by: overrides.proposed_by,
+    shared_day: overrides.shared_day,
+    window_id: overrides.window_id,
+    starts_at: "2026-08-14T16:00:00.000Z",
+    note: null,
+    answered_by: null,
+    answered_at: null,
+    happened_at: null,
+    created_at: "2026-08-10T12:00:00.000Z",
+  };
+  return { ...base, ...overrides };
+}
+
 class FakeGateway implements DataGateway {
   photos: PhotoRow[] = [];
   members: MemberRow[] = [EVA_ROW, ADAM_ROW];
   bookEntries: BookEntryRow[] = [];
+  datePlans: DatePlanRow[] = [];
   private notImplemented(method: string): never {
     throw new Error(
       `FakeGateway.${method} is not implemented — the functions under test do not call it.`,
@@ -196,6 +222,87 @@ class FakeGateway implements DataGateway {
   updateBookEntry(_id: string, _patch: BookEntryPatch): Promise<BookEntryRow | null> {
     return this.notImplemented("updateBookEntry");
   }
+
+  /* -- date plans: real, because lib/data/dates.ts is tested against this -- */
+
+  /**
+   * Reimplements `date_plans_live_slot_idx` — the PARTIAL unique index on
+   * (kind, shared_day, window_id) where status is 'proposed' or 'agreed'.
+   *
+   * Written out rather than stubbed because `proposeDate`'s whole
+   * double-tap-is-idempotent branch hangs off this index refusing a second
+   * insert. A fake that accepted every insert would let that branch go
+   * permanently untested while the suite stayed green.
+   */
+  async insertDatePlan(row: DatePlanRow): Promise<DatePlanRow> {
+    const clash = this.datePlans.find(
+      (p) =>
+        p.kind === row.kind &&
+        p.shared_day === row.shared_day &&
+        p.window_id === row.window_id &&
+        (p.status === "proposed" || p.status === "agreed"),
+    );
+    if (clash !== undefined && (row.status === "proposed" || row.status === "agreed")) {
+      throw new DataError("conflict", "insertDatePlan: duplicate key value", {
+        code: "23505",
+      });
+    }
+    this.datePlans.push(row);
+    return row;
+  }
+
+  async findDatePlanById(id: string): Promise<DatePlanRow | null> {
+    return this.datePlans.find((p) => p.id === id) ?? null;
+  }
+
+  async findLiveDatePlanInSlot(args: {
+    kind: string;
+    sharedDay: string;
+    windowId: string;
+  }): Promise<DatePlanRow | null> {
+    return (
+      this.datePlans.find(
+        (p) =>
+          p.kind === args.kind &&
+          p.shared_day === args.sharedDay &&
+          p.window_id === args.windowId &&
+          (p.status === "proposed" || p.status === "agreed"),
+      ) ?? null
+    );
+  }
+
+  async listDatePlans(query: DatePlanQuery): Promise<DatePlanRow[]> {
+    let rows = [...this.datePlans];
+    if (query.statuses !== undefined) {
+      rows = rows.filter((p) => query.statuses!.includes(p.status));
+    }
+    if (query.sharedDay !== undefined) {
+      rows = rows.filter((p) => p.shared_day === query.sharedDay);
+    }
+    if (query.startingAtOrAfter !== undefined) {
+      rows = rows.filter((p) => p.starts_at >= query.startingAtOrAfter!);
+    }
+    rows.sort((a, b) =>
+      a.starts_at !== b.starts_at
+        ? a.starts_at.localeCompare(b.starts_at)
+        : a.id.localeCompare(b.id),
+    );
+    return rows.slice(0, query.limit);
+  }
+
+  async updateDatePlan(
+    id: string,
+    patch: DatePlanPatch,
+  ): Promise<DatePlanRow | null> {
+    const index = this.datePlans.findIndex((p) => p.id === id);
+    if (index === -1) return null;
+    const current = this.datePlans[index];
+    if (current === undefined) return null;
+    const next: DatePlanRow = { ...current, ...patch };
+    this.datePlans[index] = next;
+    return next;
+  }
+
   createSignedUploadUrl(_path: string): Promise<{ url: string; token: string }> {
     return this.notImplemented("createSignedUploadUrl");
   }

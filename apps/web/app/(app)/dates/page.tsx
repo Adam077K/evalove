@@ -1,17 +1,106 @@
-/* eslint-disable @next/next/no-img-element -- the skylines are keyed
-   illustration plates; the optimizer must never re-encode their alpha. */
-
 import type { Metadata } from "next";
-import { Column } from "@/components/chrome/Column";
-import { Paper, Seam } from "@/components/materials";
-import { DatesExplorer } from "@/components/dates/DatesExplorer";
-import { HostedDates } from "@/components/dates/HostedDates";
+import { DatesScreen } from "@/components/dates/DatesScreen";
 import { WINDOW_STRINGS } from "@/lib/window-strings";
-import { currentWindow } from "@/lib/shared-day";
+import { currentWindow, sharedDayOf, SHARED_DAY_OPEN_TZ } from "@/lib/shared-day";
+import { dateDeps, datesBetweenThem, listPhotos, photoDeps } from "@/lib/data";
+
+import type { DatePlanPhotos } from "@/components/dates/BetweenThem";
+import type { MemberLite } from "@/components/dates/plan-copy";
+import type { DatePlan } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Dates — Eva & Adam",
 };
+
+/** Reads the live tables. Never prerendered. */
+export const dynamic = "force-dynamic";
+
+/** How many happened dates get their photographs pulled. */
+const PAGES_SHOWN = 4;
+
+interface LiveDates {
+  proposed: DatePlan[];
+  agreed: DatePlan[];
+  happened: DatePlan[];
+  members: MemberLite[];
+  photosByDay: DatePlanPhotos;
+}
+
+/**
+ * Everything the two live sections need, or nothing at all.
+ *
+ * `date_plans` is the one table in this schema that has never been applied
+ * anywhere — it is handed to the founder as SQL to run by hand. Until they run
+ * it, every read here fails, and this page must still be a working screen:
+ * the proposal above needs no database, the seven kinds are content, and the
+ * idea shelf is a fixture. So a failed read yields empty lists and a loud,
+ * structured server log — never a 500, and never a caught-and-forgotten
+ * silence. The truth surfaces where it matters: the first tap on Ask returns
+ * the sentence naming the migration.
+ */
+async function liveDates(): Promise<LiveDates> {
+  const empty: LiveDates = {
+    proposed: [],
+    agreed: [],
+    happened: [],
+    members: [],
+    photosByDay: {},
+  };
+
+  try {
+    const deps = dateDeps();
+    const [between, roster] = await Promise.all([
+      datesBetweenThem(deps),
+      deps.gateway.listMembers(),
+    ]);
+
+    const members: MemberLite[] = roster.map((m) => ({
+      id: m.id,
+      slug: m.slug,
+      displayName: m.display_name,
+    }));
+
+    // The page a date left behind: the photographs filed under its own shared
+    // day. `photos.shared_day` is the entire link — no join table, no
+    // `photo_id` column. Every kind, not only dailies: a photograph either of
+    // them left on that day is what the date produced, whatever the app
+    // happened to label it.
+    const photos = photoDeps();
+    const days = between.happened.slice(0, PAGES_SHOWN).map((p) => p.sharedDay);
+    const pages = await Promise.all(
+      days.map(async (day) => {
+        const { photos: found } = await listPhotos(photos, {
+          from: day,
+          to: day,
+          limit: 4,
+        });
+        return [day, found] as const;
+      }),
+    );
+
+    return {
+      proposed: between.proposed,
+      agreed: between.agreed,
+      happened: between.happened,
+      members,
+      photosByDay: Object.fromEntries(pages),
+    };
+  } catch (thrown) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        operation: "GET /dates",
+        kind: "dates_read_unavailable",
+        message: thrown instanceof Error ? thrown.message : String(thrown),
+        note:
+          "the Dates page rendered without the proposed/agreed/happened " +
+          "sections. If this is a missing relation, apply " +
+          "supabase/migrations/20260810120000_date_plans.sql.",
+      }),
+    );
+    return empty;
+  }
+}
 
 /**
  * Dates — night window above, a torn edge, two shelves of paper below.
@@ -49,91 +138,21 @@ export const metadata: Metadata = {
  * `.card` here reads as "a plate laid on the page" (globals.css); it
  * needs a page under it.
  */
-export default function DatesPage() {
+export default async function DatesPage() {
   const now = new Date();
   const windowId = currentWindow(now);
   const windowLine = windowId !== null ? (WINDOW_STRINGS[windowId] ?? null) : null;
+  const live = await liveDates();
 
   return (
-    <>
-      {/* DECO — the window: the night sky, the window sentence, the two
-          cities, and the shores. The distance between them.
-          Place, not time: renders identically in both modes (the --night-*
-          tokens are :root constants). */}
-      <section className="relative bg-night-sky pt-9">
-        <div className="px-5 md:px-8">
-          {/* The window sentence — the app's own voice, live from
-              lib/shared-day. Never a w-code. */}
-          {windowLine !== null && (
-            <p className="type-title mt-6 italic text-night-ink">
-              {windowLine}.
-            </p>
-          )}
-
-          {/* The two cities — Poiret One, DECO only, ≥32px only.
-              New York first; the gold is hers (brass, like her pin). */}
-          <h2 className="font-deco mt-10 text-[34px] tracking-[0.18em] text-night-gold">
-            NEW YORK
-          </h2>
-          <h2 className="font-deco mt-1 text-[32px] tracking-[0.22em] text-night-mute">
-            TEL AVIV
-          </h2>
-        </div>
-
-        {/* The window view — two shores and the space between.
-            The plates are keyed (border-connected flood fill, §9.7).
-            Neither city is "the far one"; they are both "here", one per
-            person. Height judged by eye: 228 brings the crown up under
-            the names with ~30px of true sky left above it. */}
-        <div className="relative mt-2 h-[228px] overflow-hidden">
-          <img
-            src="/materials/deco-nyc-shore.webp"
-            alt=""
-            aria-hidden="true"
-            width={640}
-            height={638}
-            className="absolute -bottom-10 -left-4 w-[62%] max-w-none"
-          />
-          <img
-            src="/materials/deco-tlv-shore.webp"
-            alt=""
-            aria-hidden="true"
-            width={724}
-            height={525}
-            className="absolute -bottom-4 -right-6 w-[58%] max-w-none"
-          />
-        </div>
-      </section>
-
-      {/* The Seam — tears out of the night above into the paper below.
-          rotated = point-reflected 180°: its night-sky falloff sits at
-          the top (matching bg-night-sky above), its transparent edge at
-          the bottom lets the Paper show through. 190px is the smallest
-          height above the ~180 crop floor for the fibre strip at 393px. */}
-      <Seam rotated height={190} />
-
-      {/* PAPER — the dates content.
-          `<Paper>` wraps `<Column>` so every `.card` reads as a plate
-          laid on the page (globals.css). */}
-      <Paper stock="coldpress">
-        <Column>
-          <header className="mb-6">
-            <p className="type-micro text-mute">for the two of them</p>
-            <h1 className="type-hero mt-1.5 text-ink">Dates</h1>
-          </header>
-
-          {/* space-y-8, not the original space-y-10 — part of the same
-              first-paint dock-clip fix as /book: at 393x852 "The idea
-              shelf" heading below sat 3-20px inside the fixed dock's
-              tray on arrival (tray from 783px). Trimmed here rather than
-              inside HostedDates' own seeded rhythm, which stays as
-              designed. */}
-          <div className="space-y-8">
-            <HostedDates />
-            <DatesExplorer />
-          </div>
-        </Column>
-      </Paper>
-    </>
+    <DatesScreen
+      windowLine={windowLine}
+      today={sharedDayOf(now, SHARED_DAY_OPEN_TZ)}
+      proposed={live.proposed}
+      agreed={live.agreed}
+      happened={live.happened}
+      members={live.members}
+      photosByDay={live.photosByDay}
+    />
   );
 }

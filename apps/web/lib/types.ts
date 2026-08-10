@@ -304,6 +304,63 @@ export interface DateTurn {
 }
 
 /* ------------------------------------------------------------------ *
+ * Date plans (a date they go on, not a game the app runs)
+ * ------------------------------------------------------------------ */
+
+/**
+ * `proposed` — one of them has asked. Nobody has answered.
+ * `agreed`   — the other said yes. It is going to happen at `startsAt`.
+ * `declined` — the other said not this one. An ordinary answer.
+ * `happened` — it happened; the photographs on `sharedDay` are its page.
+ *
+ * There is deliberately no status for a date that was agreed and then quietly
+ * did not happen, and no job that could write one. Same rule as `DateStatus`
+ * above: nothing here decides that something of theirs has run out.
+ */
+export type DatePlanStatus = "proposed" | "agreed" | "declined" | "happened";
+
+/**
+ * A date one of them proposed and the other answered.
+ *
+ * Distinct from `DateSession`, which is a turn-taking game the app hosts. This
+ * one has a clock in it: it sits at a real instant inside a named window of a
+ * named shared day, and afterwards it is over.
+ *
+ * `sharedDay` is the whole link to the photographs a date left behind — there
+ * is no `photoId` here and there must not be one. See the header of
+ * `supabase/migrations/20260810120000_date_plans.sql` for why the day is the
+ * page.
+ */
+export interface DatePlan {
+  id: Uuid;
+  /** A slug from `lib/dates/kinds.ts`, e.g. `'same-film'`. */
+  kind: string;
+  status: DatePlanStatus;
+  proposedBy: Uuid;
+
+  /** The named day it sits in, and the band inside that day. */
+  sharedDay: IsoDate;
+  /** One of `w1`..`w9`, per `lib/shared-day/windows.ts`. */
+  windowId: string;
+  /**
+   * The instant that (day, window) pair resolved to when it was proposed.
+   *
+   * Stored rather than recomputed: a later tzdata correction must not silently
+   * move a date one of them has already said yes to.
+   */
+  startsAt: IsoDateTime;
+
+  /** What the proposer wrote with it. Most of these are one tap. */
+  note?: string;
+
+  answeredBy?: Uuid;
+  answeredAt?: IsoDateTime;
+  happenedAt?: IsoDateTime;
+
+  createdAt: IsoDateTime;
+}
+
+/* ------------------------------------------------------------------ *
  * Activity index
  * ------------------------------------------------------------------ */
 

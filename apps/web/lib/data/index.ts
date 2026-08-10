@@ -9,6 +9,7 @@
 
 import { supabaseGateway } from "./supabase-gateway";
 import type { BookDeps } from "./book";
+import type { DateDeps } from "./dates";
 import type { PhotoDeps } from "./photos";
 
 export { DataError, isDataError, statusOf } from "./errors";
@@ -47,6 +48,27 @@ export type {
 export { bookManifest, patchBookEntry } from "./book";
 export type { BookDeps, PatchBookEntryInput } from "./book";
 
+export {
+  MAX_DATE_PLANS_PER_READ,
+  MAX_DAYS_AHEAD,
+  MAX_NOTE_LENGTH,
+  answerDatePlan,
+  datesBetweenThem,
+  datesOnDay,
+  listDatePlans,
+  markDateHappened,
+  proposeDate,
+} from "./dates";
+export type {
+  AnswerDateInput,
+  DateAnswer,
+  DateDeps,
+  DatesBetweenThem,
+  ListDatePlansInput,
+  ProposeDateInput,
+  ProposeDateResult,
+} from "./dates";
+
 export type { DataGateway } from "./gateway";
 
 /** Production wiring: the Supabase gateway, the real clock, real uuids. */
@@ -60,4 +82,12 @@ export function photoDeps(): PhotoDeps {
 
 export function bookDeps(): BookDeps {
   return { gateway: supabaseGateway() };
+}
+
+export function dateDeps(): DateDeps {
+  return {
+    gateway: supabaseGateway(),
+    now: () => new Date(),
+    newId: () => globalThis.crypto.randomUUID(),
+  };
 }
