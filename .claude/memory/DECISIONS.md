@@ -24,6 +24,61 @@
 
 <!-- Entries below this line, most-recent first. -->
 
+## 2026-08-10 — The board becomes /today; the leaf takes the photograph; the approved design cannot add a photograph
+
+Decision-maker: Founder, via CEO. Tier: design-defining, no code merged.
+
+**Context:** The board port was moved from last to next in the build order. Three
+decisions were taken and one hole was found that no worker can close.
+
+**Decision 1 — the book leaf.** The mount takes the photograph's real shape and the
+handwritten line keeps a **guaranteed floor**; the photograph takes the remainder.
+Nothing may ever be silently clipped. *Rationale:* design-H's `.lf .mount img` is a
+266x196 landscape box and 38 of 46 photographs are portrait, so the mock crops the
+common case; React's `Polaroid.tsx` uses fixed portrait aspects (`795/1024`,
+`900/1024`) with `object-cover` and crops the other 8. The two crop in opposite
+directions. A silently eaten sentence is indistinguishable from one never written.
+
+**Decision 2 — the route.** **The board becomes `/today`.** Not a shell: a Next layout
+does not unmount between siblings, so board-as-shell keeps GSAP Draggables and 46 `img`
+tags live behind `/send`. The Dock stays. The board's own ribbon and two chips **do not
+ship** — the piles are the ribbon; ship both and 250px of an 852px screen is two
+navigation systems doing one job, undoing the deco quarantine. Chrome arithmetic is
+even: design-H's `CHROME=150` against the shipped `--band-height 56` + `--dock-footprint
+68-94`.
+
+**Decision 3 — where adding lives.** **Dock now, table-native object later.** The
+approved design has no way to add a photograph: grep of all 2415 lines for
+`send|upload|camera|input type=file|pocket|sign out` returns **one** match, the word
+"send" inside the prose of a date idea. design-H is a place to look at memories with no
+way to make one. Shipping T1-T6 with the Dock unblocks the port; the table-native
+affordance becomes its own ticket, sequenced **after** the founder has used the real
+board on a phone rather than before.
+
+**The finding that reframes the port.** design-H has **no layout** — 2400 lines of
+hand-placed left/top/rotation in a world fixed at 950x2860. `STACK_AT` is a literal
+array of **twelve** positions, `DAYS` has **twelve** entries, and `if (!at) return;`
+**silently drops the thirteenth day.** They are on day twelve. The load-bearing task is
+therefore *inventing the placement rule design-H never had* — and that rule must decide
+where the **bare wood** goes, not only where objects go, because six of the mock's
+objects cannot ship and an ordinary day puts two photographs on a 950x2860 table.
+
+**Four corrections to the CEO's own brief, all verified.** (1) Songs are **not** blocked
+by the MIME gates — a link carries no bytes; they are blocked because `book_entries`
+carries `check ((photo_id is null) <> (date_id is null))`, two arms and no third for a
+URL. Cheapest of the three media types: one new table. (2) There is a **fourth** gate,
+`photo_kind as enum ('daily','book')`, which makes audio a two-migration dance. (3)
+`patchBookEntry` belongs to `/book`, not this port — the board curates nothing. (4) The
+190px is **inverted**: removing the Seam *gave* `/book`, `/send` and `/pocket` that space
+back.
+
+**Reversibility:** fully reversible — nothing merged, `main` unmoved at `238441c`.
+**Owner:** ceo (session ceo-3-1785631504)
+**Affects:** whoever executes T1-T6 (`docs/08-agents_work/2026-08-10-board-port-decomposition.md`);
+frontend-engineer on `feat/leaf-takes-shape`. **Two founder rulings still open:** whether
+a visible count survives in the day overlay (design-H renders counts; the shipped law says
+none), and whether the Band renders on `/today` at all.
+
 ## 2026-08-06 — QA-Lead PASS on integration/wave4 (three-places + today-margins + book-proportion)
 
 **Context:** Full-tier gate (21 files, +1106/-199 — auto-Full on LOC alone) on the merge of `feat/three-places`, `feat/today-margins`, `feat/book-proportion` into `integration/wave4` ahead of `main`. No API/DB/auth/billing/migration touched. `code-reviewer`, `security-engineer`, `adversary-engineer` all returned PASS/zero-blocking; QA-Lead independently reproduced `tsc` clean, the exact `vitest` count (34 files/492 tests/1 pre-existing failure/489 passed/2 skipped), `middleware.ts` gating (`/echo` absent from `PUBLIC_PATHS`/`PUBLIC_PREFIXES`, so the new redirect creates no unauthenticated path), and the `BOARD_HEIGHT_PX` arithmetic (364.4, ratio 0.76839, within spec tolerance).
