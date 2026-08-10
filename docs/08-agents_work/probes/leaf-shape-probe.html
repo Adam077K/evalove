@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Leaf shape probe</title>
+
+<!--
+  PROBE — frontend-engineer, 10 August 2026.
+
+  The question: what does the book leaf look like when the mount takes
+  the photograph's own aspect ratio, and the sentence always keeps its
+  floor?
+
+  BEFORE (design-H as shipped):
+    .lf .mount img { height:196px; object-fit:cover }
+    The mount is a fixed 266×196 landscape box. 38 of 46 real photos
+    are portrait. A portrait in this box is letterboxed to 196px — about
+    45% of its natural height. The sentence below has plenty of room
+    BECAUSE the mount is short.
+
+  AFTER (this fix):
+    .lf is a flex column. The mount gets flex:1 1 0 and the image
+    inside it uses object-fit:contain. The sentence gets flex:0 0 auto
+    with min-height:52px — the guaranteed floor. A very tall portrait
+    yields a smaller (scaled-down) picture, never a clipped sentence.
+
+  Four panels:
+    ?p=before         portrait in the 266×196 landscape mount (design-H)
+    ?p=after          portrait in the flex mount, sentence floor intact
+    ?p=landscape      landscape in the flex mount
+    ?p=extreme        narrow portrait (460:1000) in the flex mount
+
+  Trap: shape declarations are verified at runtime against naturalWidth.
+  A wrong declaration prevents the screenshot from being taken.
+  ?lie=1 inverts all declarations — the trap must fire.
+
+  The root is apps/web/public (served by serve-probe.mjs). Fonts and
+  materials come from there. The photographs are the real library —
+  design-ph-* are gitignored but live in the main worktree's public/.
+-->
+
+<style>
+:root{
+  --paper:#f2ecdf; --bone:#efe7d6; --print:#fcf8ef;
+  --edge:#d8ccb1; --kraft:#a98a63; --ink:#1a1611; --ink-2:#6b6053;
+  --hand-eva:#7a2a1c; --hand-adam:#2f3a52;
+  --hand-face:"Bradley Hand","Noteworthy","Marker Felt","Segoe Script",cursive;
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --lie: 0 1px 1px rgba(0,0,0,.34), 0 7px 12px rgba(0,0,0,.40), 0 20px 34px rgba(0,0,0,.26);
+}
+@font-face{ font-family:"Fraunces"; src:url("/fonts/fraunces-vf.woff2") format("woff2-variations");
+  font-weight:400 600; font-display:swap; }
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:#241811;}
+body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+#device{ position:relative; width:100%; height:100dvh; overflow:hidden; }
+#tag{ position:fixed; z-index:200; left:0; right:0; top:0; text-align:center;
+  font-family:var(--ui); font-size:9.5px; font-weight:700; letter-spacing:.18em;
+  text-transform:uppercase; color:#f0e5cd; padding:9px 12px;
+  background:#140d07; box-shadow:0 2px 10px rgba(0,0,0,.6); }
+#tag b{ color:#d9a441; }
+.bookstage{ position:absolute; inset:0; z-index:60;
+  background:#150f0a url("/materials/book-cloth-olive.webp") center/cover no-repeat;
+  display:flex; flex-direction:column; align-items:center; }
+.bookstage::before{ content:""; position:absolute; inset:0; z-index:0;
+  background:#150f0a; opacity:.66; }
+.pleaf{ position:relative; z-index:2; width:330px; height:496px; margin-top:46px; }
+
+/* ── BEFORE: design-H as shipped ──────────────────────────────────── */
+.lf-before{
+  position:absolute; inset:0; overflow:hidden;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  background:linear-gradient(96deg,#efe7d4,#f6f0e2 22%,#f3ecdd);
+  box-shadow:0 2px 6px rgba(0,0,0,.32), 0 14px 30px rgba(0,0,0,.34);
+  padding:26px 24px 22px;
+}
+.lf-before .kicker{
+  font-family:var(--ui); font-size:8.5px; font-weight:700;
+  letter-spacing:.3em; text-transform:uppercase; color:var(--kraft);
+}
+.lf-before h2{
+  margin-top:9px;
+  font-family:"Fraunces",Georgia,serif;
+  font-variation-settings:"opsz" 120,"wght" 400,"WONK" 1;
+  font-size:40px; line-height:.94; letter-spacing:-.026em; color:var(--ink); font-weight:400;
+}
+.lf-before .mount{
+  margin-top:16px; padding:8px 8px 0;
+  background:linear-gradient(168deg,#fdfaf2,#f4eddd);
+  box-shadow:0 1px 2px rgba(60,42,18,.3), 0 8px 16px rgba(60,42,18,.22);
+}
+/* THE BUG: fixed 196px height forces a landscape box for every photo */
+.lf-before .mount img{ display:block; width:100%; height:196px; object-fit:cover;
+  background:#241d15; filter:none; }
+.lf-before .mount .cap{
+  display:block; font-family:var(--hand-face); font-size:14px;
+  line-height:30px; height:30px; color:var(--hand-eva); text-align:center;
+}
+.lf-before .say{ margin-top:16px; font-family:var(--hand-face);
+  font-size:16.5px; line-height:1.52; color:var(--hand-eva); }
+
+/* ── AFTER: flex mount, sentence floor ──────────────────────────────  */
+.lf-after{
+  position:absolute; inset:0; overflow:hidden;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  background:linear-gradient(96deg,#efe7d4,#f6f0e2 22%,#f3ecdd);
+  box-shadow:0 2px 6px rgba(0,0,0,.32), 0 14px 30px rgba(0,0,0,.34);
+  padding:26px 24px 22px;
+  /* FIX: flex column so mount fills remaining space, say gets its floor */
+  display:flex; flex-direction:column;
+}
+.lf-after .kicker{
+  font-family:var(--ui); font-size:8.5px; font-weight:700;
+  letter-spacing:.3em; text-transform:uppercase; color:var(--kraft);
+}
+.lf-after h2{
+  margin-top:9px;
+  font-family:"Fraunces",Georgia,serif;
+  font-variation-settings:"opsz" 120,"wght" 400,"WONK" 1;
+  font-size:40px; line-height:.94; letter-spacing:-.026em; color:var(--ink); font-weight:400;
+}
+.lf-after .mount{
+  margin-top:16px; padding:8px 8px 0;
+  background:linear-gradient(168deg,#fdfaf2,#f4eddd);
+  box-shadow:0 1px 2px rgba(60,42,18,.3), 0 8px 16px rgba(60,42,18,.22);
+  /* FIX: mount fills the space between fixed content and the say floor */
+  flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden;
+}
+/* FIX: photograph shown at its own aspect ratio within the allocated space */
+.lf-after .mount img{ display:block; width:100%;
+  flex:1 1 0; min-height:0;
+  object-fit:contain; object-position:top center;
+  background:#241d15; filter:none; }
+.lf-after .mount .cap{
+  display:block; font-family:var(--hand-face); font-size:14px;
+  line-height:30px; height:30px; color:var(--hand-eva); text-align:center;
+  /* Cap anchors the mount's bottom — never shrinks */
+  flex:0 0 30px;
+}
+/* FIX: the guaranteed floor. flex:0 0 auto and min-height together ensure
+   at least two lines of handwriting are ALWAYS visible, for any photo shape.
+   This is the sentence PROBE-8 lost when the mount grew to fit the portrait. */
+.lf-after .say{ margin-top:16px; font-family:var(--hand-face);
+  font-size:16.5px; line-height:1.52; color:var(--hand-eva);
+  flex:0 0 auto; min-height:52px; }
+
+@media (min-width:520px){
+  html,body{ background:#0d0906; } body{ display:grid; place-items:center; }
+  #device{ width:393px; height:852px; max-height:100dvh; border-radius:38px;
+    transform:translateZ(0);
+    box-shadow:0 0 0 1px rgba(255,224,180,.10), 0 36px 90px rgba(0,0,0,.66); }
+}
+</style>
+</head>
+<body>
+<div id="device">
+  <p id="tag"></p>
+  <div class="bookstage" id="stage"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* Real photographs, shape verified at runtime against naturalWidth.
+   Using the three extremes the task brief specifies:
+     - Tallest portrait (PROBE measured as 460:1000 in sips, portrait in browser)
+     - Standard landscape (1000:750)
+     - Standard portrait (750:1000)
+   All shapes are portrait in browser-display orientation
+   (sips reports stored pixels; EXIF orientation 6 rotates 16 of 46 files). */
+var PHOTOS = {
+  portrait: { src:"/design-ph-20260806-01.jpg", shape:"port",
+    cap:"6 August", say:"the whole square to myself for about a minute." },
+  extreme:  { src:"/design-ph-20260806-04.jpg", shape:"port",
+    cap:"6 August", say:"I stood in the middle of it like an idiot." },
+  landscape:{ src:"/design-ph-20260731-01.jpg", shape:"land",
+    cap:"31 July", say:"you recorded it at 11:20 your time." },
+};
+
+var q = new URLSearchParams(location.search);
+var panel = q.get("p") || "before";
+var LIE   = q.get("lie") === "1";
+
+var TAGS = {
+  before:    'Before &middot; <b>portrait in the 266×196 landscape mount</b> &middot; sentence has room',
+  after:     'After &middot; <b>portrait in flex mount</b> &middot; sentence floor guaranteed',
+  landscape: 'After &middot; <b>landscape in flex mount</b> &middot; sentence floor guaranteed',
+  extreme:   'After &middot; <b>narrow portrait (460:1000) in flex mount</b> &middot; sentence floor guaranteed',
+};
+document.getElementById("tag").innerHTML = TAGS[panel] || panel;
+
+function img(ph){
+  var shape = LIE ? (ph.shape === "land" ? "port" : "land") : ph.shape;
+  return '<img src="'+ph.src+'" data-shape="'+shape+'" alt="Photograph from that day">';
+}
+
+function leaf(variant, ph){
+  return '<div class="pleaf"><div class="lf-'+variant+'">' +
+    '<p class="kicker">One</p>' +
+    '<h2>The square</h2>' +
+    '<div class="mount">'+img(ph)+'<span class="cap">'+ph.cap+'</span></div>' +
+    '<p class="say">'+ph.say+'</p>' +
+  '</div></div>';
+}
+
+var st = document.getElementById("stage");
+if      (panel === "before")    st.innerHTML = leaf("before",   PHOTOS.portrait);
+else if (panel === "after")     st.innerHTML = leaf("after",    PHOTOS.portrait);
+else if (panel === "landscape") st.innerHTML = leaf("after",    PHOTOS.landscape);
+else if (panel === "extreme")   st.innerHTML = leaf("after",    PHOTOS.extreme);
+
+/* Trap — same pattern as orientation-probe.html. An image that does not
+   load, or whose declared shape is wrong, blocks the screenshot harness. */
+window.__BAD   = [];
+window.__READY = false;
+window.addEventListener("load", function(){
+  var imgs = [].slice.call(document.images);
+  imgs.forEach(function(im){
+    var src = im.getAttribute("src");
+    if (!im.complete || im.naturalWidth === 0){ window.__BAD.push("blank: "+src); return; }
+    var want = im.getAttribute("data-shape");
+    if (!want) return;
+    var got = im.naturalWidth > im.naturalHeight ? "land" : "port";
+    if (got !== want) window.__BAD.push(
+      "declared "+want+" but browser paints "+got+
+      " ("+im.naturalWidth+"x"+im.naturalHeight+"): "+src);
+  });
+  window.__COUNT  = imgs.length;
+  window.__SHAPED = imgs.filter(function(i){ return i.getAttribute("data-shape"); }).length;
+  window.__READY  = true;
+});
+})();
+</script>
+</body>
+</html>
