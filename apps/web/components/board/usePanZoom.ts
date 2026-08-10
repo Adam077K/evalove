@@ -57,6 +57,25 @@ async function loadGsap() {
 export const WORLD_W = 950;
 export const WORLD_H = 2860;
 
+/**
+ * The composed first view approved by the founder. design-H:1548.
+ *
+ * This is a COMPOSITION, not a computation. Do not replace with a
+ * fit-to-content or centring calculation. The arrival shows:
+ *   - Torn scrap: SUNDAY / NEW YORK / 3:41 PM
+ *   - Cue: "seven hours ahead, further down"
+ *   - Two photographs (2 August + Lisbon)
+ *
+ * Why these constants are declared here and why gsap.set is called AFTER
+ * Draggable.create (not before): GSAP Draggable's applyBounds() runs during
+ * Draggable.create initialization and overrides any position set before creation.
+ * Setting the arrival position after creation, followed by panRef.current.update(),
+ * ensures Draggable's internal tracking syncs to the correct arrival state.
+ */
+export const BOARD_ARRIVAL_X = -40;      // design-H:1548
+export const BOARD_ARRIVAL_Y = 0;        // design-H:1548
+export const BOARD_ARRIVAL_SCALE = 1;    // design-H:1548
+
 const MAX_SCALE = 1.55;
 
 function clamp(v: number, a: number, b: number) {
@@ -229,9 +248,6 @@ export function usePanZoom(
     minScaleRef.current = MIN;
     scaleRef.current = 1;
 
-    // Initial position: x:-40, y:0 — design-H:1548
-    gsap.set(srf, { x: -40, y: 0, scale: 1 });
-
     // Velocity tracking state (design-H:1550)
     let vx = 0, vy = 0, lastT = 0, lastX = 0, lastY = 0;
 
@@ -279,6 +295,13 @@ export function usePanZoom(
     });
 
     panRef.current = panInstances[0] ?? null;
+
+    // Arrival position — set AFTER Draggable.create so applyBounds() (which runs
+    // during Draggable init) cannot override it. update() syncs the Draggable's
+    // internal x/y tracking to the arrival values without re-applying bounds.
+    // BOARD_ARRIVAL_X, BOARD_ARRIVAL_Y, BOARD_ARRIVAL_SCALE are declared above.
+    gsap.set(srf, { x: BOARD_ARRIVAL_X, y: BOARD_ARRIVAL_Y, scale: BOARD_ARRIVAL_SCALE });
+    panRef.current?.update(); // sync Draggable's tracking — does NOT call applyBounds
 
     // Pinch zoom state (design-H:1619)
     const pts = new Map<number, { x: number; y: number }>();
