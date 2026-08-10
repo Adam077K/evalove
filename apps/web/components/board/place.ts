@@ -395,7 +395,6 @@ function placeStacksInternal(
     const row = Math.floor(i / STACKS_PER_ROW);
     const land = day.topPhotoWidth > day.topPhotoHeight;
     const imgW = land ? STACK_IMG_W_LANDSCAPE : STACK_IMG_W_PORTRAIT;
-    const imgH = land ? 74 : 100; // thumbnail height, from design-H:2155
     const outerW = imgW + STACK_OUTER_PADDING;
 
     // Extend STACK_COLS beyond 4 columns by repeating the spacing
@@ -426,7 +425,7 @@ function placeStacksInternal(
   }
 
   const rows = Math.ceil(days.length / STACKS_PER_ROW);
-  // Stack element height: imgH + chin (24px, from design-H:2171) + leaf offsets
+  // Stack element height: portrait thumbnail (100px) + chin (24px, design-H:2171) + leaf offsets
   const stackH = 100 + 24 + 9 * 2.2; // portrait worst case
   const bottomY = STACK_ROW_Y_START + rows * STACK_ROW_SPACING + Math.ceil(stackH);
 
