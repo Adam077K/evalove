@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Paper } from "@/components/materials";
 import { TodayPairContent } from "@/components/home/TodayPair";
 import { SealedCard } from "@/components/home/SealedCard";
+import { SignOut } from "@/components/auth/SignOut";
 import { photoDeps } from "@/lib/data";
 import { liveTodayObject } from "@/lib/data/today";
 import { liveWhatCameBack } from "@/lib/data/archive";
@@ -17,11 +18,14 @@ export const metadata: Metadata = {
 /**
  * Which of the two is holding the phone, for `todaySnapshot`'s day
  * boundary. Reads the same `profile` cookie `lib/viewer.ts` reads
- * client-side and `getIdentity()` reads server-side — attribution, not
- * authentication (see `lib/session/profile.ts`), so a bare cookie read is
- * the documented way to get at it; there is nothing here for a fourth
- * reader to protect. Eva-first when nobody has tapped a name yet, matching
- * `useViewer()`'s own fallback.
+ * client-side and `getIdentity()` falls back to server-side —
+ * attribution, not authentication (see `lib/session/profile.ts`), so a
+ * bare cookie read is the documented way to get at it; there is nothing
+ * here for a fourth reader to protect. A day boundary is a display
+ * choice, so the cookie is the right source even now that the session
+ * carries a proven `mid`: the two agree, because signing in writes this
+ * cookie from the same answer the token got. Eva-first when nobody has
+ * tapped a name yet, matching `useViewer()`'s own fallback.
  */
 async function currentViewerSlug(): Promise<MemberSlug> {
   const jar = await cookies();
@@ -94,6 +98,14 @@ export default async function TodayPage() {
       <div className="ml-8 mr-12 mt-12">
         <SealedCard />
       </div>
+
+      {/* The way out, after the last object on the table. Until now
+          there was none: `DELETE /api/session` worked and nothing in
+          the app called it, so handing the phone to someone meant
+          clearing site data in Safari. It is one line of text at the
+          foot of the one screen you always land on, deliberately below
+          everything worth reading. See components/auth/SignOut.tsx. */}
+      <SignOut />
     </Paper>
   );
 }

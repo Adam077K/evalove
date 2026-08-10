@@ -13,7 +13,8 @@ function hash(secret: string, salt = randomBytes(16)): string {
 const BASE = {
   NEXT_PUBLIC_SUPABASE_URL: "https://abcdefg.supabase.co/",
   SUPABASE_SERVICE_ROLE_KEY: "sb_secret_" + "x".repeat(60),
-  APP_PASSWORD_HASH: hash("book-opener"),
+  APP_PASSWORD_HASH_EVA: hash("evas-book-opener"),
+  APP_PASSWORD_HASH_ADAM: hash("adams-book-opener"),
   VAULT_PASSPHRASE_HASH: hash("vault-opener"),
   SESSION_SECRET: randomBytes(32).toString("base64"),
 };
@@ -50,7 +51,7 @@ test("shared salt is refused", async () => {
   const salt = randomBytes(16);
   await expect(
     load({
-      APP_PASSWORD_HASH: hash("book-opener", salt),
+      APP_PASSWORD_HASH_EVA: hash("evas-book-opener", salt),
       VAULT_PASSPHRASE_HASH: hash("vault-opener", salt),
     }),
   ).rejects.toThrow(/share a salt/);
@@ -59,14 +60,14 @@ test("shared salt is refused", async () => {
 test("identical hashes are refused", async () => {
   const same = hash("one-secret-for-both");
   await expect(
-    load({ APP_PASSWORD_HASH: same, VAULT_PASSPHRASE_HASH: same }),
+    load({ APP_PASSWORD_HASH_EVA: same, VAULT_PASSPHRASE_HASH: same }),
   ).rejects.toThrow(/same hash/);
 });
 
 test("copied line: same salt and same key reports both", async () => {
   const same = hash("one-secret-for-both");
   await expect(
-    load({ APP_PASSWORD_HASH: same, VAULT_PASSPHRASE_HASH: same }),
+    load({ APP_PASSWORD_HASH_EVA: same, VAULT_PASSPHRASE_HASH: same }),
   ).rejects.toThrow(/share a salt/);
 });
 
@@ -83,8 +84,8 @@ test("weak session secret", async () => {
 });
 
 test("malformed hash", async () => {
-  await expect(load({ APP_PASSWORD_HASH: "notahash" })).rejects.toThrow(
-    /APP_PASSWORD_HASH is malformed/,
+  await expect(load({ APP_PASSWORD_HASH_EVA: "notahash" })).rejects.toThrow(
+    /APP_PASSWORD_HASH_EVA is malformed/,
   );
 });
 
@@ -93,7 +94,7 @@ test("low scrypt N", async () => {
   const key = scryptSync("x", salt, 32, { N: 1024, r: 8, p: 1 });
   await expect(
     load({
-      APP_PASSWORD_HASH: `scrypt$1024$8$1$${salt.toString("base64")}$${key.toString("base64")}`,
+      APP_PASSWORD_HASH_EVA: `scrypt$1024$8$1$${salt.toString("base64")}$${key.toString("base64")}`,
     }),
   ).rejects.toThrow(/scrypt N below the 16384 minimum/);
 });
@@ -103,7 +104,7 @@ test("short salt", async () => {
   const key = scryptSync("x", salt, 32, { N, r: R, p: P });
   await expect(
     load({
-      APP_PASSWORD_HASH: `scrypt$${N}$${R}$${P}$${salt.toString("base64")}$${key.toString("base64")}`,
+      APP_PASSWORD_HASH_EVA: `scrypt$${N}$${R}$${P}$${salt.toString("base64")}$${key.toString("base64")}`,
     }),
   ).rejects.toThrow(/8-byte salt/);
 });

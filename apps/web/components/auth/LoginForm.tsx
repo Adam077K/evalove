@@ -8,21 +8,39 @@ import { declareViewer } from "@/lib/viewer";
 import type { MemberSlug } from "@/lib/types";
 
 /**
- * The door, and then the tap that says who is holding the phone.
+ * The door — and the tap that used to follow it, for the sessions that
+ * still need one.
  *
- * TWO STEPS, AND THEY ARE NOT THE SAME KIND OF THING. The first is
- * authentication: one password, checked on the server against a scrypt
- * hash. The second is ATTRIBUTION: a tap that decides whose name goes on
- * what gets written next. It gates nothing, either person can pick
- * either name, and it is stored in a cookie that script can read —
- * because it is not a secret and treating it like one is how someone
+ * ONE STEP NOW, USUALLY. Eva and Adam have their own passwords
+ * (2026-08-10), so the server knows which of them typed one and says so
+ * in the success body as `who`. When it does, this form records that
+ * name itself and goes straight in: asking "who's this?" when the door
+ * has already established the answer is asking a question we know, and
+ * inviting an answer that contradicts it.
+ *
+ * THE PICKER IS NOT DEAD CODE. The server omits `who` when it could not
+ * attribute the login — the case being two credentials that turn out to
+ * be the same secret (`lib/auth/door.ts`). Then the tap is the only
+ * thing that knows, and the old two-step flow runs exactly as it did.
+ *
+ * WHEN IT DOES RUN IT IS ATTRIBUTION, NOT AUTHENTICATION: it decides
+ * whose name goes on what gets written next, it gates nothing, either
+ * person can pick either name, and it lives in a cookie script can read
+ * — because it is not a secret and treating it like one is how someone
  * later starts trusting it. See `lib/session/profile.ts`.
- *
- * They are on the same screen because they happen at the same moment,
- * not because they are the same question.
  */
 
 type Step = "password" | "who";
+
+/** Whose password it was, if the response said. Nothing else is read. */
+function whoFrom(body: unknown): MemberSlug | undefined {
+  if (!body || typeof body !== "object" || !("who" in body)) return undefined;
+  const who = (body as { who: unknown }).who;
+  // Narrowed rather than cast: this value decides which name goes on
+  // everything written next, and `lib/session/profile.ts` refuses
+  // anything but the two slugs for the same reason.
+  return who === "eva" || who === "adam" ? who : undefined;
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -61,7 +79,14 @@ export function LoginForm() {
 
       if (response.ok) {
         setPassword("");
-        setStep("who");
+
+        // The door's own answer, when it has one. `enter` writes the
+        // same cookie the tap would have written, so nothing downstream
+        // can tell the two paths apart — this is one fewer screen, not
+        // a second way of recording a name.
+        const who = whoFrom(await response.json().catch(() => null));
+        if (who) enter(who);
+        else setStep("who");
         return;
       }
 
@@ -83,7 +108,12 @@ export function LoginForm() {
     }
   }
 
-  function choose(slug: MemberSlug) {
+  /**
+   * Record the name and go in. Both paths end here — the tap and the
+   * server's `who` — so there is one place that decides what "signed
+   * in" does, and no chance of the two drifting apart.
+   */
+  function enter(slug: MemberSlug) {
     declareViewer(slug);
     router.replace(next);
     // A full refresh, so Server Components re-render having seen the
@@ -112,14 +142,14 @@ export function LoginForm() {
         <div className="mt-8 flex flex-col gap-3">
           <PillButton
             variant="quiet"
-            onClick={() => choose("eva")}
+            onClick={() => enter("eva")}
             className="w-full"
           >
             Eva
           </PillButton>
           <PillButton
             variant="quiet"
-            onClick={() => choose("adam")}
+            onClick={() => enter("adam")}
             className="w-full"
           >
             Adam
@@ -141,9 +171,11 @@ export function LoginForm() {
             setPassword(e.target.value);
             setError(undefined);
           },
-          // The one credential in this app, shared by two people and
-          // kept in both their password managers. `current-password`
-          // is what lets those managers offer it.
+          // Each of them has their own now, kept in their own manager.
+          // `current-password` is what lets a manager offer it, and it
+          // is also why there is no name field above this one: the
+          // password IS the name, and a manager keyed on this origin
+          // offers whichever one belongs to this phone.
           autoComplete: "current-password",
           autoFocus: true,
           enterKeyHint: "go",

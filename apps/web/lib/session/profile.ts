@@ -3,11 +3,20 @@
  *
  * READ THIS BEFORE USING ANYTHING IN HERE.
  *
- * The "who's this?" picker is ATTRIBUTION, NOT AUTHENTICATION. There is one
- * password and both of them know it, so the front door genuinely cannot tell
- * which of the two typed it. The picker is one tap that says "it's me holding
- * the phone", and it exists so a photo gets the right name on it — not so that
- * anything can be allowed or refused.
+ * The "who's this?" picker is ATTRIBUTION, NOT AUTHENTICATION. It is one tap
+ * that says "it's me holding the phone", and it exists so a photo gets the
+ * right name on it — not so that anything can be allowed or refused.
+ *
+ * IT IS NOW THE FALLBACK, NOT THE ANSWER. Until 2026-08-10 there was one
+ * password that both of them knew, the front door could not tell which of the
+ * two had typed it, and this cookie was the only thing in the system with an
+ * opinion about who was holding the phone. Eva and Adam have their own
+ * credentials now, so the token carries a signed `mid` and `getIdentity()`
+ * prefers it. This cookie answers for the sessions that predate that change,
+ * for a login the members table could not be reached during, and for the
+ * client, which cannot read the httpOnly session token at all. Everything
+ * below still holds for every one of those cases — nothing here became
+ * trustworthy.
  *
  * Concretely, and every one of these is deliberate:
  *
@@ -21,9 +30,8 @@
  *     `source` in its type so no caller can use the id without seeing the
  *     caveat attached to it.
  *
- * If a future feature needs to know who is really acting, it does not read this
- * cookie harder. It needs real identity, which Phase 2's per-person accounts
- * will provide, and until then the honest answer is that we do not have it.
+ * If a feature needs to know who is really acting, it does not read this cookie
+ * harder. It asks `getIdentity()` and checks `source`.
  *
  * A cookie rather than only `localStorage` because a Server Component rendering
  * during SSR cannot see `localStorage`, and the alternative is a flash of the

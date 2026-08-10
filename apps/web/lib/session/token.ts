@@ -92,12 +92,20 @@ export interface NewSession {
   /** Session id. One per successful unlock; not reused across logins. */
   sid: Uuid;
   /**
-   * Member id, when one is already known.
+   * Member id — the DATABASE id of whoever's password opened the door.
    *
-   * Almost always absent in Phase 1: the front door does not know which of the
-   * two people typed the password, because there is one password and they both
-   * have it. See `getIdentity` in `./index.ts` for how attribution is handled
-   * instead, and why it is not this.
+   * Present on every session minted since Eva and Adam got their own
+   * credentials (2026-08-10): the front door checks both hashes and knows
+   * which one matched. Still OPTIONAL, and the two reasons are both real —
+   * a session issued before that change carries none and stays valid until it
+   * expires, and a login that could not reach the members table mints one
+   * without rather than refusing entry. `getIdentity` in `./index.ts` handles
+   * both by falling back to the self-declared profile cookie.
+   *
+   * NEVER a fixture id. `lib/fixtures/members.ts` and the database agree on
+   * these uuids (`supabase/seed.sql`), and `lib/fixtures/__tests__/
+   * member-ids.test.ts` is what keeps them agreeing — but the value put here
+   * must still come from `memberIdBySlug`, which reads the rows.
    */
   mid?: Uuid;
 }

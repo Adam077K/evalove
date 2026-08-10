@@ -15,9 +15,9 @@ import { createHmac, scryptSync, randomUUID } from "node:crypto";
  * on a loopback port.
  *
  * `lib/env.ts` validates at module evaluation and refuses to boot on a bad
- * config, including refusing two password hashes that look derived from one
- * another — hence two distinct passwords below. See `lib/__tests__/setup-env.ts`,
- * which does the same job for vitest.
+ * config, including refusing any two credential hashes that look derived from
+ * one another — hence three distinct passwords and three distinct salts below.
+ * See `lib/__tests__/setup-env.ts`, which does the same job for vitest.
  */
 
 /** 32 bytes of zero-cost fixture entropy, base64 — the shape `lib/env.ts` wants. */
@@ -33,7 +33,8 @@ function scryptHash(password: string, salt: string): string {
 export const TEST_ENV: Record<string, string> = {
   NEXT_PUBLIC_SUPABASE_URL: "https://example-project.supabase.co",
   SUPABASE_SERVICE_ROLE_KEY: Buffer.alloc(48, "e2e-service-role").toString("hex"),
-  APP_PASSWORD_HASH: scryptHash("an-e2e-app-password", "e2e-app-salt"),
+  APP_PASSWORD_HASH_EVA: scryptHash("an-e2e-password-for-eva", "e2e-eva-salt"),
+  APP_PASSWORD_HASH_ADAM: scryptHash("an-e2e-password-for-adam", "e2e-adam-salt"),
   VAULT_PASSPHRASE_HASH: scryptHash("an-independent-e2e-vault-phrase", "e2e-vault-salt"),
   SESSION_SECRET,
 };

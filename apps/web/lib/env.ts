@@ -23,8 +23,8 @@
  *      boot, so a stray `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` in a Vercel
  *      dashboard still cannot quietly ship.
  *
- *   2. The app password and the vault passphrase are INDEPENDENT credentials.
- *      See the `assertIndependentCredentials` block at the bottom.
+ *   2. Eva's password, Adam's password and the vault passphrase are THREE
+ *      INDEPENDENT credentials. See the independence block at the bottom.
  */
 
 import { Buffer } from "node:buffer";
@@ -263,10 +263,20 @@ const envSchema = z.object({
     }
   }),
 
-  /** Opens the book. Known to both of us. */
-  APP_PASSWORD_HASH: scryptHashVar("APP_PASSWORD_HASH"),
+  /**
+   * Opens the book, as Eva. Hers alone — Adam does not have it.
+   *
+   * There used to be one `APP_PASSWORD_HASH` that both of them typed, which
+   * meant the front door could not say who had come in and Eva's way into the
+   * archive was a string in Adam's password manager. Two variables is what
+   * turns that from a shared key into her own.
+   */
+  APP_PASSWORD_HASH_EVA: scryptHashVar("APP_PASSWORD_HASH_EVA"),
 
-  /** Opens the vault. A different secret, independently generated. */
+  /** Opens the book, as Adam. A different secret, independently generated. */
+  APP_PASSWORD_HASH_ADAM: scryptHashVar("APP_PASSWORD_HASH_ADAM"),
+
+  /** Opens the vault. A third secret, independently generated. */
   VAULT_PASSPHRASE_HASH: scryptHashVar("VAULT_PASSPHRASE_HASH"),
 
   /**
@@ -379,64 +389,122 @@ function collectPublicPrefixProblems(source: NodeJS.ProcessEnv): string[] {
 }
 
 /**
+ * The variable that used to be the only door, and is no longer read.
+ *
+ * Kept here as a name rather than deleted from the file entirely, because the
+ * value is still sitting in a Vercel dashboard and in somebody's `.env.local`
+ * on the day this ships, and a secret nothing checks is a secret nobody
+ * rotates.
+ */
+const RETIRED_APP_PASSWORD_VAR = "APP_PASSWORD_HASH";
+
+/**
+ * A leftover shared password, reported but NOT fatal.
+ *
+ * This is deliberately a warning and not a boot problem, and the asymmetry is
+ * the point. Refusing to start would mean that a deploy where both new
+ * variables are set correctly and the old one merely still exists takes the
+ * app down — and this is the one door of an archive with no reset flow and no
+ * recovery email, where "down" is not recoverable by the person locked out.
+ * The cost of the leftover is a stale secret; the cost of failing closed is
+ * two people outside. So it is said loudly, once, at boot, and the app serves.
+ */
+function collectRetiredVariableWarnings(source: NodeJS.ProcessEnv): string[] {
+  const raw = source[RETIRED_APP_PASSWORD_VAR]?.trim();
+  if (raw === undefined || raw === "") return [];
+
+  return [
+    `${RETIRED_APP_PASSWORD_VAR} is set but is no longer read by anything. Eva and Adam ` +
+      "now have their own credentials — APP_PASSWORD_HASH_EVA and APP_PASSWORD_HASH_ADAM. " +
+      `Delete ${RETIRED_APP_PASSWORD_VAR} wherever it is defined (Vercel project settings, ` +
+      ".env.local): until you do, the old shared password still exists as a secret that " +
+      "nothing verifies and nobody rotates.",
+  ];
+}
+
+/** The credentials that must all be independent of one another. Eva first. */
+const INDEPENDENT_CREDENTIAL_VARS = [
+  "APP_PASSWORD_HASH_EVA",
+  "APP_PASSWORD_HASH_ADAM",
+  "VAULT_PASSPHRASE_HASH",
+] as const;
+
+/**
  * The assertion this whole module exists for.
  *
- * The app password opens the book. The vault passphrase opens the private
- * items. If the second is derivable from the first, then the book's password —
- * the one typed on a phone, in public, most days — also opens the vault, and
- * the vault was never a second door at all.
+ * THREE secrets now, not two. Eva's password and Adam's password open the
+ * book; the vault passphrase opens the private items. Every pair of them has
+ * to be independent, and each pair fails differently if it is not:
  *
- * Independence cannot be proven from two hashes; that is the honest limit of a
+ *   - Eva's and Adam's derived from one another: the door can no longer say
+ *     who came in, which is the entire point of there being two of them. Worse
+ *     than the single shared password it replaced, because the token would now
+ *     assert an identity that is not true.
+ *   - Either of theirs and the vault's: the password typed on a phone, in
+ *     public, most days also opens the private items, and the vault was never
+ *     a second door at all.
+ *
+ * Independence cannot be proven from hashes; that is the honest limit of a
  * runtime check. What CAN be caught is every plausible way the mistake
  * actually happens:
  *
- *   - Copying the whole `APP_PASSWORD_HASH` line and editing the variable name
- *     -> identical salt AND identical key.
+ *   - Copying a whole `APP_PASSWORD_HASH_EVA=` line and editing the variable
+ *     name -> identical salt AND identical key. The likeliest mistake of all
+ *     while splitting one variable into two.
  *   - Reusing one generated salt for both, "to keep it simple"
  *     -> identical salt, different key. This is the dangerous one: it looks
- *        fine, and it means one rainbow table covers both credentials.
+ *        fine, and it means one precomputation covers both credentials.
  *   - Hashing the same passphrase twice with fresh salts
  *     -> not detectable here, and the reason the README says to generate each
  *        secret in a password manager rather than typing one you invented.
+ *        `lib/auth/door.ts` catches this one at the door instead, at the only
+ *        moment it can be seen: when a single typed string opens both.
  *
- * A shared salt is enough to refuse to start. Two independently generated
+ * A shared salt is enough to refuse to start. Independently generated
  * credentials have a vanishing chance of colliding, so a collision is not bad
  * luck — it is evidence of derivation.
  */
 function collectCredentialIndependenceProblems(
-  appRaw: string | undefined,
-  vaultRaw: string | undefined,
+  source: NodeJS.ProcessEnv,
 ): string[] {
   // Run even when other variables are invalid, so this — the assertion the
-  // whole module exists for — is never hidden behind an unrelated typo. If
-  // either credential is itself malformed the schema already says so, and
-  // there is nothing meaningful to compare.
-  if (appRaw === undefined || vaultRaw === undefined) return [];
-  if (collectScryptProblems("APP_PASSWORD_HASH", appRaw).length > 0) return [];
-  if (collectScryptProblems("VAULT_PASSPHRASE_HASH", vaultRaw).length > 0) {
-    return [];
-  }
+  // whole module exists for — is never hidden behind an unrelated typo. A
+  // credential that is itself malformed is already reported by the schema and
+  // has nothing meaningful to compare.
+  const usable = INDEPENDENT_CREDENTIAL_VARS.flatMap((label) => {
+    const raw = source[label]?.trim();
+    if (raw === undefined) return [];
+    if (collectScryptProblems(label, raw).length > 0) return [];
+    return [{ label, hash: parseScryptHash(label, raw) }];
+  });
 
-  const app = parseScryptHash("APP_PASSWORD_HASH", appRaw);
-  const vault = parseScryptHash("VAULT_PASSPHRASE_HASH", vaultRaw);
   const problems: string[] = [];
 
-  if (app.salt.equals(vault.salt)) {
-    problems.push(
-      "APP_PASSWORD_HASH and VAULT_PASSPHRASE_HASH share a salt. Each credential " +
-        "must be generated with its own random salt — a shared salt means one " +
-        "precomputation attacks both doors. Regenerate VAULT_PASSPHRASE_HASH from " +
-        "scratch (see apps/web/README.md).",
-    );
-  }
+  // Every pair, not just the adjacent ones: with three credentials there are
+  // three pairs, and the one that gets skipped by a loop over neighbours is
+  // Eva-versus-vault, which is exactly as bad as the two it would have checked.
+  for (let i = 0; i < usable.length; i += 1) {
+    for (let j = i + 1; j < usable.length; j += 1) {
+      const a = usable[i]!;
+      const b = usable[j]!;
 
-  if (app.key.equals(vault.key)) {
-    problems.push(
-      "APP_PASSWORD_HASH and VAULT_PASSPHRASE_HASH are the same hash. The vault " +
-        "passphrase must be a different secret from the app password — not the " +
-        "same string, not a suffix of it, not a second round over the same input. " +
-        "Generate an independent passphrase (see apps/web/README.md).",
-    );
+      if (a.hash.salt.equals(b.hash.salt)) {
+        problems.push(
+          `${a.label} and ${b.label} share a salt. Each credential must be generated ` +
+            "with its own random salt — a shared salt means one precomputation attacks " +
+            `both. Regenerate ${b.label} from scratch (see apps/web/README.md).`,
+        );
+      }
+
+      if (a.hash.key.equals(b.hash.key)) {
+        problems.push(
+          `${a.label} and ${b.label} are the same hash. Each of these must be a ` +
+            "different secret — not the same string, not a suffix of another, not a " +
+            `second round over the same input. Generate an independent secret for ` +
+            `${b.label} (see apps/web/README.md).`,
+        );
+      }
+    }
   }
 
   return problems;
@@ -453,11 +521,18 @@ function loadEnv(source: NodeJS.ProcessEnv): Env {
   const result = envSchema.safeParse({
     NEXT_PUBLIC_SUPABASE_URL: source.NEXT_PUBLIC_SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: source.SUPABASE_SERVICE_ROLE_KEY,
-    APP_PASSWORD_HASH: source.APP_PASSWORD_HASH,
+    APP_PASSWORD_HASH_EVA: source.APP_PASSWORD_HASH_EVA,
+    APP_PASSWORD_HASH_ADAM: source.APP_PASSWORD_HASH_ADAM,
     VAULT_PASSPHRASE_HASH: source.VAULT_PASSPHRASE_HASH,
     SESSION_SECRET: source.SESSION_SECRET,
     ANTHROPIC_API_KEY: source.ANTHROPIC_API_KEY,
   });
+
+  // Said before the throw below, so a leftover shared password is still
+  // reported on a boot that is also failing for an unrelated reason.
+  for (const warning of collectRetiredVariableWarnings(source)) {
+    console.warn(warning);
+  }
 
   const problems = [
     ...collectPublicPrefixProblems(source),
@@ -465,10 +540,7 @@ function loadEnv(source: NodeJS.ProcessEnv): Env {
     // a bug rather than a to-do. Our custom messages already say what to fix,
     // so they are used verbatim.
     ...(result.success ? [] : result.error.issues.map((i) => i.message)),
-    ...collectCredentialIndependenceProblems(
-      source.APP_PASSWORD_HASH?.trim(),
-      source.VAULT_PASSPHRASE_HASH?.trim(),
-    ),
+    ...collectCredentialIndependenceProblems(source),
   ];
 
   if (problems.length > 0) throw new EnvironmentError(problems);

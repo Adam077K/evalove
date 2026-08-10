@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Identity, Member, MemberSlug } from "@/lib/types";
+import type { Member, MemberSlug } from "@/lib/types";
 import { memberBySlug } from "@/lib/fixtures/members";
 import {
   parseProfile,
@@ -10,19 +10,34 @@ import {
 } from "@/lib/session/profile";
 
 /**
- * Who is holding the phone, on the client.
+ * Which of the two is holding the phone, on the client — a name and a
+ * display record, and DELIBERATELY NOT AN IDENTITY.
  *
- * The server's answer is `getIdentity()` in `lib/session/`, which reads
- * the same `profile` cookie this file writes. Two readers, one key —
- * the constant comes from `lib/session/profile.ts` so they cannot drift
- * apart, which is the bug where the picker writes one name and SSR
+ * WHAT THIS USED TO RETURN, AND WHY IT NO LONGER DOES. Until 2026-08-10
+ * this hook also handed back `identity: { memberId, source }`, built
+ * from the FIXTURE member record. The fixture uuids and the database's
+ * uuids were different strings for the same two people, so
+ * `useViewer().identity.memberId` was an id that did not exist in the
+ * database. It was harmless only for as long as nothing wrote with it:
+ * the first client-side write to take that id would have attributed a
+ * row to nobody, and no type would have complained, because the shape
+ * was exactly right and only the value was wrong.
+ *
+ * There is now no `Identity` on this side of the wire at all. A caller
+ * that needs one asks the server, where it is derived from the signed
+ * session (`getIdentity()` in `lib/session/`) — the only place that
+ * knows a real member id. That is a structural fix rather than a
+ * corrected constant: a value that does not exist cannot be passed to a
+ * write by mistake. `lib/fixtures/__tests__/member-ids.test.ts`
+ * separately pins the fixture ids to `supabase/seed.sql`, so the
+ * `member` record below is not a second lie waiting to be found.
+ *
+ * The server reads the same `profile` cookie this file writes, and the
+ * key comes from `lib/session/profile.ts` so the two cannot drift —
+ * that drift is the bug where the picker writes one name and SSR
  * renders the other.
- *
- * Identity keeps its `source` on purpose. Nothing downstream may
- * mistake a tapped name for proof: the picker is attribution, both
- * people can set it to either value, and it gates nothing.
  */
-export function useViewer(): { member: Member; identity: Identity } {
+export function useViewer(): { member: Member } {
   const [slug, setSlug] = useState<MemberSlug>("eva");
 
   useEffect(() => {
@@ -40,15 +55,13 @@ export function useViewer(): { member: Member; identity: Identity } {
     }
   }, []);
 
-  const member = memberBySlug(slug);
-  return {
-    member,
-    identity: { memberId: member.id, source: "self_declared" },
-  };
+  return { member: memberBySlug(slug) };
 }
 
 /**
- * The "who's this?" screen writes here; nothing else does.
+ * The door writes here — the "who's this?" tap, or the server's own
+ * answer once it started knowing which password was typed. Nothing else
+ * does.
  *
  * Both a cookie and localStorage. The cookie is the one that matters —
  * a Server Component cannot see localStorage, and without it every
@@ -66,6 +79,24 @@ export function declareViewer(slug: MemberSlug): void {
     window.localStorage.setItem(PROFILE_KEY, slug);
   } catch {
     /* private mode; the cookie is the real record */
+  }
+}
+
+/**
+ * Forget the name on the way out. Signing out calls this.
+ *
+ * `destroySession()` already expires the profile COOKIE server-side, and
+ * that is not enough on its own: `useViewer` above falls back to
+ * localStorage precisely so a cleared cookie does not lose the name, and
+ * that fallback would greet the next person to open the app by the last
+ * one's name. The cookie is left to the server, which is the only side
+ * that can expire it with the attributes it was set with.
+ */
+export function forgetViewer(): void {
+  try {
+    window.localStorage.removeItem(PROFILE_KEY);
+  } catch {
+    /* private mode; there was nothing stored to forget */
   }
 }
 

@@ -8,7 +8,7 @@
  * that need a network are stubbed — the `auth_attempts` table and the cookie
  * jar.
  *
- * The four behaviours this file exists to hold:
+ * The five behaviours this file exists to hold:
  *
  *   1. A wrong password answers 401, and takes the same time as every other
  *      declining branch.
@@ -16,9 +16,17 @@
  *   3. A correct password sets a cookie carrying every attribute that makes it
  *      safe.
  *   4. No response body ever says which branch refused it.
+ *   5. EITHER password opens the door, and the token records which one it was.
  *
  * Section 5 covers the degraded path: when the database is unreachable,
  * scope='session' falls back to the in-process counter rather than 503.
+ * Section 6 covers the two credentials and the identity they put in the token.
+ *
+ * WHAT IS NOT TESTED HERE. That the route checks BOTH hashes rather than
+ * stopping at the first match cannot be seen from outside an HTTP handler with
+ * a real scrypt in it — the measurement is drowned by everything else the
+ * request does. It lives in `lib/auth/__tests__/door.test.ts`, against the
+ * module the route delegates to, where the verification can be counted.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -29,7 +37,17 @@ import {
   __resetDegradedCounters,
 } from "@/lib/auth/rate-limit";
 import { FAILURE_FLOOR_MS } from "@/lib/auth/timing";
-import { TEST_APP_PASSWORD as PASSWORD } from "@/lib/__tests__/setup-env";
+import {
+  TEST_ADAM_PASSWORD,
+  TEST_EVA_PASSWORD,
+} from "@/lib/__tests__/setup-env";
+
+/**
+ * The password most of this file uses. Eva's, because Eva is first
+ * everywhere in this product — not because the route treats it specially.
+ * Section 6 exercises both.
+ */
+const PASSWORD = TEST_EVA_PASSWORD;
 
 /* ------------------------------------------------------------------ *
  * Stubs
@@ -75,6 +93,28 @@ const jar = vi.hoisted(() => {
 
 vi.mock("next/headers", () => ({ cookies: async () => jar }));
 
+/**
+ * The members table, as two rows and a switch.
+ *
+ * These are `supabase/seed.sql`'s real uuids, not invented ones: the whole
+ * point of the route resolving a slug through `lib/data/members.ts` is that
+ * the id it puts in the token is an id the database has, and a test fixture
+ * with made-up uuids would assert that it does so while proving nothing.
+ */
+const members = vi.hoisted(() => ({
+  eva: "11111111-1111-4111-8111-111111111111",
+  adam: "22222222-2222-4222-8222-222222222222",
+  /** Set to make the members read fail, the way a paused project does. */
+  readThrows: false,
+}));
+
+vi.mock("@/lib/data/members", () => ({
+  memberIdBySlug: vi.fn(async (slug: "eva" | "adam") => {
+    if (members.readThrows) throw new Error("connection refused");
+    return members[slug];
+  }),
+}));
+
 import { DELETE, POST } from "@/app/api/session/route";
 
 /* ------------------------------------------------------------------ *
@@ -112,6 +152,7 @@ beforeEach(() => {
   attempts.fromAddress = [];
   attempts.everywhere = [];
   attempts.readThrows = false;
+  members.readThrows = false;
   // Reset the in-process degraded counter so tests do not bleed into each other.
   __resetDegradedCounters();
 });
@@ -325,7 +366,7 @@ describe("the right password", () => {
     const response = await POST(post({ password: PASSWORD }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true });
+    await expect(response.json()).resolves.toEqual({ ok: true, who: "eva" });
   });
 
   it("is recorded as a successful attempt", async () => {
@@ -385,5 +426,128 @@ describe("DELETE", () => {
     // Signing out is idempotent. A 401 here would error a client whose cookie
     // has already expired while it tries to do the safe thing.
     await expect(DELETE()).resolves.toMatchObject({ status: 204 });
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * 6. Two credentials, and who came in
+ * ------------------------------------------------------------------ */
+
+/** The claims inside a minted token, without verifying the signature. */
+function claimsFromCookie(): Record<string, unknown> {
+  const token = jar.set.mock.calls.find((c) => c[0] === "ea_session")?.[1];
+  const payload = String(token).split(".")[1] ?? "";
+  return JSON.parse(
+    Buffer.from(payload, "base64url").toString("utf8"),
+  ) as Record<string, unknown>;
+}
+
+describe("two credentials", () => {
+  it("opens for EVA's password and puts Eva's member id in the token", async () => {
+    const response = await POST(post({ password: TEST_EVA_PASSWORD }));
+
+    expect(response.status).toBe(200);
+    expect(claimsFromCookie().mid).toBe(members.eva);
+  });
+
+  it("opens for ADAM's password and puts Adam's member id in the token", async () => {
+    const response = await POST(post({ password: TEST_ADAM_PASSWORD }));
+
+    expect(response.status).toBe(200);
+    expect(claimsFromCookie().mid).toBe(members.adam);
+  });
+
+  it("puts DIFFERENT ids in the two tokens", async () => {
+    // The assertion that would still pass if both branches resolved the same
+    // person — which is the failure mode of a copy-pasted second branch.
+    await POST(post({ password: TEST_EVA_PASSWORD }));
+    const eva = claimsFromCookie().mid;
+
+    jar.set.mockClear();
+    await POST(post({ password: TEST_ADAM_PASSWORD }));
+    const adam = claimsFromCookie().mid;
+
+    expect(eva).not.toBe(adam);
+  });
+
+  it("uses the DATABASE uuids, not the fixture ones", async () => {
+    // `lib/fixtures/members.ts` and `supabase/seed.sql` disagreed about these
+    // for months, and an id from the wrong set is a row attributed to a member
+    // that does not exist. Pinned as literals so agreeing with the fixture is
+    // not enough to pass.
+    await POST(post({ password: TEST_EVA_PASSWORD }));
+    expect(claimsFromCookie().mid).toBe("11111111-1111-4111-8111-111111111111");
+  });
+
+  it("tells the client whose password it was, so the picker can be skipped", async () => {
+    const eva = await (await POST(post({ password: TEST_EVA_PASSWORD }))).json();
+    const adam = await (
+      await POST(post({ password: TEST_ADAM_PASSWORD }))
+    ).json();
+
+    expect(eva).toEqual({ ok: true, who: "eva" });
+    expect(adam).toEqual({ ok: true, who: "adam" });
+  });
+
+  it("says nothing about who on a REFUSED attempt", async () => {
+    // `who` on a 401 would be an oracle of the worst kind: it would answer
+    // "whose password were you closest to" to somebody who has not got in.
+    const body = await (await POST(post({ password: "not either" }))).json();
+
+    expect(body).toEqual({ ok: false, message: "That's not it. Try again." });
+    expect(JSON.stringify(body)).not.toMatch(/eva|adam/i);
+  });
+
+  it("still lets them in when the members table will not answer", async () => {
+    // The password was right. A paused Supabase project must not turn that
+    // into a 500 — see `memberIdOrNull` in the route, and the same argument
+    // the rate limiter's degraded path is built on.
+    members.readThrows = true;
+
+    const response = await POST(post({ password: TEST_EVA_PASSWORD }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true, who: "eva" });
+  });
+
+  it("mints a token with NO mid when the members table will not answer", async () => {
+    // Rather than a made-up id. A session without `mid` is the legacy shape,
+    // and `getIdentity()` already knows how to fall back for it.
+    members.readThrows = true;
+
+    await POST(post({ password: TEST_EVA_PASSWORD }));
+
+    expect(claimsFromCookie().mid).toBeUndefined();
+  });
+
+  it("a wrong password is refused with the same status and sentence as before", async () => {
+    // Pinned as literals, not compared to another response: this is the one
+    // property a change to the door must not alter, so it is written out.
+    const response = await POST(post({ password: "not either of theirs" }));
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      message: "That's not it. Try again.",
+    });
+    expect(jar.set).not.toHaveBeenCalled();
+  });
+
+  it("holds a wrong password to the floor, as it always did", async () => {
+    const { ms } = await timed(post({ password: "not either of theirs" }));
+    expect(ms).toBeGreaterThanOrEqual(FAILURE_FLOOR_MS - 5);
+  });
+
+  it("costs the same whichever of the two correct passwords was typed", async () => {
+    // Two real scrypts either way. This is the coarse, end-to-end version of
+    // the measurement in `lib/auth/__tests__/door.test.ts`; the tolerance is
+    // wide because an HTTP handler has a lot else going on, and the precise
+    // one lives where it can be precise.
+    const eva = await timed(post({ password: TEST_EVA_PASSWORD }));
+    const adam = await timed(post({ password: TEST_ADAM_PASSWORD }));
+
+    expect(eva.response.status).toBe(200);
+    expect(adam.response.status).toBe(200);
+    expect(Math.abs(eva.ms - adam.ms)).toBeLessThan(60);
   });
 });

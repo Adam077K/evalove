@@ -62,10 +62,30 @@ const redirectSignal = vi.hoisted(() => {
 vi.mock("next/headers", () => ({ cookies: async () => jar }));
 vi.mock("next/navigation", () => ({ redirect: redirectSignal.redirect }));
 
-/** The one member lookup `getIdentity` makes. No database in this file. */
+/**
+ * The member lookup `getIdentity` makes on its FALLBACK path. No database in
+ * this file.
+ *
+ * The authenticated path does not reach this stub at all, and that is worth
+ * saying out loud: a `mid` in the token is already a member id, so turning it
+ * into one costs no read. If a change to `getIdentity` ever makes an
+ * authenticated identity depend on this mock, the test below that asserts a
+ * signed session survives a members outage is what will notice.
+ */
+const MEMBER_ID = {
+  eva: "1e0a5c1e-0000-4000-8000-00000000eva1",
+  adam: "2ad0f4b2-0000-4000-8000-0000000adam2",
+} as const;
+
+const memberLookup = vi.hoisted(() => ({ throws: false }));
+
 vi.mock("@/lib/data/members", () => ({
-  memberIdBySlug: async (slug: "eva" | "adam") =>
-    slug === "eva" ? "1e0a5c1e-0000-4000-8000-00000000eva1" : "2ad0f4b2-0000-4000-8000-0000000adam2",
+  memberIdBySlug: async (slug: "eva" | "adam") => {
+    if (memberLookup.throws) throw new Error("connection refused");
+    return slug === "eva"
+      ? "1e0a5c1e-0000-4000-8000-00000000eva1"
+      : "2ad0f4b2-0000-4000-8000-0000000adam2";
+  },
 }));
 
 import {
@@ -83,6 +103,7 @@ beforeEach(() => {
   jar.store.clear();
   jar.set.mockClear();
   redirectSignal.redirect.mockClear();
+  memberLookup.throws = false;
 });
 
 /* ------------------------------------------------------------------ *
@@ -97,7 +118,9 @@ describe("createSession / getSession", () => {
     expect(read).not.toBeNull();
     expect(read?.sid).toBe(created.sid);
     expect(read?.v).toBe(created.v);
-    // No `mid`: one password, two people, and the door cannot tell them apart.
+    // No `mid` when none was given. `createSession()` with no argument is the
+    // legacy shape and still has to mint something readable — an e2e fixture
+    // and every session issued before the two credentials existed are this.
     expect(read?.mid).toBeUndefined();
   });
 
@@ -190,7 +213,7 @@ describe("getIdentity", () => {
     await expect(getIdentity()).resolves.toBeNull();
   });
 
-  it("carries source: self_declared, always", async () => {
+  it("carries source: self_declared when only the profile cookie has an opinion", async () => {
     jar.store.set("profile", "adam");
     const identity = await getIdentity();
 
@@ -206,6 +229,67 @@ describe("getIdentity", () => {
       jar.store.set("profile", bogus);
       await expect(getIdentity()).resolves.toBeNull();
     }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * The token's own answer
+   * ---------------------------------------------------------------- */
+
+  it("carries source: authenticated when the session names a member", async () => {
+    await createSession({ mid: MEMBER_ID.adam });
+
+    await expect(getIdentity()).resolves.toEqual({
+      memberId: MEMBER_ID.adam,
+      source: "authenticated",
+    });
+  });
+
+  it("PREFERS the signed session over the profile cookie when they disagree", async () => {
+    // The assertion the whole priority order exists for. The cookie is a tap
+    // and can say anything — script writes it, either of them can set it to
+    // either name — while `mid` is signed. If a disagreement ever resolved the
+    // cookie's way, the picker would silently override a proven identity and
+    // every write after it would carry the wrong author.
+    await createSession({ mid: MEMBER_ID.adam });
+    jar.store.set("profile", "eva");
+
+    await expect(getIdentity()).resolves.toEqual({
+      memberId: MEMBER_ID.adam,
+      source: "authenticated",
+    });
+  });
+
+  it("falls back to the cookie for a LEGACY session that carries no member", async () => {
+    // Sessions minted before the two credentials existed are valid for six
+    // months from the day they were issued. Removing this fallback signs both
+    // of them out of a session that is still good.
+    await createSession();
+    jar.store.set("profile", "eva");
+
+    await expect(getIdentity()).resolves.toEqual({
+      memberId: MEMBER_ID.eva,
+      source: "self_declared",
+    });
+  });
+
+  it("is null for a legacy session with no cookie either", async () => {
+    await createSession();
+
+    await expect(getIdentity()).resolves.toBeNull();
+  });
+
+  it("answers from the token alone when the members table is unreachable", async () => {
+    // A `mid` IS a member id. Nothing needs to be read to turn it into one,
+    // and this proves the authenticated path does not quietly acquire a
+    // database dependency — which would put a Supabase outage between them and
+    // knowing who they are.
+    await createSession({ mid: MEMBER_ID.eva });
+    memberLookup.throws = true;
+
+    await expect(getIdentity()).resolves.toEqual({
+      memberId: MEMBER_ID.eva,
+      source: "authenticated",
+    });
   });
 });
 

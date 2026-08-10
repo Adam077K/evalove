@@ -3,10 +3,23 @@ import type { Member, MemberSlug, Uuid } from "@/lib/types";
 /**
  * Fixture members, against the canonical contract (`lib/types.ts`).
  * Eva before Adam, everywhere — including in this array.
+ *
+ * THE IDS ARE THE DATABASE'S IDS, and that is not a coincidence to be
+ * tidied away. They used to be a separate invented pair (`1e0a5c1e-…` /
+ * `2ad0f4b2-…`) while `supabase/seed.sql` inserted `1111…` / `2222…`, so
+ * every fixture-backed screen was carrying a member id that did not
+ * exist in the database — a value with the right type, the right shape,
+ * and no row behind it. Nothing broke only because nothing wrote with
+ * it. `__tests__/member-ids.test.ts` reads seed.sql and fails if these
+ * two lines and that file ever disagree again.
+ *
+ * These rows are still fixtures for everything else: the display names
+ * and `createdAt` here are stand-ins, and a screen that needs real
+ * member data reads `lib/data/members.ts`.
  */
 
 export const EVA: Member = {
-  id: "1e0a5c1e-4c11-4b6e-9a3e-7d2f5b9c0a01",
+  id: "11111111-1111-4111-8111-111111111111",
   slug: "eva",
   displayName: "Eva",
   homeTimezone: "America/New_York",
@@ -14,7 +27,7 @@ export const EVA: Member = {
 };
 
 export const ADAM: Member = {
-  id: "2ad0f4b2-8e4e-4d1c-b7a4-9c3e6f1d0b02",
+  id: "22222222-2222-4222-8222-222222222222",
   slug: "adam",
   displayName: "Adam",
   homeTimezone: "Asia/Jerusalem",

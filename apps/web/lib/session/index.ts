@@ -146,21 +146,42 @@ export async function requireSessionOrRedirect(): Promise<Session> {
  * ------------------------------------------------------------------ */
 
 /**
- * Who we believe is holding the phone, and how sure we are — which is: not.
+ * Who is holding the phone, and how sure we are.
  *
- * `source` is in the return type ON PURPOSE. It is always `'self_declared'` in
- * Phase 1, and it will not always be, and every caller that needs proven
- * identity is forced to look at this field and notice that it does not have
- * any. A bare `memberId` would let that mistake pass silently, which is the
- * entire failure mode this shape exists to prevent. Do not destructure it away
- * at the boundary and pass a naked id inwards.
+ * TWO ANSWERS, IN PRIORITY ORDER, AND THE ORDER IS THE WHOLE FUNCTION:
  *
- * Null when nobody has tapped a name yet. Not an error and not a redirect: the
- * picker gates nothing, so a request without it is ordinary. A write that needs
- * an author should ask the person rather than guess, and a read should simply
- * not personalise.
+ *   1. `source: 'authenticated'` — the session token carries a `mid`. Eva and
+ *      Adam have their own passwords now (`app/api/session/route.ts`), so the
+ *      front door knows which of them came in and says so in the token. Nobody
+ *      can set this by tapping a name: it is signed, and forging it means
+ *      forging `SESSION_SECRET`.
+ *   2. `source: 'self_declared'` — no `mid`, so fall back to the `profile`
+ *      cookie, which is a tap and proves nothing.
+ *
+ * THE FALLBACK IS LOAD-BEARING, NOT VESTIGIAL. Sessions minted before the two
+ * credentials existed carry no `mid` and are valid for six months from the day
+ * they were issued. Deleting the second branch signs both of them out of a
+ * still-valid session and, worse, leaves every screen that reads identity with
+ * `null` while the app insists they are signed in. It also covers the case
+ * where the door knew who arrived and the members table would not answer — see
+ * `memberIdOrNull` in the session route.
+ *
+ * `source` IS IN THE RETURN TYPE ON PURPOSE, and it matters more now than when
+ * there was only one value it could take. A caller that gates something on
+ * identity must check this field: a `self_declared` id is a name someone
+ * tapped, and either of them can tap either name. Do not destructure it away at
+ * the boundary and pass a naked id inwards.
+ *
+ * Null when there is no session and nobody has tapped a name. Not an error and
+ * not a redirect: the picker gates nothing, so a request without it is
+ * ordinary. A write that needs an author should ask rather than guess.
  */
 export async function getIdentity(): Promise<Identity | null> {
+  const session = await getSession();
+  if (session?.mid) {
+    return { memberId: session.mid, source: "authenticated" };
+  }
+
   const jar = await cookies();
   const slug = parseProfile(jar.get(PROFILE_KEY)?.value);
   if (!slug) return null;
