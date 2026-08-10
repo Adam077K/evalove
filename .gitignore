@@ -49,3 +49,8 @@ __pycache__/
 
 # Node — the repo root is not an install target; apps manage their own
 node_modules/
+
+# local design mockups + personal photos used in them - never commit
+apps/web/public/design-*
+design-*.html
+Eva-app-images/
