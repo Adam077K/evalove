@@ -90,11 +90,11 @@ Production is different: it must be reachable by Eva, who has no Vercel account,
 
 ---
 
-## §3 — The five environment variables
+## §3 — The six required environment variables
 
-All five are **required**. `apps/web/lib/env.ts` validates them at module evaluation, so importing that file *is* the boot check — a bad value fails the build, not the first request. Only `ANTHROPIC_API_KEY` is optional.
+All six are **required**. `apps/web/lib/env.ts` validates them at module evaluation, so importing that file *is* the boot check — a bad value fails the build, not the first request. Only `ANTHROPIC_API_KEY` is optional.
 
-**Set all five in all three Vercel environments — Production, Preview and Development.** Not just Production. **The build itself needs them**: `next build` imports the route handlers to read their segment config, which evaluates `lib/env.ts`. Measured — with no variables set, the build dies at "Collecting page data" with `EnvironmentError`, listing all five as missing. A Preview deployment with no variables will fail to build for this reason and nothing else.
+**Set all six in all three Vercel environments — Production, Preview and Development.** Not just Production. **The build itself needs them**: `next build` imports the route handlers to read their segment config, which evaluates `lib/env.ts`. Measured — with no variables set, the build dies at "Collecting page data" with `EnvironmentError`, listing all six as missing. A Preview deployment with no variables will fail to build for this reason and nothing else.
 
 ### §3.1 — What each one is
 
@@ -102,24 +102,31 @@ All five are **required**. `apps/web/lib/env.ts` validates them at module evalua
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` — https, bare origin, no trailing path, no `?`, no `#` | Supabase dashboard → Project Settings → API → Project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | one line, no whitespace anywhere, ≥ 40 chars | Supabase dashboard → Project Settings → API → `service_role` key. **Bypasses RLS entirely** — every table is deny-all with zero policies, so this key is the only thing that can read anything. |
-| `APP_PASSWORD_HASH` | `scrypt$16384$8$1$<salt-b64>$<key-b64>` | Generate — §3.2. Opens the app. Both of you know it. |
-| `VAULT_PASSPHRASE_HASH` | same format | Generate — §3.2. Opens the vault. **A different secret**, independently generated. |
+| `APP_PASSWORD_HASH_EVA` | `scrypt$16384$8$1$<salt-b64>$<key-b64>` | Generate — §3.2. Opens the app as Eva. Her credential alone — Adam does not hold it. Independently generated. |
+| `APP_PASSWORD_HASH_ADAM` | same format | Generate — §3.2. Opens the app as Adam. A different secret, independently generated. |
+| `VAULT_PASSPHRASE_HASH` | same format | Generate — §3.2. Opens the vault. A third secret, independently generated. |
 | `SESSION_SECRET` | canonical base64 decoding to ≥ 32 bytes | Generate — §3.2. **Generate a new one now** — see §6. |
 | `ANTHROPIC_API_KEY` | optional | Without it the margin's route answers 503 and nothing else changes. |
 
+**If `APP_PASSWORD_HASH` (the old single-variable form) is sitting in your Vercel dashboard or `.env.local`, delete it.** The app now reads `APP_PASSWORD_HASH_EVA` and `APP_PASSWORD_HASH_ADAM` instead and ignores the old name entirely. Leaving it set produces a boot warning (see §4) but does not prevent the app from starting — the warning is deliberate and not fatal for reasons explained at `lib/env.ts:404`.
+
 The only variable in this app permitted to carry the `NEXT_PUBLIC_` prefix is `NEXT_PUBLIC_SUPABASE_URL`. Anything else you add with that prefix will refuse to boot — deliberately, because that prefix means "inlined into the JavaScript every browser downloads". The one exception is Vercel's own `NEXT_PUBLIC_VERCEL_*` system variables, which are allowed by namespace; you can leave "Automatically expose System Environment Variables" on.
 
-### §3.2 — Generating the three you have to generate
+### §3.2 — Generating the four you have to generate
 
 **Run these in your own terminal.** Each reads the secret from standard input rather than an argument, so nothing lands in your shell history. Type the secret, press Return, then press **Ctrl-D**.
 
-The app password hash:
+The credential hash command:
 
 ```sh
 node -e 'const{scryptSync,randomBytes}=require("node:crypto");const s=require("node:fs").readFileSync(0,"utf8").trim();const N=16384,r=8,p=1,salt=randomBytes(16);console.log(`scrypt$${N}$${r}$${p}$${salt.toString("base64")}$${scryptSync(s,salt,32,{N,r,p}).toString("base64")}`)'
 ```
 
-Run it **twice** — once for the app password, once for the vault passphrase, with **two different secrets you generate in a password manager**. Not one you invent, and not the app password with something added to it. A fresh salt is drawn each run, so running it twice on the *same* secret would produce two different-looking hashes that both open to the same word; the boot check cannot catch that, and it is the whole reason the vault is a second door.
+Run it **three times** — once for Eva's password (`APP_PASSWORD_HASH_EVA`), once for Adam's password (`APP_PASSWORD_HASH_ADAM`), and once for the vault passphrase (`VAULT_PASSPHRASE_HASH`). **Three different secrets**, each generated independently in a password manager. Not invented, and not derived from one another by adding a word or a suffix.
+
+A fresh random salt is drawn each run. `lib/env.ts` checks every pair of credentials for salt collisions at boot and refuses to start if any two share a salt — because a shared salt means one precomputation attacks both doors. It also checks for identical derived keys across all three pairs. There are three pairs to check: Eva/Adam, Eva/vault, Adam/vault. Each must be independent.
+
+The one mistake the boot check cannot catch: hashing the same passphrase twice with different salts produces two different-looking hashes that both open to the same word. That is caught instead at the door — `lib/auth/door.ts` detects when one typed string would open two things at once. Generate each secret fresh in a password manager rather than reusing one you invented.
 
 The session secret:
 
@@ -142,7 +149,7 @@ Both commands are verified: values they produced were fed to a real `next build`
 
 **In the Vercel dashboard: paste the hash exactly as generated. Do not escape anything.** Dashboard values are injected as process environment variables and never pass through a `.env` parser. This was tested the faithful way — a build whose five variables were injected into the child process directly, hashes carrying five literal `$` characters each, which passed the boot check and built. It has not been confirmed on Vercel's own infrastructure (§10).
 
-**The trap that survives, and it has teeth: `vercel env pull` writes `.env.local` with double quotes** — the `DOUBLE` row above. So pulling your production environment down to run the app locally produces a file this app cannot boot from, and the error will name your hashes, which are fine. If you use `vercel env pull`, re-escape the two hash lines to `\$` by hand afterwards.
+**The trap that survives, and it has teeth: `vercel env pull` writes `.env.local` with double quotes** — the `DOUBLE` row above. So pulling your production environment down to run the app locally produces a file this app cannot boot from, and the error will name your hashes, which are fine. If you use `vercel env pull`, re-escape all three credential hash lines (`APP_PASSWORD_HASH_EVA`, `APP_PASSWORD_HASH_ADAM`, `VAULT_PASSPHRASE_HASH`) to `\$` by hand afterwards.
 
 And the trap `.env.example` note 2 already documents: never define these variables in *both* the process environment and `.env.local`. Either alone works; together they fail with "malformed".
 
@@ -160,17 +167,24 @@ The build fails with `Invalid environment for apps/web. The app will not start.`
 | `... must be a bare origin — no query string, no fragment` | You copied a URL out of the browser address bar with something after the hostname. Everything from the first `?` or `#` must go, and so must any trailing path. |
 | `SUPABASE_SERVICE_ROLE_KEY contains whitespace` | The paste line-wrapped, or picked up a trailing newline. Re-copy it as one line. |
 | `SUPABASE_SERVICE_ROLE_KEY is too short` | You pasted the `anon` key's neighbour, a truncated copy, or a project ref. |
-| `APP_PASSWORD_HASH is malformed. Expected "scrypt$<N>$..."` | The single most likely cause is that the `$` characters were eaten (§3.3). In the dashboard, look for a value that starts `scrypt` and then jumps straight to digits. Second cause: you pasted the plaintext password instead of the hash. |
+| `APP_PASSWORD_HASH_EVA is malformed. Expected "scrypt$<N>$..."` (and/or `APP_PASSWORD_HASH_ADAM`, `VAULT_PASSPHRASE_HASH`) | The single most likely cause is that the `$` characters were eaten (§3.3). In the dashboard, look for a value that starts `scrypt` and then jumps straight to digits. Second cause: you pasted the plaintext password instead of the hash. |
 | `... has scrypt N below the 16384 minimum` / `... is not a power of two` | The hash was generated by something other than §3.2's command. |
 | `... has a N-byte salt` / `... has a N-byte derived key` | Same. Regenerate with §3.2. |
 | `... salt is not canonical base64` / `... derived key is not canonical base64` | The hash was truncated, or a character was lost on copy. Regenerate. |
 | `SESSION_SECRET is not canonical base64.` | Not from §3.2's command — or it picked up a stray character. |
 | `SESSION_SECRET decodes to N bytes; HS256 needs at least 32.` | Too short. §3.2 produces exactly 32. |
-| **`APP_PASSWORD_HASH and VAULT_PASSPHRASE_HASH share a salt.`** | You copied the whole app-password line and edited the variable name. Regenerate the vault hash from scratch. This one is worth stopping over: a shared salt means one precomputation attacks both doors. |
-| **`... are the same hash.`** | The vault passphrase is the app password. The vault is not a second door. Regenerate. |
+| **`APP_PASSWORD_HASH_EVA and APP_PASSWORD_HASH_ADAM share a salt.`** | You copied Eva's hash line and changed the variable name to Adam's. Regenerate Adam's hash from scratch with a new secret. A shared salt means one precomputation attacks both credentials — this is the likeliest mistake when splitting one variable into two. |
+| **`APP_PASSWORD_HASH_EVA and VAULT_PASSPHRASE_HASH share a salt.`** (or `APP_PASSWORD_HASH_ADAM and VAULT_PASSPHRASE_HASH`) | Same problem between a different pair. Regenerate the second-named variable from scratch. The boot check runs all three pairs (Eva/Adam, Eva/vault, Adam/vault) — a shared salt in any of them fails the boot. |
+| **`... are the same hash.`** | Two of the three credentials were derived from the same passphrase. Each must be a genuinely different secret. Regenerate the second-named variable with a new passphrase from your password manager. |
 | `X uses the NEXT_PUBLIC_ prefix, which inlines it into the browser bundle.` | You created a variable named `NEXT_PUBLIC_something` that is not the Supabase URL. Rename it. If a secret got that prefix and was ever deployed, treat it as published and rotate it — it is in every cached bundle. |
 
-Two of those messages tell you to "see `apps/web/README.md`". **That file does not exist** — `lib/env.ts` points at it twice and nothing is there. Use §3.2 above instead. (Reported; not fixed on this branch.)
+**Boot warning (not a build failure — the app still starts):**
+
+| Warning text (in server logs, not the build output) | What happened |
+|---|---|
+| `APP_PASSWORD_HASH is set but is no longer read by anything. Eva and Adam now have their own credentials...` | The old single-credential variable is still in your Vercel dashboard or `.env.local`. Delete it everywhere it is defined. The app deliberately does not fail on this — removing it breaks nothing, but leaving it means an old shared secret that nothing verifies and nobody rotates. |
+
+The shared-salt and identical-hash messages each end with `(see apps/web/README.md)`. **That file does not exist** — `lib/env.ts` points at it for each of the three credential pairs and nothing is there. Use §3.2 above instead. (Reported; not fixed on this branch.)
 
 ---
 
@@ -290,7 +304,7 @@ Do not reuse the `SESSION_SECRET` from the old `eva-and-adam` project.
 Sign-in first — almost nothing is reachable without it.
 
 1. **`/` redirects to `/today`, signed out you land on `/login`.** If instead you get a 503 on sign-in, the cause is almost certainly Supabase: `POST /api/session` reads `auth_attempts` *before* it looks at the password, and the rate limiter **fails closed** — a network error there is treated exactly like being under attack. A paused free-tier project does this.
-2. **Sign in with the app password** (the plaintext behind `APP_PASSWORD_HASH`).
+2. **Sign in.** There is one password field — no name selector. Eva types the plaintext behind `APP_PASSWORD_HASH_EVA`; Adam types the plaintext behind `APP_PASSWORD_HASH_ADAM`. The server attributes the login from the password itself and returns `who` in the response; the form goes straight in without a follow-up screen. A "Who's this?" picker (Eva / Adam buttons) appears only if the server cannot attribute the login — meaning the two passwords are the same secret. The boot check makes that case unlikely; if you see the picker, §3.2 was not followed correctly.
 3. **`/today`, `/book`, `/book/days`** — all three read the live database. `/book` and `/book/days` are rendered per request as of this branch; if either shows content that does not change when the database does, the `force-dynamic` fix on those two pages has been lost (§9.1).
 4. **`/sw.js` returns JavaScript, not a 404.** If it 404s, the service-worker build step did not run — check the build log for `[build-sw] done`. Everything else works; offline and image caching do not.
 5. **`/robots.txt`** returns `User-agent: *` / `Disallow: /`.
