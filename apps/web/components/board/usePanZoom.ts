@@ -235,7 +235,7 @@ export function usePanZoom(
     // Velocity tracking state (design-H:1550)
     let vx = 0, vy = 0, lastT = 0, lastX = 0, lastY = 0;
 
-    const [panInst] = Draggable.create(srf, {
+    const panInstances = Draggable.create(srf, {
       type: "x,y",
       allowNativeTouchScrolling: false,
       edgeResistance: 0.82,
@@ -264,7 +264,7 @@ export function usePanZoom(
       onDragEnd() {
         vp.classList.remove("board-panning");
         const b = limits();
-        const self = this;
+        const pan = panRef.current;
         // REDUCED check #2 (out of ten): pan momentum throw
         gsap!.to(srf, {
           x: clamp(this.x + vx * 0.26, b.minX, b.maxX),
@@ -272,13 +272,13 @@ export function usePanZoom(
           duration: reduced() ? 0 : 1.05,
           ease: "power3.out",
           onComplete() {
-            self.update();
+            pan?.update();
           },
         });
       },
     });
 
-    panRef.current = panInst;
+    panRef.current = panInstances[0] ?? null;
 
     // Pinch zoom state (design-H:1619)
     const pts = new Map<number, { x: number; y: number }>();

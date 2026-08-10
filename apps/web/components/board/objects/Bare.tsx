@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- see Print.tsx for the rationale */
 /**
  * Bare — a photograph with no mount, lying directly on the wood.
  *

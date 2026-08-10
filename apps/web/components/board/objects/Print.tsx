@@ -1,3 +1,7 @@
+/* eslint-disable @next/next/no-img-element -- board photographs must be raw
+   <img> elements so that filter:none applies directly and the lamp test can
+   assert it by walking ancestors. next/image wraps in a <span> and changes
+   the ancestor chain in ways that make the lamp test structurally unreliable. */
 /**
  * Print — a photograph on a paper mount with a chin caption.
  *

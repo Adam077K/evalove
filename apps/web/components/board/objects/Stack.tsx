@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- see Print.tsx for the rationale */
 /**
  * Stack — a day pile: one pile per day, as thick as the day was.
  *

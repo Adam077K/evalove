@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element -- furniture images are static
+   assets loaded on the board surface, same reasoning as Print.tsx */
 /**
  * Furniture — tape, pins, pressed stickers, and handwritten labels.
  *
