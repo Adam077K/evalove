@@ -6,28 +6,40 @@
 <title>Orientation probe</title>
 
 <!--
-  THROWAWAY PROBE — design-lead, 10 August.
-  Question design-H never answered: what does the board do with a
-  LANDSCAPE photograph? 24 of the 46 real photographs are landscape.
-  design-H's eight hand-placed table objects are 7 portrait + 1 landscape,
-  and the one landscape (p3) carries a `land:true` flag that is read
-  nowhere in the file.
+  THROWAWAY PROBE - design-lead, 10 August.
 
-  Every rule of design-H is kept here verbatim: paper is rotated,
-  instruments are 0deg, and NOTHING translucent is ever laid on a
-  photograph. The CSS below is copied from design-H, not re-derived.
+  The question design-H never answered: what do its frames do with a
+  photograph whose shape is not the shape they were drawn around?
 
-  ?p=a  the frame crops to portrait      (option A)
-  ?p=b  the object takes the photo shape (option B)
-  ?p=d  a second object type: the plate  (option D)
-  ?p=deck  the deck card, A vs landscape-native
-  ?p=book  the book leaf, portrait in a landscape mount
+  FIRST VERSION OF THIS PROBE ASKED THE WRONG QUESTION. It was built on
+  "24 landscape, 22 portrait", which came from `sips -g pixelWidth`. sips
+  reports stored dimensions; a browser applies the EXIF orientation tag
+  first. Sixteen of the forty-six files carry orientation 6. Read in a
+  browser - which is what ships - the library is 8 landscape / 38 portrait.
+  Three of the four photographs the first version called landscape are
+  portrait. Hence the trap at the foot of this file: every photograph here
+  declares data-shape, and the shape is verified against naturalWidth at
+  runtime. If a declaration is wrong the screenshot step refuses to shoot.
+
+  Every rule below is copied from design-H, not re-derived, except two that
+  are marked as the options under test. Paper is rotated, instruments are
+  0deg, and nothing translucent is ever laid on a photograph.
+
+  ?p=book      the leaf as built: a PORTRAIT in the 266x196 mount   (38 of 46)
+  ?p=bookfit   the mount takes the photograph's shape
+  ?p=deck      the card as built: a LANDSCAPE in the 280x344 well
+  ?p=deckfit   a landscape-native well, 280x210
+  ?p=tableB    the table as built (height:auto) with a landscape in a
+               slot whose coordinates were drawn around a portrait
+  ?p=tableA    option A - every slot a fixed portrait well, crop to fit
+  ?p=tableD    option D - two object types, the slot declares the shape
+  ?p=day31     31 July under option D: the day that is all landscape
+  ?p=asbuilt   the same table coordinates with portraits, for reference
 -->
 
 <style>
 :root{
   --wood:url("https://d8j0ntlcm91z4.cloudfront.net/user_3GsJ2DSZxGcIbdUGLeK8PnRpye2/hf_20260809_114925_187e2b68-0ab4-488c-99a2-2930c98ccf13.png");
-  --cork:url("https://d8j0ntlcm91z4.cloudfront.net/user_3GsJ2DSZxGcIbdUGLeK8PnRpye2/hf_20260809_114925_76b2ed1d-ed1b-4762-9a3a-ef73bf20985b.png");
   --paper:#f2ecdf; --bone:#efe7d6; --print:#fcf8ef; --verso:#e7dcc1;
   --edge:#d8ccb1; --kraft:#a98a63; --ink:#1a1611; --ink-2:#6b6053;
   --hand-eva:#7a2a1c; --hand-adam:#2f3a52; --accent:#2c5a37; --instrument:#f8f3e8;
@@ -52,7 +64,7 @@ body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-fon
   transform-origin:0 0; background:#2a1c12 var(--wood) center/cover no-repeat;
   transform:translate(-40px,0); }
 
-/* ── design-H object rules, copied verbatim ───────────────────── */
+/* -- design-H object rules, copied verbatim --------------------- */
 .obj{ position:absolute; z-index:10; }
 .bare img,.print img{ display:block; width:100%; height:auto; background:#3a3129; }
 .bare{ border-radius:2px; box-shadow:var(--lie); }
@@ -95,13 +107,16 @@ body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-fon
 .hand{ font-family:var(--hand-face); color:var(--hand-eva); font-size:15.5px; line-height:1.5; }
 .hand.his{ color:var(--hand-adam); }
 
-/* OPTION A only: the well is fixed portrait and the photograph is cropped
-   into it. This is the ONLY rule in this file that is not design-H's. */
+/* OPTION A ONLY. Not design-H's. The well is a fixed portrait box and the
+   photograph is cropped into it, so a slot's height no longer depends on
+   what lands in it. Centre crop, because nobody will hand-author an
+   object-position for forty-six photographs. */
 .crop img{ height:var(--wellh); object-fit:cover; }
 
-/* OPTION D only: the plate — a landscape-native object. Same paper, same
-   shadow, same rotation language; a different footprint. Nothing about a
-   photograph is altered, only the shape of the thing it is mounted on. */
+/* OPTION D ONLY. Not design-H's. A second object type, landscape-native.
+   Same paper, same shadow, same rotation language, a different footprint.
+   Nothing about the photograph is altered - only the shape of the thing
+   it is mounted on. */
 .plate{
   background:linear-gradient(168deg,#fdfaf2,#f7f1e3 62%,#f1e9d8),
              url("/materials/paper-coldpress-stock.webp") center/210% auto;
@@ -112,13 +127,13 @@ body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-fon
 .plate .chin{ display:block; font-family:var(--hand-face); font-size:13px;
   line-height:26px; height:26px; color:var(--hand-adam); text-align:right; padding-right:4px; }
 
-/* ── the deck card, copied from design-H ──────────────────────── */
+/* -- the deck card, copied from design-H ------------------------ */
 .deckstage{ position:absolute; inset:0; z-index:60; background:#150f0a; display:none;
   flex-direction:column; align-items:center; }
 .deckstage::before{ content:""; position:absolute; inset:0; z-index:0;
   background:#150f0a var(--wood) center/cover no-repeat; opacity:.34; }
 .deckstage[data-on]{ display:flex; }
-.pcard{ position:relative; z-index:2; width:306px; height:462px; margin-top:14px; }
+.pcard{ position:relative; z-index:2; width:306px; height:462px; margin-top:52px; }
 .cx{ position:relative; width:100%; height:100%; border-radius:2px;
   box-shadow:0 30px 58px rgba(0,0,0,.58), 0 7px 16px rgba(0,0,0,.42); }
 .front{ position:absolute; inset:0; border-radius:2px; overflow:hidden;
@@ -128,7 +143,7 @@ body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-fon
 .well{ position:relative; width:280px; height:344px; overflow:hidden; background:#241d15;
   box-shadow:0 1px 4px rgba(60,42,18,.34), 0 0 0 1px rgba(60,42,18,.13); }
 .well img{ display:block; width:100%; height:100%; object-fit:cover; filter:none; }
-/* landscape-native well: same 280 width, the height the photograph asks for */
+/* landscape-native well: design-H's width, the height the photograph asks for */
 .well.landwell{ height:210px; }
 .chin2{ flex:1 1 auto; display:flex; flex-direction:column; justify-content:center; padding:0 3px; }
 .chin2 .place{ font-family:"Fraunces",Georgia,serif;
@@ -141,13 +156,13 @@ body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-fon
   background:linear-gradient(45deg,#d7c9a8,#e6dcc2 55%,#f2ead8);
   box-shadow:-2px -2px 3px rgba(60,42,18,.3); }
 
-/* ── the book leaf, copied from design-H ──────────────────────── */
+/* -- the book leaf, copied from design-H ------------------------ */
 .bookstage{ position:absolute; inset:0; z-index:60; background:#150f0a; display:none;
   flex-direction:column; align-items:center; }
 .bookstage::before{ content:""; position:absolute; inset:0; z-index:0;
   background:#150f0a var(--wood) center/cover no-repeat; opacity:.34; }
 .bookstage[data-on]{ display:flex; }
-.pleaf{ position:relative; z-index:2; width:330px; height:496px; margin-top:8px; }
+.pleaf{ position:relative; z-index:2; width:330px; height:496px; margin-top:46px; }
 .lf{ position:absolute; inset:0; overflow:hidden;
   background:linear-gradient(96deg,#efe7d4,#f6f0e2 22%,#f3ecdd);
   box-shadow:0 2px 6px rgba(0,0,0,.32), 0 14px 30px rgba(0,0,0,.34);
@@ -162,16 +177,17 @@ body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-fon
   box-shadow:0 1px 2px rgba(60,42,18,.3), 0 8px 16px rgba(60,42,18,.22); }
 .lf .mount img{ display:block; width:100%; height:196px; object-fit:cover;
   background:#241d15; filter:none; }
-.lf .mount.fit img{ height:auto; object-fit:fill; }
+/* the only non-design-H rule on the leaf: the mount takes the shape */
+.lf .mount.fit img{ height:auto; object-fit:contain; }
 .lf .mount .cap{ display:block; font-family:var(--hand-face); font-size:14px;
   line-height:30px; height:30px; color:var(--hand-eva); text-align:center; }
 .lf .say{ margin-top:16px; font-family:var(--hand-face); font-size:16.5px;
   line-height:1.52; color:var(--hand-eva); }
 
-/* the caption strip that names which rule is on screen. It is chrome,
-   it sits on the wood, never on a photograph. */
+/* The strip naming which rule is on screen. It is chrome. It sits on the
+   wood or on the stage, never on a photograph. */
 #tag{ position:fixed; z-index:200; left:0; right:0; top:0; text-align:center;
-  font-family:var(--ui); font-size:9.5px; font-weight:700; letter-spacing:.2em;
+  font-family:var(--ui); font-size:9.5px; font-weight:700; letter-spacing:.18em;
   text-transform:uppercase; color:#f0e5cd; padding:9px 12px;
   background:#140d07; box-shadow:0 2px 10px rgba(0,0,0,.6); }
 #tag b{ color:var(--amber); }
@@ -195,104 +211,126 @@ body{ font-family:Georgia,"Times New Roman",serif; color:var(--ink); -webkit-fon
 (function(){
 "use strict";
 
-/* Real photographs, measured with sips — not guessed.
-   L = 1000x750 (1.333). P = 750x1000 (0.750). N = narrow portrait. */
-var L1 = { src:"/design-ph-20260724-09.jpg", w:1000, h:750 };
-var L2 = { src:"/design-ph-20260731-01.jpg", w:1000, h:750 };
-var L3 = { src:"/design-ph-20260727-01.jpg", w:1000, h:750 };
-var L4 = { src:"/design-ph-20260802-01.jpg", w:1000, h:750 };
-var P1 = { src:"/design-ph-20260806-01.jpg", w:750,  h:1000 };
-var P2 = { src:"/design-ph-20260803-01.jpg", w:750,  h:1000 };
-var N1 = { src:"/design-ph-20260806-04.jpg", w:460,  h:1000 };
+/* Real photographs from the real library, with the shape a BROWSER paints
+   them - not the shape sips reports. Every one of these is asserted at the
+   foot of this file against naturalWidth, so a wrong entry here cannot
+   quietly produce a screenshot. */
+var LAND = {
+  jul31a: { src:"/design-ph-20260731-01.jpg", shape:"land" },
+  jul31b: { src:"/design-ph-20260731-04.jpg", shape:"land" },
+  jul31c: { src:"/design-ph-20260731-05.jpg", shape:"land" },
+  jul24a: { src:"/design-ph-20260724-16.jpg", shape:"land" },
+  jul24b: { src:"/design-ph-20260724-17.jpg", shape:"land" },
+  jul27:  { src:"/design-ph-20260727-02.jpg", shape:"land" },
+  aug03:  { src:"/design-ph-20260803-06.jpg", shape:"land" }
+};
+var PORT = {
+  aug06:  { src:"/design-ph-20260806-01.jpg", shape:"port" },
+  aug03:  { src:"/design-ph-20260803-01.jpg", shape:"port" },
+  jul24:  { src:"/design-ph-20260724-09.jpg", shape:"port" },
+  narrow: { src:"/design-ph-20260806-04.jpg", shape:"port" }
+};
 
 var world = document.getElementById("world");
 var q = new URLSearchParams(location.search);
-var panel = q.get("p") || "a";
+var panel = q.get("p") || "tableB";
 
-function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+/* Photographs get a neutral alt here on purpose. This is a throwaway probe
+   and describing a photograph nobody on the team has opened is how a wrong
+   caption gets into the repository. */
+function img(ph, when){
+  return '<img src="'+ph.src+'" data-shape="'+ph.shape+'" alt="Photograph, '+when+'">';
+}
 
-/* The day column exactly as design-H places it: the same left/top, the
-   same widths, the same rotations. Only the photographs change. */
+/* design-H's own day header, at design-H's own coordinates. */
 function header(){
   return '<div class="obj scrap places" style="left:50px;top:52px;transform:rotate(-0.9deg)">' +
     '<div class="sheet torn-b"><div class="eyebrow">Sunday 9 August</div>' +
     '<span class="citybox">New York</span><span class="clock">3:41 PM</span>' +
     '<div class="rule"></div></div></div>' +
     '<div class="tape" style="left:350px;top:38px;width:76px;transform:rotate(30deg)">' +
-    '<img src="/materials/washi-terracotta.webp" alt=""></div>' +
-    '<div class="press" style="left:326px;top:166px;width:76px;transform:rotate(22deg);z-index:4">' +
-    '<img src="/materials/sticker-rose-red-pressed.webp" alt=""></div>';
+    '<img src="/materials/washi-terracotta.webp" alt=""></div>';
 }
 
-/* ---- OPTION A: the frame stays portrait, the photograph is cropped ---- */
-function optionA(){
-  /* Every slot keeps the height the ORIGINAL portrait photograph gave it,
-     and a landscape photograph is object-fit:cover'd into it. The 250px
-     print was 328px tall with a portrait in it; it stays 328px tall. */
-  var h = '';
-  h += header();
-  h += '<div class="obj print crop" style="left:60px;top:236px;width:250px;transform:rotate(-3.4deg);--wellh:328px">' +
-       '<img src="'+L1.src+'" alt="Landscape photograph, 24 July"><span class="chin">24 July</span></div>';
-  h += '<div class="tape" style="left:250px;top:242px;width:96px;transform:rotate(23deg)">' +
-       '<img src="/materials/washi-ochre-dots.webp" alt=""></div>';
-  h += '<div class="obj bare crop" style="left:282px;top:326px;width:158px;z-index:8;transform:rotate(5.6deg);--wellh:211px">' +
-       '<img src="'+L2.src+'" alt="Landscape photograph, 31 July"></div>';
-  h += '<div class="label hers" style="left:278px;top:552px;transform:rotate(4.4deg)">31 July</div>';
-  h += '<div class="obj bare crop" style="left:44px;top:640px;width:140px;transform:rotate(-6.2deg);--wellh:187px">' +
-       '<img src="'+L3.src+'" alt="Landscape photograph, 27 July"></div>';
-  h += '<div class="label" style="left:40px;top:842px;transform:rotate(-5.2deg)">27 July</div>';
-  h += '<div class="obj print crop" style="left:200px;top:690px;width:176px;transform:rotate(2.6deg);--wellh:231px">' +
-       '<img src="'+P1.src+'" alt="Portrait photograph, 6 August"><span class="chin his">6 August</span></div>';
-  return h;
-}
-
-/* ---- OPTION B: the object takes the photograph's own shape ---- */
-function optionB(){
-  /* Identical left/top and width to option A. height:auto is design-H's
-     OWN rule for .print img and .bare img, so nothing here is invented —
-     the object simply ends where the photograph ends. */
-  var h = '';
-  h += header();
+/* ---- THE TABLE AS BUILT ------------------------------------------------
+   design-H's exact coordinates, lifted from design-H.html: the 250px print
+   at 60,236 rot -3.4; the 158px bare at 282,326 rot 5.6 with its label at
+   278,518; the butterfly at 44,546. Those numbers were chosen by hand with
+   a portrait in every slot. `asbuilt` puts portraits back in them.
+   `tableB` changes one thing: the photographs are landscape. The rule is
+   design-H's own - .print img and .bare img are height:auto - so the object
+   simply ends where the photograph ends, and the hand-placed things below
+   it stay where they were put. */
+function tableSlots(a, b){
+  var h = header();
   h += '<div class="obj print" style="left:60px;top:236px;width:250px;transform:rotate(-3.4deg)">' +
-       '<img src="'+L1.src+'" alt="Landscape photograph, 24 July"><span class="chin">24 July</span></div>';
+       img(a, "2 August") + '<span class="chin">2 August</span></div>';
   h += '<div class="tape" style="left:250px;top:242px;width:96px;transform:rotate(23deg)">' +
        '<img src="/materials/washi-ochre-dots.webp" alt=""></div>';
+  h += '<div class="press" style="left:44px;top:546px;width:62px;transform:rotate(-22deg);z-index:28">' +
+       '<img src="/materials/sticker-butterfly-pressed.webp" alt=""></div>';
   h += '<div class="obj bare" style="left:282px;top:326px;width:158px;z-index:8;transform:rotate(5.6deg)">' +
-       '<img src="'+L2.src+'" alt="Landscape photograph, 31 July"></div>';
-  h += '<div class="label hers" style="left:278px;top:552px;transform:rotate(4.4deg)">31 July</div>';
-  h += '<div class="obj bare" style="left:44px;top:640px;width:140px;transform:rotate(-6.2deg)">' +
-       '<img src="'+L3.src+'" alt="Landscape photograph, 27 July"></div>';
-  h += '<div class="label" style="left:40px;top:842px;transform:rotate(-5.2deg)">27 July</div>';
-  h += '<div class="obj print" style="left:200px;top:690px;width:176px;transform:rotate(2.6deg)">' +
-       '<img src="'+P1.src+'" alt="Portrait photograph, 6 August"><span class="chin his">6 August</span></div>';
+       img(b, "6 August") + '</div>';
+  h += '<div class="label hers" style="left:278px;top:518px;transform:rotate(4.4deg)">Lisbon, 6 August</div>';
   return h;
 }
 
-/* ---- OPTION D: two object types, and the slot knows which it wants ---- */
-function optionD(){
-  /* The composition is authored as SLOTS, and a slot declares the shape it
-     holds. A landscape photograph goes in a plate: wider, shorter, its
-     caption along the foot instead of centred. A portrait goes in a print.
-     Nothing is cropped and nothing leaves a hole, because the slot was
-     drawn for the shape that lands in it. */
-  var h = '';
-  h += header();
-  h += '<div class="obj plate" style="left:46px;top:236px;width:292px;transform:rotate(-2.2deg)">' +
-       '<img src="'+L1.src+'" alt="Landscape photograph, 24 July"><span class="chin">24 July</span></div>';
-  h += '<div class="tape" style="left:288px;top:222px;width:88px;transform:rotate(19deg)">' +
+/* ---- OPTION A: every slot a fixed portrait well ------------------------
+   Same coordinates. Each slot keeps the height its portrait gave it and a
+   landscape is object-fit:cover'd into it. A 4:3 landscape in a 3:4 well
+   keeps 56 percent of the frame; the outer 44 percent is gone. */
+function optionA(){
+  var h = header();
+  h += '<div class="obj print crop" style="left:60px;top:236px;width:250px;transform:rotate(-3.4deg);--wellh:309px">' +
+       img(LAND.jul31a, "31 July") + '<span class="chin">31 July</span></div>';
+  h += '<div class="tape" style="left:250px;top:242px;width:96px;transform:rotate(23deg)">' +
        '<img src="/materials/washi-ochre-dots.webp" alt=""></div>';
-  h += '<div class="obj print" style="left:66px;top:470px;width:172px;transform:rotate(-4.4deg)">' +
-       '<img src="'+P1.src+'" alt="Portrait photograph, 6 August"><span class="chin">6 August</span></div>';
-  h += '<div class="obj plate" style="left:238px;top:512px;width:150px;z-index:12;transform:rotate(4.8deg)">' +
-       '<img src="'+L2.src+'" alt="Landscape photograph, 31 July"><span class="chin">31 July</span></div>';
-  h += '<div class="press" style="left:44px;top:690px;width:62px;transform:rotate(-22deg);z-index:28">' +
+  h += '<div class="press" style="left:44px;top:546px;width:62px;transform:rotate(-22deg);z-index:28">' +
        '<img src="/materials/sticker-butterfly-pressed.webp" alt=""></div>';
-  h += '<div class="obj plate" style="left:96px;top:748px;width:266px;transform:rotate(1.9deg)">' +
-       '<img src="'+L3.src+'" alt="Landscape photograph, 27 July"><span class="chin">27 July</span></div>';
-  h += '<div class="obj print" style="left:60px;top:990px;width:132px;transform:rotate(3.6deg)">' +
-       '<img src="'+N1.src+'" alt="Narrow portrait photograph, 6 August"><span class="chin his">6 August</span></div>';
-  h += '<div class="obj plate" style="left:214px;top:1010px;width:158px;transform:rotate(-3.1deg)">' +
-       '<img src="'+L4.src+'" alt="Landscape photograph, 2 August"><span class="chin">2 August</span></div>';
+  h += '<div class="obj bare crop" style="left:282px;top:326px;width:158px;z-index:8;transform:rotate(5.6deg);--wellh:211px">' +
+       img(LAND.jul27, "27 July") + '</div>';
+  h += '<div class="label hers" style="left:278px;top:518px;transform:rotate(4.4deg)">27 July</div>';
+  return h;
+}
+
+/* ---- OPTION D: the slot declares the shape it holds --------------------
+   A landscape goes in a plate: wider, shorter, caption along the foot. A
+   portrait goes in a print. Nothing is cropped and nothing leaves a hole,
+   because the slot's height was computed from the shape it accepts. */
+function optionD(){
+  var h = header();
+  h += '<div class="obj plate" style="left:46px;top:236px;width:292px;transform:rotate(-2.2deg)">' +
+       img(LAND.jul31a, "31 July") + '<span class="chin">31 July</span></div>';
+  h += '<div class="tape" style="left:286px;top:222px;width:88px;transform:rotate(19deg)">' +
+       '<img src="/materials/washi-ochre-dots.webp" alt=""></div>';
+  h += '<div class="obj print" style="left:60px;top:498px;width:168px;transform:rotate(-4.4deg)">' +
+       img(PORT.aug06, "6 August") + '<span class="chin">6 August</span></div>';
+  h += '<div class="obj plate" style="left:240px;top:530px;width:152px;z-index:12;transform:rotate(4.8deg)">' +
+       img(LAND.jul27, "27 July") + '<span class="chin">27 July</span></div>';
+  h += '<div class="press" style="left:236px;top:690px;width:58px;transform:rotate(-22deg);z-index:28">' +
+       '<img src="/materials/sticker-butterfly-pressed.webp" alt=""></div>';
+  return h;
+}
+
+/* ---- 31 JULY: the day that is entirely landscape -----------------------
+   Three photographs, all three landscape. Every other day in the library
+   has a portrait in it somewhere; this one does not. Option D's plate,
+   three of them stacked, is what that day looks like. */
+function day31(){
+  var h = '<div class="obj scrap places" style="left:50px;top:52px;transform:rotate(-0.9deg)">' +
+    '<div class="sheet torn-b"><div class="eyebrow">Friday 31 July</div>' +
+    '<span class="citybox">New York</span><span class="clock">9:12 PM</span>' +
+    '<div class="rule"></div></div></div>' +
+    '<div class="tape" style="left:350px;top:38px;width:76px;transform:rotate(30deg)">' +
+    '<img src="/materials/washi-terracotta.webp" alt=""></div>';
+  h += '<div class="obj plate" style="left:44px;top:238px;width:286px;transform:rotate(-2.4deg)">' +
+       img(LAND.jul31a, "31 July") + '<span class="chin">31 July</span></div>';
+  h += '<div class="obj plate" style="left:150px;top:468px;width:250px;z-index:12;transform:rotate(3.1deg)">' +
+       img(LAND.jul31b, "31 July") + '<span class="chin">31 July</span></div>';
+  h += '<div class="press" style="left:52px;top:520px;width:66px;transform:rotate(-16deg);z-index:28">' +
+       '<img src="/materials/sticker-record-45rpm.webp" alt=""></div>';
+  h += '<div class="obj plate" style="left:62px;top:664px;width:268px;transform:rotate(-1.2deg)">' +
+       img(LAND.jul31c, "31 July") + '<span class="chin">31 July</span></div>';
   return h;
 }
 
@@ -304,13 +342,15 @@ function deckPanel(which){
   st.innerHTML =
     '<div class="pcard"><div class="cx"><div class="front">' +
       '<div class="well'+(landNative?" landwell":"")+'">' +
-        '<img src="'+L1.src+'" alt="Landscape photograph, 24 July"></div>' +
-      '<div class="chin2"><p class="place">24 July</p><p class="when">2026</p></div>' +
+        img(LAND.jul31a, "31 July") + '</div>' +
+      '<div class="chin2"><p class="place">The three of them</p><p class="when">31 July 2026</p></div>' +
       '<span class="corner"></span>' +
     '</div></div></div>';
 }
 
-/* ---- the book leaf ---- */
+/* ---- the book leaf ----
+   The common case, not the edge case: the mount is 266 wide by 196 tall,
+   a landscape box, and 38 of the 46 photographs are portrait. */
 function bookPanel(which){
   var st = document.getElementById("bookstage");
   st.setAttribute("data-on","");
@@ -319,25 +359,29 @@ function bookPanel(which){
     '<div class="pleaf"><div class="lf">' +
       '<p class="kicker">One</p><h2>The square</h2>' +
       '<div class="mount'+(fit?" fit":"")+'">' +
-        '<img src="'+P2.src+'" alt="Portrait photograph, 3 August">' +
-        '<span class="cap">3 August</span></div>' +
+        img(PORT.aug06, "6 August") +
+        '<span class="cap">6 August</span></div>' +
       '<p class="say">the whole square to myself for about a minute.</p>' +
     '</div></div>';
 }
 
 var TAGS = {
-  a:    'Option A &middot; <b>the frame crops to portrait</b> &middot; 39% of each landscape frame discarded',
-  b:    'Option B &middot; <b>the object takes the photograph’s shape</b> &middot; same slots, holes below',
-  d:    'Option D &middot; <b>a second object type: the plate</b> &middot; slots authored per orientation',
-  deck:     'The deck card today &middot; <b>landscape cropped into a 280&times;344 portrait well</b>',
-  deckfit:  'The deck card &middot; <b>landscape-native well, 280&times;210</b>',
-  book:     'The book leaf today &middot; <b>portrait cropped into a 266&times;196 landscape mount</b> &middot; 45% lost',
-  bookfit:  'The book leaf &middot; <b>mount takes the photograph’s shape</b>'
+  asbuilt:'design-H as approved &middot; <b>portraits in slots drawn for portraits</b>',
+  tableB: 'The table as built &middot; <b>landscape, height:auto</b> &middot; the label and the butterfly stay put',
+  tableA: 'Option A &middot; <b>fixed portrait well, crop to fit</b> &middot; 44% of each landscape gone',
+  tableD: 'Option D &middot; <b>the slot declares the shape</b> &middot; print for portrait, plate for landscape',
+  day31:  '31 July under option D &middot; <b>the one day that is all landscape</b>',
+  deck:   'The card as built &middot; <b>landscape in the 280&times;344 well</b> &middot; centre crop',
+  deckfit:'The card &middot; <b>landscape-native well, 280&times;210</b>',
+  book:   'The leaf as built &middot; <b>portrait in the 266&times;196 mount</b> &middot; this is 38 of 46',
+  bookfit:'The leaf &middot; <b>the mount takes the photograph</b>'
 };
 
-if (panel === "a") world.innerHTML = optionA();
-else if (panel === "b") world.innerHTML = optionB();
-else if (panel === "d") world.innerHTML = optionD();
+if (panel === "asbuilt") world.innerHTML = tableSlots(PORT.jul24, PORT.aug06);
+else if (panel === "tableB") world.innerHTML = tableSlots(LAND.jul31a, LAND.jul27);
+else if (panel === "tableA") world.innerHTML = optionA();
+else if (panel === "tableD") world.innerHTML = optionD();
+else if (panel === "day31") world.innerHTML = day31();
 else if (panel === "deck") deckPanel("crop");
 else if (panel === "deckfit") deckPanel("fit");
 else if (panel === "book") bookPanel("crop");
@@ -345,18 +389,30 @@ else if (panel === "bookfit") bookPanel("fit");
 
 document.getElementById("tag").innerHTML = TAGS[panel] || panel;
 
-/* THE TRAP THIS PROJECT HAS ALREADY PAID FOR: a screen has been judged
-   before with 401s where the photographs go. Nothing here is judged until
-   every <img> reports a non-zero naturalWidth. __READY stays false and
-   __BAD lists whatever failed, so the screenshot step can refuse. */
+/* THE TRAP.
+   Two things this project has already paid for. A screen was judged once
+   with 401s where the photographs go, so nothing is shot until every img
+   reports a non-zero naturalWidth. And the first version of this probe
+   declared four photographs landscape when three of them were portrait, so
+   every declared shape is now checked against what the browser painted.
+   Both checks can fail, and __BAD carries the reason out. */
 window.__BAD = [];
 window.__READY = false;
 window.addEventListener("load", function(){
   var imgs = [].slice.call(document.images);
   imgs.forEach(function(im){
-    if (!im.complete || im.naturalWidth === 0) window.__BAD.push(im.getAttribute("src"));
+    var src = im.getAttribute("src");
+    if (!im.complete || im.naturalWidth === 0) { window.__BAD.push("blank: " + src); return; }
+    var want = im.getAttribute("data-shape");
+    if (!want) return;
+    var got = im.naturalWidth > im.naturalHeight ? "land" : "port";
+    if (got !== want) {
+      window.__BAD.push("declared " + want + " but browser paints " + got +
+        " (" + im.naturalWidth + "x" + im.naturalHeight + "): " + src);
+    }
   });
   window.__COUNT = imgs.length;
+  window.__SHAPED = imgs.filter(function(i){ return i.getAttribute("data-shape"); }).length;
   window.__READY = true;
 });
 })();

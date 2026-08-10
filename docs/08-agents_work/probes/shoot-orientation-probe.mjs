@@ -11,13 +11,15 @@ const OUT = "/Users/adamks/VibeCoding/evalove/.worktrees/board-probe/docs/08-age
 const BASE = "http://127.0.0.1:4599/design-probe-orient.html";
 
 const PANELS = [
-  ["a", "PROBE-1-crop-to-portrait.png"],
-  ["b", "PROBE-2-object-takes-shape.png"],
-  ["d", "PROBE-3-the-plate.png"],
-  ["deck", "PROBE-4-deck-landscape-cropped.png"],
-  ["deckfit", "PROBE-5-deck-landscape-native.png"],
-  ["book", "PROBE-6-book-portrait-cropped.png"],
-  ["bookfit", "PROBE-7-book-mount-fits.png"],
+  ["asbuilt", "PROBE-0-table-as-approved.png"],
+  ["tableB", "PROBE-1-table-landscape-height-auto.png"],
+  ["tableA", "PROBE-2-table-crop-to-portrait-well.png"],
+  ["tableD", "PROBE-3-table-the-plate.png"],
+  ["day31", "PROBE-4-31-july-all-landscape.png"],
+  ["deck", "PROBE-5-deck-landscape-cropped.png"],
+  ["deckfit", "PROBE-6-deck-landscape-native.png"],
+  ["book", "PROBE-7-book-portrait-in-landscape-mount.png"],
+  ["bookfit", "PROBE-8-book-mount-takes-photograph.png"],
 ];
 
 const browser = await chromium.launch();
@@ -39,18 +41,34 @@ for (const [p, file] of PANELS) {
 
   const bad = await page.evaluate(() => window.__BAD);
   const count = await page.evaluate(() => window.__COUNT);
-  // Second, independent check: measure every img from the harness side too,
-  // so a bug in the page's own detector cannot pass this silently.
-  const measured = await page.$$eval("img", (els) =>
-    els.map((e) => ({ src: e.getAttribute("src"), nw: e.naturalWidth, rw: Math.round(e.getBoundingClientRect().width) })),
+  const shaped = await page.evaluate(() => window.__SHAPED);
+  // Second, independent check, run from the harness rather than the page, so
+  // a bug in the page's own detector cannot pass this silently. It repeats
+  // both tests: nothing blank, and nothing whose declared shape is not the
+  // shape the browser painted.
+  const measured = await page.$$eval("img[data-shape]", (els) =>
+    els.map((e) => ({
+      src: e.getAttribute("src"),
+      want: e.getAttribute("data-shape"),
+      got: e.naturalWidth > e.naturalHeight ? "land" : "port",
+      nw: e.naturalWidth,
+      nh: e.naturalHeight,
+    })),
   );
-  const broken = measured.filter((m) => m.nw === 0);
-  if (bad.length || broken.length) {
+  const blank = await page.$$eval("img", (els) =>
+    els.filter((e) => e.naturalWidth === 0).map((e) => e.getAttribute("src")),
+  );
+  const mismatched = measured.filter((m) => m.nw === 0 || m.want !== m.got);
+  if (bad.length || blank.length || mismatched.length) {
     failed = true;
-    console.log(`  !! ${p}: page reported ${JSON.stringify(bad)}, harness found ${JSON.stringify(broken)}`);
+    console.log(`  !! ${p}: page said ${JSON.stringify(bad)}`);
+    console.log(`     harness blank ${JSON.stringify(blank)} mismatched ${JSON.stringify(mismatched)}`);
   }
+  // A panel that declares no shapes has not been checked by the shape test.
+  // Say so rather than let a silent zero read as a pass.
+  if (shaped === 0) console.log(`  !! ${p}: no photograph declared a shape - shape test did not run`);
   await page.screenshot({ path: `${OUT}/${file}` });
-  console.log(`${p.padEnd(8)} -> ${file}  imgs=${count} broken=${broken.length}`);
+  console.log(`${p.padEnd(9)} -> ${file}  imgs=${count} shape-checked=${shaped} blank=${blank.length}`);
 }
 
 await browser.close();
