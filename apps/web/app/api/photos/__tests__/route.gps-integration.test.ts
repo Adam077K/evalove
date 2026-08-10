@@ -89,6 +89,9 @@ vi.mock("@/lib/data", async (importActual) => {
         async findPhotoByClientUuid() {
           return null; // First commit of this clientUuid in this test.
         },
+        async findPhotoByChecksumSha256() {
+          return null; // No prior photo with these bytes in these tests.
+        },
         async insertPhotoIfAbsent(row: Record<string, unknown>) {
           inserted.push(row);
           return row;
