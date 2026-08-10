@@ -221,57 +221,51 @@ describe("Polaroid — chin minimum height (handwritten line floor)", () => {
 });
 
 /*
- * ─── MUTATION PROOF ───────────────────────────────────────────────────────────
+ * ─── MUTATION PROOF (actual output recorded 2026-08-10) ─────────────────────
  *
- * To generate this output:
- *   1. In Polaroid.tsx FRAMES.chin, set chinMinHeightPx: 0
- *   2. pnpm test apps/web/components/book/__tests__/Polaroid.leaf-shape.test.tsx
- *   3. Restore chinMinHeightPx: 44
+ * Mutation A: FRAMES.chin.chinMinHeightPx set to 0.
+ *   Command: pnpm test components/book/__tests__/Polaroid.leaf-shape.test.tsx
+ *   Result:  3 failing, 7 passing
  *
- * Output (abbreviated) when chinMinHeightPx is 0:
+ *   FAIL  Polaroid — chin minimum height > chin div carries minHeight '44px' for a portrait photo
+ *   AssertionError: expected '' to be '44px' // Object.is equality
+ *   - Expected: 44px
+ *   + Received: (empty)
  *
- *   FAIL  apps/web/components/book/__tests__/Polaroid.leaf-shape.test.tsx
+ *   FAIL  Polaroid — chin minimum height > chin div carries minHeight '44px' for the widest landscape
+ *   AssertionError: expected '' to be '44px' // Object.is equality
+ *   - Expected: 44px
+ *   + Received: (empty)
  *
- *   Polaroid — chin minimum height (handwritten line floor)
- *     × chin div carries minHeight '44px' for a portrait photo
- *       AssertionError: expected '' to be '44px'
- *         - Expected: "44px"
- *         + Received: ""
+ *   FAIL  Polaroid — chin minimum height > chin div carries minHeight '44px' for the tallest portrait
+ *   AssertionError: expected '' to be '44px' // Object.is equality
+ *   - Expected: 44px
+ *   + Received: (empty)
  *
- *     × chin div carries minHeight '44px' for the widest landscape photo in the library
- *       AssertionError: expected '' to be '44px'
- *         - Expected: "44px"
- *         + Received: ""
+ * Mutation B: aspectRatio hardcoded to "795 / 1024" (the old fixed value).
+ *   Result:  5 failing, 5 passing
  *
- *     × chin div carries minHeight '44px' for the tallest portrait in the library
- *       AssertionError: expected '' to be '44px'
- *         - Expected: "44px"
- *         + Received: ""
+ *   FAIL  > portrait 1200×1600 — frame derives from photo
+ *   AssertionError: expected 0.7763671875 to be close to 0.6063849475632326,
+ *   received difference 0.16998, expected ±0.00005
  *
- *   AR-formula tests still pass because the formula change is independent.
+ *   FAIL  > tallest portrait 460×1000 — frame derives from photo
+ *   AssertionError: expected 0.7763671875 to be close to 0.37191610117211604,
+ *   received difference 0.40445, expected ±0.00005
  *
- * To verify the AR-formula failure (revert to hardcoded "795 / 1024"):
- *   In Polaroid.tsx, replace the aspectRatio computation with:
- *     const aspectRatio = "795 / 1024";
+ *   FAIL  > widest landscape 1000×750 — frame derives from photo
+ *   AssertionError: expected 0.7763671875 to be close to 1.0780176845568579,
+ *   received difference 0.30165, expected ±0.00005
  *
- *   Failing tests:
- *     × portrait 1200×1600 — frame derives from photo
- *       AssertionError: expected 0.776367... to be close to 0.6086... ± 1e-4
+ *   FAIL  > landscape frame AR is wider than portrait frame AR
+ *   AssertionError: expected 0.7763671875 to be greater than 0.7763671875
+ *   (both photos produce the same hardcoded ratio — the test is structurally incapable of passing)
  *
- *     × tallest portrait 460×1000 — frame derives from photo
- *       AssertionError: expected 0.776367... to be close to 0.3724... ± 1e-4
+ *   FAIL  > the hardcoded 795/1024 ratio is NOT what ships
+ *   AssertionError: expected 0.7763671875 to not be close to 0.7763671875,
+ *   received difference 0, expected >0.005
+ *   (the ratio IS the old value — the test that asserts it should differ fails)
  *
- *     × widest landscape 1000×750 — frame derives from photo
- *       AssertionError: expected 0.776367... to be close to 1.0782... ± 1e-4
- *
- *     × landscape frame AR is wider than portrait frame AR
- *       AssertionError: expected 0.776... not to be greater than 0.776...
- *       (ar2 === ar1 because both use the same hardcoded ratio)
- *
- *     × the hardcoded 795/1024 ratio is NOT what ships
- *       AssertionError: expected 0.776367... to not be close to 0.776367...
- *       (this one PASSES on the broken impl — it expects the ratio to differ)
- *       Wait: that test asserts NOT close to 0.7764, so it FAILS when ratio IS 0.7764.
- *       Correct — the test fails on the broken implementation as intended.
+ * Both mutations were applied and restored; the test file shows the restored result (10/10 pass).
  * ──────────────────────────────────────────────────────────────────────────────
  */
