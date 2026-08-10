@@ -778,6 +778,26 @@ Three consequences for the tasks above:
    The aspect of every photograph is known before paint, so the placement rule is
    pure arithmetic and the board has no layout shift. Add that to T2's criteria.
 
+### `height:auto` is necessary and nowhere near sufficient — the picture of why
+
+`PROBE-1-table-landscape-height-auto.png` is the mock's own table with landscape
+photographs dropped into it and nothing else changed. **Open it before briefing T2.**
+The photographs themselves are fine — the mount takes the landscape shape, the chin
+still reads. Everything around them breaks:
+
+- the pressed butterfly, which sat on the print's lower-left corner in PROBE-0, is
+  now stranded alone on bare wood most of a screen below it;
+- the label `Lisbon, 6 August` floats in open wood with its photograph up and to the
+  right, half off-screen;
+- the objects lost roughly 40% of their painted height, the hand-tuned coordinates
+  did not move, and the screen opened a hole.
+
+The first pass derived "furniture attaches to objects, never to coordinates" by
+reading the source. This is the photograph of what the codebase looks like when that
+rule is missing, at the only viewport that counts. It is the strongest argument that
+**T2 is the load-bearing task and T1 must not hard-code a single coordinate it will
+have to unpick.**
+
 ---
 
 ## The nearly-empty board, answered
@@ -818,8 +838,24 @@ and nothing else. That single fact makes T2's derived height tractable — it is
 
 **3 · The emptiness has a floor and a ceiling.** Bare wood is what makes it a table.
 Below roughly half a screen of it between clusters, the objects read as a grid;
-above roughly a screen and a half, the pan feels broken. `gap(n)` clamps between
+above roughly a screen and a half, the pan feels broken. The gap clamps between
 those. That is a number for T2 to tune against a screenshot, not a formula to derive.
+
+**4 · The gap is a function of painted height, not of photograph count.** Corrected
+after opening PROBE-4. Three landscape photographs on 31 July **fill** the screen;
+two portrait photographs on 9 August leave two-fifths of it bare. At `height:auto` a
+landscape photograph laid at the same width paints a little over half the height of a
+portrait one, so count is a poor proxy for how full the board is. T2 sums the painted
+heights — which it can do exactly, from `photos.width`/`height`, before anything
+renders — and spaces against that. A rule keyed on `n` will produce a cramped
+all-landscape day and a hollow all-portrait one.
+
+PROBE-4 also settles two things worth copying rather than re-deriving: a landscape
+photograph needs roughly **2.5× the width** of a portrait one to carry the same
+presence on the wood (the mock's portraits sit at 122–250px; the probe's landscapes
+sit at 640–790px in the same 950px world), and the three prints stagger
+left–right–left down the world rather than stacking on one margin. Both read well at
+393×852. Neither is in the mock's source, because the mock has only one landscape.
 
 **4 · What is forbidden.** No decoration added to fill space — no extra stickers,
 washi or scraps scaled to photograph count. That is the exact move that produced the
@@ -945,8 +981,10 @@ that has not started.
 
 - **I did not open design-H on a phone either.** The first pass's first bullet stands
   unchanged and is still the most important line in this document.
-- **I opened one probe shot, PROBE-0.** PROBE-1 through PROBE-8 remain unopened by
-  both passes.
+- **I opened three probe shots: PROBE-0, PROBE-1 and PROBE-4.** PROBE-2, 3, 5, 6, 7
+  and 8 remain unopened by both passes. PROBE-5 and PROBE-6 are a deck decision
+  (`landscape-cropped` against `landscape-native`) that T4 will have to make and
+  neither pass has looked at.
 - **I did not verify the `world height` arithmetic** in "the bottom is held by things
   that are always there" against the mock's actual y-coordinates below 1400. It is
   reasoned from the object inventory, not measured.
