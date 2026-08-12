@@ -24,6 +24,52 @@
 
 <!-- Entries below this line, most-recent first. -->
 
+## 2026-08-12 — Ten branches merged to main and pushed WITHOUT a QA-Lead verdict, on the founder's direct instruction
+
+Decision-maker: Founder, directly and twice. Tier: **irreversible** (pushed to `origin/main`).
+
+**What happened.** `integration/2026-08-12` — ten branches on top of `238441c` — was merged
+to `main` as `2f7a391` and pushed. **QA-Lead was mid-flight and was stopped**; its
+code-review, security-engineer and adversary-engineer reviewers were all killed before
+returning. **No QA verdict exists for this diff.** The CEO raised the gate requirement,
+the founder reaffirmed the instruction, and the CEO proceeded and recorded it here and in
+the merge commit body rather than leaving it implicit.
+
+**What WAS verified before landing**, by the CEO's own hands and not on an agent's account:
+`pnpm build` passes · `pnpm test` **1230 passed / 1 failed** · `pnpm typecheck` **0 errors**.
+The one failure is `tools/export/__tests__/cli-smoke.test.ts` (`ERR_MODULE_NOT_FOUND`),
+which **also fails on `main`** — `tools/` needs its own `pnpm install`. The diff contains
+no `.env*`, no `node_modules`, no photographs, no `design-H.html`, and touches neither
+`middleware.ts` nor `next.config.ts`. Six load-bearing guards were mutation-verified by
+breaking them and watching them fail: the leaf AR and 44px floor, the dedup refusal, the
+`original_location` claim, grain z-index, the viewport meta, and the gateway-completeness
+guard.
+
+**What was NOT reviewed, and is the actual cost of skipping the gate:** no security review
+and no adversary pass on a diff that adds a **new API route** (`PATCH /api/photos/[id]/original`),
+extends the photo **commit path**, and adds a **new dependency** (`gsap`). Authorization on
+that route is unexamined. The dedup lookup is a **sequential scan with no index** — the index
+was proposed and deliberately not applied.
+
+**The finding the merge itself produced.** Ten branches merged with **zero textual conflicts**
+and one pair was **semantically incompatible**: `feat/photo-dedup` extended `DataGateway` with
+`findPhotoByChecksumSha256`; `fix/original-location-lie`'s private test stub did not follow.
+Both branches green alone, **eight failures together**. Fixed on the integration branch and
+on the source branch, plus a completeness guard that now throws at **stub construction**
+naming the missing method, rather than surfacing as a `TypeError` deep inside `commitPhoto`.
+**A clean textual merge is not evidence of a working merge.**
+
+**Deliberately excluded:** `fix/window-strings` — nine sentences of product copy describing
+Eva's day that the founder has not read. Still unmerged.
+
+**Reversibility:** the merge is revertible (`git revert -m 1 2f7a391`), but it is **pushed**,
+so history is public. No migration was run and no live DB write occurred.
+**Owner:** ceo (session ceo-3-1785631504)
+**Affects:** whoever runs the next QA gate — **this diff has never been security-reviewed and
+should be**. Also: existing `photos` rows may still carry `original_location = 'supabase'`
+from before the fix (corrective SQL is one line, conditional on the table having rows, which
+is still unverified against the live project).
+
 ## 2026-08-10 — The board becomes /today; the leaf takes the photograph; the approved design cannot add a photograph
 
 Decision-maker: Founder, via CEO. Tier: design-defining, no code merged.
