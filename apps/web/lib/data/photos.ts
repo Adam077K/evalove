@@ -354,6 +354,45 @@ export async function commitPhoto(
     );
   }
 
+  // Content-dedup for book photos.
+  //
+  // WHY ONLY "book": the daily path already has `supersedePriorDaily`, which
+  // intentionally replaces any prior photo for that author on that day. A
+  // daily re-post of the same bytes is a valid "I'm choosing this one again"
+  // signal and must not be refused.
+  //
+  // WHY THIS IS NOT SILENT: a guard that silently de-duplicates without
+  // telling the caller has created a row whose ID belongs to someone else's
+  // photo — different author, different day, different caption. Returning it
+  // as the result of this commit would be a lie. The honest outcome is a
+  // `conflict` error the route handler can turn into a 409 with the existing
+  // photo's id in the response body, so the person sees "this photo is already
+  // in your book" rather than a phantom success followed by a confusing board.
+  //
+  // WHY BEFORE verifyDerivativesAreClean: the EXIF scan downloads and scans
+  // two objects from storage. Refusing a duplicate before that work is cheaper
+  // and correct — the incoming bytes are identical to what is already stored,
+  // so there is nothing new to verify.
+  //
+  // WHY AFTER the client_uuid idempotency check: a retried commit (same
+  // client_uuid, same bytes) is caught above and returned safely. Only a fresh
+  // client_uuid carrying identical bytes reaches this point.
+  if (input.kind === "book") {
+    const contentMatch = await deps.gateway.findPhotoByChecksumSha256(
+      input.checksumSha256,
+    );
+    if (contentMatch !== null) {
+      throw new DataError(
+        "conflict",
+        "a photo with these exact bytes is already in the book",
+        {
+          existingPhotoId: contentMatch.id,
+          checksumSha256: input.checksumSha256,
+        },
+      );
+    }
+  }
+
   const member =
     input.author !== undefined ? await memberBySlug(deps, input.author) : undefined;
 

@@ -156,6 +156,18 @@ export interface DataGateway {
 
   findPhotoByClientUuid(clientUuid: string): Promise<PhotoRow | null>;
 
+  /**
+   * Find a live (not purged) photo whose bytes matched this SHA-256 checksum.
+   *
+   * Used by the book-photo commit path to detect content-identical photographs
+   * before a second row is written. Scoped to non-purged rows only: a purged
+   * photo is destroyed and the slot is available again — a re-upload of the same
+   * bytes after a purge is not a duplicate, it is a new photo.
+   *
+   * Returns the first row found, or `null` if no live photo carries this digest.
+   */
+  findPhotoByChecksumSha256(checksum: string): Promise<PhotoRow | null>;
+
   listPhotos(query: PhotoPageQuery): Promise<PhotoRow[]>;
 
   /** Live daily photos for one shared day, both authors. */

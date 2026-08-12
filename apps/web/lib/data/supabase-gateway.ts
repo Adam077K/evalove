@@ -219,6 +219,35 @@ export function supabaseGateway(): DataGateway {
       return data as unknown as PhotoRow;
     },
 
+    /**
+     * Find a live (not purged) photo by its SHA-256 content digest.
+     *
+     * Returns the first row whose `checksum_sha256` matches and whose
+     * `purged_at` is null. `deleted_at` is deliberately NOT filtered: a
+     * soft-deleted photo is still in the book (its bytes exist, it is merely
+     * hidden), so uploading the same bytes again is still a duplicate. A purged
+     * photo is gone — its slot is open.
+     *
+     * NOTE: there is currently no index on `checksum_sha256`. For a two-person
+     * book this is a sequential scan over a handful of rows, which is
+     * acceptable. The founder has been given the proposed index SQL (see the
+     * `needs_migration` field of the backend-engineer return contract for this
+     * task) and may apply it when the table grows.
+     */
+    async findPhotoByChecksumSha256(checksum: string): Promise<PhotoRow | null> {
+      const db = await serviceClient();
+      const { data, error } = await db
+        .from("photos")
+        .select(PHOTO_COLUMNS)
+        .eq("checksum_sha256", checksum)
+        .is("purged_at", null)
+        .limit(1);
+
+      if (error) throw translate("findPhotoByChecksumSha256", error, { checksum });
+      const rows = (data ?? []) as unknown as PhotoRow[];
+      return rows[0] ?? null;
+    },
+
     async listPhotos(query: PhotoPageQuery): Promise<PhotoRow[]> {
       const db = await serviceClient();
 

@@ -72,6 +72,13 @@ class FakeGateway implements DataGateway {
     return null;
   }
 
+  async findPhotoByChecksumSha256(checksum: string): Promise<PhotoRow | null> {
+    for (const p of this.photos.values()) {
+      if (p.checksum_sha256 === checksum && p.purged_at === null) return p;
+    }
+    return null;
+  }
+
   async insertPhotoIfAbsent(row: PhotoRow): Promise<PhotoRow> {
     const existing = await this.findPhotoByClientUuid(row.client_uuid);
     if (existing) return existing;

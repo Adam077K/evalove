@@ -109,6 +109,10 @@ class FakeGateway implements DataGateway {
     return this.notImplemented("findPhotoByClientUuid");
   }
 
+  findPhotoByChecksumSha256(_checksum: string): Promise<PhotoRow | null> {
+    return this.notImplemented("findPhotoByChecksumSha256");
+  }
+
   listPhotos(_query: PhotoPageQuery): Promise<PhotoRow[]> {
     return this.notImplemented("listPhotos");
   }
