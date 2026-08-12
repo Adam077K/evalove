@@ -23,10 +23,29 @@ import { photoSrc } from "@/lib/fixtures/resolve";
  *   square  polaroid-frame-empty (900×1024) — equal borders,
  *           window x 10.3→91.2%, y 11.1→74.4%.
  *
- * The photograph is object-cover into the window: a polaroid crops to
- * its aperture — that is what the format is. The <img> carries
- * `.photo` and nothing else; only the FRAME dims under the lamp, via
- * an inline filter because drop-shadow forces the lamp curve inline
+ * THE MOUNT TAKES THE PHOTOGRAPH'S REAL SHAPE.
+ *
+ * The outer frame's aspect ratio is computed from the photograph's own
+ * dimensions so that the transparent window matches the photo exactly
+ * and object-cover never crops a single pixel:
+ *
+ *   window_AR = window_width% / window_height%  (from frame asset)
+ *   photo_AR  = photo.width  / photo.height
+ *   frame_AR  = photo_AR  × (window_height% / window_width%)
+ *
+ * When frame_AR is derived this way, window_AR = frame_AR × (width%/height%) =
+ * photo_AR exactly — the window and the photo share one shape, and object-cover
+ * is a no-op. The frame PNG stretches to the new proportions (its borders grow
+ * and shrink proportionally with the photo); that is acceptable because the
+ * frame's visual weight comes from its material, not from pixel-perfect borders.
+ *
+ * The chin keeps a guaranteed minimum height so a handwritten caption is never
+ * squeezed off a very wide landscape frame. No overflow-hidden in the ancestry
+ * (BookSheet explicitly forbids it), so the chin cannot be clipped — the floor
+ * is about giving the text adequate room, not about preventing clip.
+ *
+ * The <img> carries `.photo` and nothing else; only the FRAME dims under the
+ * lamp, via an inline filter because drop-shadow forces the lamp curve inline
  * (the Pinned precedent — one definition in :root, two readers).
  *
  * No <Mounted> in here — the caller mounts the whole polaroid so
@@ -40,21 +59,41 @@ export type PolaroidVariant = "chin" | "square";
 
 interface FrameSpec {
   src: string;
-  aspect: string;
   /** Transparent window, as percentages of the frame box. */
   window: { left: string; top: string; width: string; height: string };
+  /**
+   * Raw numeric percentages (0–100) for the window edges — used to compute
+   * the frame's aspect ratio from the photograph's own dimensions.
+   * Derived once from the window strings above; kept here so the math is
+   * co-located with the values it reads.
+   */
+  windowWidthPct: number;
+  windowHeightPct: number;
+  /** Minimum chin height in px — guaranteed even for very wide landscape photos. */
+  chinMinHeightPx: number;
 }
 
 const FRAMES: Record<PolaroidVariant, FrameSpec> = {
   chin: {
     src: "/materials/polaroid-frame-chin.webp",
-    aspect: "795 / 1024",
     window: { left: "9.56%", top: "9.77%", width: "81.05%", height: "65.53%" },
+    windowWidthPct: 81.05,
+    windowHeightPct: 65.53,
+    // Chin spans top-[77.5%] to bottom-[4%] = 18.5% of frame height.
+    // At the widest landscape we expect (≈16:9), the frame is ~0.54× the
+    // width in height, giving a chin of 0.185×0.54×W ≈ 0.10W.
+    // At W=200 px that is 20 px — too tight for a line of 19px Fraunces.
+    // 44 px covers one generous line of Eva's hand + a small time stamp.
+    chinMinHeightPx: 44,
   },
   square: {
     src: "/materials/polaroid-frame-empty.webp",
-    aspect: "900 / 1024",
     window: { left: "10.33%", top: "11.13%", width: "80.89%", height: "63.28%" },
+    windowWidthPct: 80.89,
+    windowHeightPct: 63.28,
+    // Square variant has no chin — callers never pass children for it.
+    // The field exists for type uniformity; it is never applied.
+    chinMinHeightPx: 44,
   },
 };
 
@@ -76,8 +115,33 @@ export function Polaroid({
 }: PolaroidProps) {
   const frame = FRAMES[variant];
 
+  // Derive the frame's aspect ratio from the photograph's own dimensions so
+  // the transparent window matches the photo's shape exactly. When this ratio
+  // is used, the window's intrinsic AR equals the photo's AR and object-cover
+  // is a no-op — no crop for portrait or landscape.
+  //
+  //   frame_AR = photo_AR × (window_height% / window_width%)
+  //
+  // Falls back to 1:1 only if dimensions are missing or zero (never in
+  // practice — every Photo has width/height set by the ingestion pipeline).
+  const photoAR =
+    photo.width > 0 && photo.height > 0 ? photo.width / photo.height : 1;
+  // Express as "W / H" to satisfy CSS aspect-ratio's preferred syntax.
+  //
+  //   frame_AR = photo_AR × (windowHeightPct / windowWidthPct)
+  //
+  // Written as a rational fraction: numerator = photo_AR × windowHeightPct,
+  // denominator = windowWidthPct. This avoids floating-point rounding by
+  // letting the browser evaluate the division.
+  //
+  // Proof: window_AR = (windowWidthPct × frame_W) / (windowHeightPct × frame_H)
+  //   = (windowWidthPct / windowHeightPct) × frame_AR
+  //   = (windowWidthPct / windowHeightPct) × photo_AR × (windowHeightPct / windowWidthPct)
+  //   = photo_AR ✓
+  const aspectRatio = `${frame.windowHeightPct * photoAR} / ${frame.windowWidthPct}`;
+
   return (
-    <div className={className} style={{ position: "relative", aspectRatio: frame.aspect }}>
+    <div className={className} style={{ position: "relative", aspectRatio }}>
       {/* The print, under the frame, visible through the window. */}
       <img
         src={photoSrc(photo)}
@@ -100,9 +164,17 @@ export function Polaroid({
           transition: "filter var(--dur-3) var(--ease-io)",
         }}
       />
-      {/* The chin — their hand, directly on the frame's paper. */}
+      {/* The chin — their hand, directly on the frame's paper.
+          min-height guarantees a legible floor even for very wide landscape
+          frames where the chin's natural percentage-height would be too small
+          for a line of text. No overflow-hidden in the ancestry means the
+          floor never clips content — it only ensures adequate room. */}
       {children !== undefined && variant === "chin" && (
-        <div className="absolute inset-x-[11%] top-[77.5%] bottom-[4%]">
+        <div
+          className="absolute inset-x-[11%] top-[77.5%] bottom-[4%]"
+          style={{ minHeight: frame.chinMinHeightPx > 0 ? `${frame.chinMinHeightPx}px` : undefined }}
+          data-testid="polaroid-chin"
+        >
           {children}
         </div>
       )}

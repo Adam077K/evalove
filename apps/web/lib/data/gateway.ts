@@ -156,6 +156,18 @@ export interface DataGateway {
 
   findPhotoByClientUuid(clientUuid: string): Promise<PhotoRow | null>;
 
+  /**
+   * Find a live (not purged) photo whose bytes matched this SHA-256 checksum.
+   *
+   * Used by the book-photo commit path to detect content-identical photographs
+   * before a second row is written. Scoped to non-purged rows only: a purged
+   * photo is destroyed and the slot is available again — a re-upload of the same
+   * bytes after a purge is not a duplicate, it is a new photo.
+   *
+   * Returns the first row found, or `null` if no live photo carries this digest.
+   */
+  findPhotoByChecksumSha256(checksum: string): Promise<PhotoRow | null>;
+
   listPhotos(query: PhotoPageQuery): Promise<PhotoRow[]>;
 
   /** Live daily photos for one shared day, both authors. */
@@ -254,3 +266,45 @@ export interface DataGateway {
    */
   removeObjects(paths: readonly string[]): Promise<string[]>;
 }
+
+/**
+ * Exhaustive list of every method declared on DataGateway.
+ *
+ * The `satisfies Record<keyof DataGateway, true>` makes this a compile-time
+ * check: if DataGateway grows a method and this record is not updated,
+ * TypeScript errors here rather than silently dropping the method from the
+ * list. That means DATA_GATEWAY_METHODS is always complete — which in turn
+ * means assertGatewayComplete (fake-gateway.ts) can catch stubs that are
+ * missing a method at stub-construction time rather than at the call site
+ * inside business logic.
+ */
+const _GATEWAY_METHOD_EXHAUSTIVE = {
+  listMembers: true,
+  insertPhotoIfAbsent: true,
+  findPhotoById: true,
+  findPhotoByClientUuid: true,
+  findPhotoByChecksumSha256: true,
+  listPhotos: true,
+  dailyPhotosForDay: true,
+  updatePhoto: true,
+  supersedePriorDaily: true,
+  countDaysTogether: true,
+  countPurgeRequestsSince: true,
+  insertPurgeAudit: true,
+  markPurgeAuditStoragePurged: true,
+  listBookEntries: true,
+  updateBookEntry: true,
+  insertDatePlan: true,
+  findDatePlanById: true,
+  findLiveDatePlanInSlot: true,
+  listDatePlans: true,
+  updateDatePlan: true,
+  createSignedUploadUrl: true,
+  downloadObject: true,
+  removeObjects: true,
+} satisfies Record<keyof DataGateway, true>;
+
+/** All method names declared on DataGateway. Always in sync with the interface via the satisfies above. */
+export const DATA_GATEWAY_METHODS = Object.keys(
+  _GATEWAY_METHOD_EXHAUSTIVE,
+) as Array<keyof DataGateway>;

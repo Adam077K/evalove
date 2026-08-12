@@ -144,10 +144,12 @@ export interface UploadSlot {
  * from the client's outbox entry so that a retry lands on the same three
  * objects rather than orphaning the first attempt's bytes.
  *
- * All three variants are authorised together and the client commits only once
- * all three have landed. That is what makes `original_location = 'supabase'`
- * a true statement at commit time, and it is what lets a purge delete three
- * known paths instead of guessing which ones exist.
+ * All three variants are authorised together — the client uploads display and
+ * thumb before commit, and the original later over wi-fi via
+ * `uploadDeferredOriginals`. At commit time `original_location` is written as
+ * `'none'`; `confirmOriginalLanded` flips it to `'supabase'` once the bytes
+ * are actually there. This lets a purge delete three known paths instead of
+ * guessing which ones exist, regardless of whether the original has arrived.
  */
 export async function issueUploadSlots(
   deps: PhotoDeps,
@@ -354,6 +356,45 @@ export async function commitPhoto(
     );
   }
 
+  // Content-dedup for book photos.
+  //
+  // WHY ONLY "book": the daily path already has `supersedePriorDaily`, which
+  // intentionally replaces any prior photo for that author on that day. A
+  // daily re-post of the same bytes is a valid "I'm choosing this one again"
+  // signal and must not be refused.
+  //
+  // WHY THIS IS NOT SILENT: a guard that silently de-duplicates without
+  // telling the caller has created a row whose ID belongs to someone else's
+  // photo — different author, different day, different caption. Returning it
+  // as the result of this commit would be a lie. The honest outcome is a
+  // `conflict` error the route handler can turn into a 409 with the existing
+  // photo's id in the response body, so the person sees "this photo is already
+  // in your book" rather than a phantom success followed by a confusing board.
+  //
+  // WHY BEFORE verifyDerivativesAreClean: the EXIF scan downloads and scans
+  // two objects from storage. Refusing a duplicate before that work is cheaper
+  // and correct — the incoming bytes are identical to what is already stored,
+  // so there is nothing new to verify.
+  //
+  // WHY AFTER the client_uuid idempotency check: a retried commit (same
+  // client_uuid, same bytes) is caught above and returned safely. Only a fresh
+  // client_uuid carrying identical bytes reaches this point.
+  if (input.kind === "book") {
+    const contentMatch = await deps.gateway.findPhotoByChecksumSha256(
+      input.checksumSha256,
+    );
+    if (contentMatch !== null) {
+      throw new DataError(
+        "conflict",
+        "a photo with these exact bytes is already in the book",
+        {
+          existingPhotoId: contentMatch.id,
+          checksumSha256: input.checksumSha256,
+        },
+      );
+    }
+  }
+
   const member =
     input.author !== undefined ? await memberBySlug(deps, input.author) : undefined;
 
@@ -431,7 +472,11 @@ export async function commitPhoto(
     storage_path_display: displayPath,
     storage_path_thumb: thumbPath,
     storage_path_original: photoOriginalPath(input.photoId),
-    original_location: "supabase",
+    // At commit time only display and thumb are in storage — the original goes
+    // later over wi-fi via uploadDeferredOriginals. Writing 'supabase' here
+    // was the lie this fix removes. `confirmOriginalLanded` flips this to
+    // 'supabase' when the bytes are actually confirmed on the server.
+    original_location: "none",
 
     width: input.width,
     height: input.height,
@@ -454,6 +499,73 @@ export async function commitPhoto(
 
   const written = await deps.gateway.insertPhotoIfAbsent(row);
   return { photo: toPhoto(written), created: written.id === input.photoId };
+}
+
+/* ------------------------------------------------------------------ *
+ * Confirm original landed
+ * ------------------------------------------------------------------ */
+
+/**
+ * Mark the untouched original as stored in Supabase.
+ *
+ * Called by `PATCH /api/photos/[id]/original` after the outbox's
+ * `uploadDeferredOriginals` successfully PUTs the original bytes to storage.
+ * Flips `original_location` from `'none'` to `'supabase'`.
+ *
+ * Idempotent: if `original_location` is already `'supabase'` (a retried
+ * confirm after a lost response), the existing row is returned unchanged.
+ * Any other starting value is an error — `'r2'` and `'purged'` cannot
+ * transition here, and would indicate a route or workflow bug.
+ */
+export interface ConfirmOriginalInput {
+  photoId: Uuid;
+  /**
+   * Byte count of the original as reported by the device after upload.
+   *
+   * Informational — no separate column exists for original bytes yet, so this
+   * is accepted but not persisted. A future schema addition can store it
+   * without changing the caller's interface.
+   */
+  bytes: number;
+}
+
+export async function confirmOriginalLanded(
+  deps: PhotoDeps,
+  input: ConfirmOriginalInput,
+): Promise<Photo> {
+  const existing = await deps.gateway.findPhotoById(input.photoId);
+  if (existing === null) {
+    throw new DataError("not_found", "no such photo", { photoId: input.photoId });
+  }
+  if (existing.purged_at !== null) {
+    throw new DataError("not_found", "this photo was purged", {
+      photoId: input.photoId,
+    });
+  }
+
+  // Idempotent: a retried confirm after a dropped response is not an error.
+  if (existing.original_location === "supabase") {
+    return toPhoto(existing);
+  }
+
+  if (existing.original_location !== "none") {
+    throw new DataError(
+      "invalid",
+      `cannot confirm original for a photo whose original_location is '${existing.original_location}'`,
+      {
+        photoId: input.photoId,
+        originalLocation: existing.original_location,
+      },
+    );
+  }
+
+  const updated = await deps.gateway.updatePhoto(input.photoId, {
+    original_location: "supabase",
+  });
+  if (updated === null) {
+    throw new DataError("not_found", "no such photo", { photoId: input.photoId });
+  }
+  return toPhoto(updated);
 }
 
 /* ------------------------------------------------------------------ *

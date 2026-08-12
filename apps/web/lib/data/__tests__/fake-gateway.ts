@@ -17,6 +17,7 @@
  */
 
 import { DataError } from "../errors";
+import { DATA_GATEWAY_METHODS } from "../gateway";
 import type {
   DataGateway,
   DatePlanPatch,
@@ -194,6 +195,9 @@ class FakeGateway implements DataGateway {
   findPhotoByClientUuid(_clientUuid: string): Promise<PhotoRow | null> {
     return this.notImplemented("findPhotoByClientUuid");
   }
+  findPhotoByChecksumSha256(_checksum: string): Promise<PhotoRow | null> {
+    return this.notImplemented("findPhotoByChecksumSha256");
+  }
   updatePhoto(_id: string, _patch: PhotoPatch): Promise<PhotoRow | null> {
     return this.notImplemented("updatePhoto");
   }
@@ -316,4 +320,32 @@ class FakeGateway implements DataGateway {
 
 export function fakeGateway(): FakeGateway {
   return new FakeGateway();
+}
+
+/**
+ * Validates that every method declared on DataGateway is present as a function
+ * on `gateway`. Call this in the constructor of any in-test FakeGateway stub.
+ *
+ * WHY: vitest uses esbuild (not tsc) to run tests. TypeScript's `implements
+ * DataGateway` is erased — a stub that is silently missing a method passes
+ * the type check at compile time but blows up with "is not a function" at
+ * runtime, inside business logic, where the error message gives no hint about
+ * which stub is incomplete. Calling assertGatewayComplete in the constructor
+ * moves the failure to stub-construction time, where the message is explicit.
+ *
+ * The method list comes from DATA_GATEWAY_METHODS (gateway.ts), which is kept
+ * exhaustive by `satisfies Record<keyof DataGateway, true>`. Adding a method
+ * to DataGateway without updating that record is a TypeScript error, so the
+ * two cannot drift.
+ */
+export function assertGatewayComplete(gateway: DataGateway, label = "stub"): void {
+  for (const method of DATA_GATEWAY_METHODS) {
+    if (typeof (gateway as unknown as Record<string, unknown>)[method] !== "function") {
+      throw new Error(
+        `Gateway stub "${label}" is missing method "${method}". ` +
+          `The DataGateway interface was extended since this stub was written. ` +
+          `Add "${method}" to prevent a silent TypeError at the call site in business logic.`,
+      );
+    }
+  }
 }
