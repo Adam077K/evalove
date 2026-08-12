@@ -62,7 +62,24 @@ const FULL_BLEED_ROUTES = new Set(["today", "book"]);
  *                           flagged to the team lead rather than silently
  *                           patched or silently ignored.
  */
-const EXCLUDED_ROUTES = new Set(["echo", "review/book-states", "review/today-pair"]);
+const EXCLUDED_ROUTES = new Set([
+  "echo",
+  "review/book-states",
+  "review/today-pair",
+  /**
+   * review/board — dev-only T1 review harness, full-bleed by design (the
+   * board fills the whole screen edge-to-edge). Same exception class as
+   * review/book-states and review/today-pair above: gated twice, unreachable
+   * from the dock, never served in production, and Column's gutter would be
+   * wrong for a full-bleed pannable surface.
+   */
+  "review/board",
+  /**
+   * review/dates — dev-only harness for the Dates screen, added alongside
+   * the board probe. Same reasoning as the other review exclusions.
+   */
+  "review/dates",
+]);
 
 const COLUMN_IMPORT = /from\s+["']@\/components\/chrome\/Column["']/;
 const COLUMN_USAGE = /<Column[\s>]/;
