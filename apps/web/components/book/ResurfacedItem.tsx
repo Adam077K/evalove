@@ -127,7 +127,7 @@ export function ResurfacedItem({ returned }: { returned: Return }) {
           id={photo.id}
           context="book-photo"
           elevation={4}
-          className={leftward ? "-ml-2" : "-mr-2"}
+          className={leftward ? "-ml-2 overflow-hidden h-4" : "-mr-2 overflow-hidden h-4"}
           style={{
             width: `${widthPct}%`,
             /* Polaroids cast along their keyed cut, not a rectangle;
