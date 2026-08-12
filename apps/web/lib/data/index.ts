@@ -22,6 +22,7 @@ export {
   PURGE_LIMIT_PER_DAY,
   UPLOAD_URL_TTL_MS,
   commitPhoto,
+  confirmOriginalLanded,
   issueUploadSlots,
   listPhotos,
   purgePhoto,
@@ -32,6 +33,7 @@ export {
 export type {
   CommitPhotoInput,
   CommitPhotoResult,
+  ConfirmOriginalInput,
   ListPhotosInput,
   ListPhotosResult,
   PhotoBytes,
