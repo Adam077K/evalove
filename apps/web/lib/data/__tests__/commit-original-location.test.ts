@@ -58,7 +58,7 @@ import type {
   PhotoPatch,
   PurgeAuditInsert,
 } from "../gateway";
-import { ADAM_ROW, EVA_ROW } from "./fake-gateway";
+import { ADAM_ROW, EVA_ROW, assertGatewayComplete } from "./fake-gateway";
 
 /* ------------------------------------------------------------------ *
  * Minimal EXIF-free JPEG bytes
@@ -76,6 +76,12 @@ const CLEAN_JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]).buffer;
  * `confirmOriginalLanded` exercise. Everything else throws so that a test
  * that accidentally hits an unimplemented path fails loudly rather than
  * silently returning a stub.
+ *
+ * The constructor calls assertGatewayComplete so that any future DataGateway
+ * method that is added but not reflected here fails at stub-construction time,
+ * not at the call site inside business logic. This is the guard that prevented
+ * the 2026-08-12 merge regression (findPhotoByChecksumSha256 missing) from
+ * silently propagating.
  */
 class FakeGateway implements DataGateway {
   photos = new Map<string, PhotoRow>();
@@ -88,6 +94,13 @@ class FakeGateway implements DataGateway {
     this.photos.set(id, updated);
     return updated;
   });
+
+  constructor() {
+    // Fires at stub-construction time. If DataGateway gains a method and this
+    // class is not updated, the error names the missing method immediately
+    // rather than letting the test run until business logic trips over it.
+    assertGatewayComplete(this, "commit-original-location FakeGateway");
+  }
 
   private notImplemented(method: string): never {
     throw new Error(
@@ -108,6 +121,13 @@ class FakeGateway implements DataGateway {
 
   async findPhotoById(id: string): Promise<PhotoRow | null> {
     return this.photos.get(id) ?? null;
+  }
+
+  async findPhotoByChecksumSha256(checksum: string): Promise<PhotoRow | null> {
+    for (const p of this.photos.values()) {
+      if (p.checksum_sha256 === checksum && p.purged_at === null) return p;
+    }
+    return null;
   }
 
   async insertPhotoIfAbsent(row: PhotoRow): Promise<PhotoRow> {
